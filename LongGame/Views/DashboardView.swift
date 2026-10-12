@@ -21,10 +21,11 @@ struct DashboardView: View {
         planned.filter { calendar.isDateInToday($0.date) && $0.plan?.isDraft != true }
     }
 
-    private var nextGoal: Goal? {
+    /// Every active goal still ahead, soonest first.
+    private var upcomingGoals: [Goal] {
         goals
             .filter { $0.status == .active && ($0.targetDate ?? .distantPast) >= today }
-            .min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
+            .sorted { ($0.targetDate ?? .distantFuture, $0.priority) < ($1.targetDate ?? .distantFuture, $1.priority) }
     }
 
     private var lastSevenDays: [CompletedWorkout] {
@@ -72,9 +73,11 @@ struct DashboardView: View {
                 }
             }
 
-            if let goal = nextGoal {
-                Section("Next goal") {
-                    GoalCountdownRow(goal: goal)
+            if !upcomingGoals.isEmpty {
+                Section(upcomingGoals.count == 1 ? "Next goal" : "Goals") {
+                    ForEach(upcomingGoals) { goal in
+                        GoalCountdownRow(goal: goal)
+                    }
                 }
             }
 
