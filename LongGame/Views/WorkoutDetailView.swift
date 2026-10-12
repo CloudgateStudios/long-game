@@ -30,7 +30,9 @@ struct WorkoutDetailView: View {
         let from = workout.start.addingTimeInterval(-86_400)
         let to = workout.start.addingTimeInterval(86_400)
         _nearby = Query(
-            filter: #Predicate { $0.sportRaw == sportRaw && $0.start >= from && $0.start <= to && $0.externalID != externalID },
+            filter: #Predicate {
+                $0.sportRaw == sportRaw && $0.start >= from && $0.start <= to && $0.externalID != externalID
+            },
             sort: \CompletedWorkout.start
         )
     }
@@ -50,13 +52,18 @@ struct WorkoutDetailView: View {
                     LabeledContent(workout.sport == .bike ? "Average speed" : "Average pace", value: pace)
                 }
                 if let energy = workout.activeEnergyKcal {
-                    LabeledContent("Active energy", value: "\(energy.formatted(.number.precision(.fractionLength(0)))) kcal")
+                    LabeledContent(
+                        "Active energy", value: "\(energy.formatted(.number.precision(.fractionLength(0)))) kcal")
                 }
                 if let effort = workout.effortScore {
-                    LabeledContent("Effort", value: "\(effort.formatted(.number.precision(.fractionLength(0...1)))) / 10")
+                    LabeledContent(
+                        "Effort", value: "\(effort.formatted(.number.precision(.fractionLength(0...1)))) / 10")
                 }
                 if let load = workout.load {
-                    LabeledContent("Training load", value: workout.confidence == .estimated ? "\(Format.load(load)) (estimated)" : Format.load(load))
+                    LabeledContent(
+                        "Training load",
+                        value: workout.confidence == .estimated ? "\(Format.load(load)) (estimated)" : Format.load(load)
+                    )
                 }
             }
 
@@ -79,11 +86,14 @@ struct WorkoutDetailView: View {
             if workout.averagePowerWatts != nil || workout.averageCadence != nil {
                 Section(workout.sport == .bike ? "Power and cadence" : "Cadence") {
                     if let power = workout.averagePowerWatts {
-                        LabeledContent("Average power", value: "\(power.formatted(.number.precision(.fractionLength(0)))) W")
+                        LabeledContent(
+                            "Average power", value: "\(power.formatted(.number.precision(.fractionLength(0)))) W")
                     }
                     if let cadence = workout.averageCadence {
                         let unit = workout.sport == .bike ? "rpm" : "spm"
-                        LabeledContent("Average cadence", value: "\(cadence.formatted(.number.precision(.fractionLength(0)))) \(unit)")
+                        LabeledContent(
+                            "Average cadence",
+                            value: "\(cadence.formatted(.number.precision(.fractionLength(0)))) \(unit)")
                     }
                 }
             }
@@ -119,7 +129,8 @@ struct WorkoutDetailView: View {
                             Label {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(leg.displayName)
-                                    Text(Format.duration(leg.durationSeconds)).font(.subheadline).foregroundStyle(.secondary)
+                                    Text(Format.duration(leg.durationSeconds)).font(.subheadline).foregroundStyle(
+                                        .secondary)
                                 }
                             } icon: {
                                 Image(systemName: leg.sport.symbolName)
@@ -144,13 +155,17 @@ struct WorkoutDetailView: View {
                 } header: {
                     Text("Other recordings")
                 } footer: {
-                    Text("The same session was recorded more than once. Only one recording counts toward training load and the plan.")
+                    Text(
+                        "The same session was recorded more than once. Only one recording counts toward training load and the plan."
+                    )
                 }
             }
 
             Section {
                 LabeledContent("Source", value: workout.sourceName.isEmpty ? "Unknown" : workout.sourceName)
-                LabeledContent("Recorded as", value: workout.activityName.isEmpty ? workout.sport.displayName : workout.activityName)
+                LabeledContent(
+                    "Recorded as",
+                    value: workout.activityName.isEmpty ? workout.sport.displayName : workout.activityName)
                 LabeledContent("Heart-rate data", value: workout.confidence == .measured ? "Recorded" : "None")
                 if !workout.isPrimary {
                     LabeledContent("Counted", value: "No, duplicate")
@@ -159,7 +174,9 @@ struct WorkoutDetailView: View {
                 Text("Data")
             } footer: {
                 if workout.confidence == .estimated {
-                    Text("This workout has no heart-rate samples, so its training load can only be estimated from its duration.")
+                    Text(
+                        "This workout has no heart-rate samples, so its training load can only be estimated from its duration."
+                    )
                 }
             }
         }
@@ -221,10 +238,13 @@ extension Format {
         case .bike:
             let speed = Measurement(value: meters / workout.durationSeconds, unit: UnitSpeed.metersPerSecond)
                 .converted(to: metric ? .kilometersPerHour : .milesPerHour)
-            return speed.formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(1))))
+            return speed.formatted(
+                .measurement(
+                    width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(1))))
         case .swim:
             let lengths = DistanceEntry.value(meters: meters, sport: .swim) / 100
-            return "\(minutesAndSeconds(workout.durationSeconds / lengths)) /100 \(DistanceEntry.unit(for: .swim).symbol)"
+            return
+                "\(minutesAndSeconds(workout.durationSeconds / lengths)) /100 \(DistanceEntry.unit(for: .swim).symbol)"
         case .run, .other:
             let units = DistanceEntry.value(meters: meters, sport: .run)
             return "\(minutesAndSeconds(workout.durationSeconds / units)) /\(DistanceEntry.unit(for: .run).symbol)"

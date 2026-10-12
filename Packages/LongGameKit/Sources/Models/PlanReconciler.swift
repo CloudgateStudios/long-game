@@ -51,7 +51,9 @@ extension TrainingPlan {
 public enum PlanReconciler {
     /// Re-runs matching and compliance. Returns how many sessions changed.
     @discardableResult
-    public static func reconcile(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws -> Int {
+    public static func reconcile(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws
+        -> Int
+    {
         // Sessions in a draft plan are proposals, not commitments.
         let planned = try context.fetch(FetchDescriptor<PlannedWorkout>()).filter { $0.plan?.isDraft != true }
         guard let first = planned.map(\.date).min(), let last = planned.map(\.date).max() else { return 0 }
@@ -84,9 +86,11 @@ public enum PlanReconciler {
         }
 
         for session in planned {
-            let status: PlannedStatus = session.isRest
+            let status: PlannedStatus =
+                session.isRest
                 ? .planned
-                : Compliance.status(planned: session.session, matched: session.matchedWorkout?.session, today: now, calendar: calendar)
+                : Compliance.status(
+                    planned: session.session, matched: session.matchedWorkout?.session, today: now, calendar: calendar)
             if session.status != status {
                 session.status = status
                 changed.insert(session.uuid)
@@ -123,9 +127,12 @@ public enum PlanReconciler {
         let from = session.date.addingTimeInterval(-reach)
         let to = session.date.addingTimeInterval(reach + 86_400)
         let sportRaw = session.sportRaw
-        let released = try context.fetch(FetchDescriptor<CompletedWorkout>(
-            predicate: #Predicate { $0.isMatchLocked && $0.sportRaw == sportRaw && $0.start >= from && $0.start <= to }
-        ))
+        let released = try context.fetch(
+            FetchDescriptor<CompletedWorkout>(
+                predicate: #Predicate {
+                    $0.isMatchLocked && $0.sportRaw == sportRaw && $0.start >= from && $0.start <= to
+                }
+            ))
         for workout in released where workout.plannedWorkout == nil {
             workout.isMatchLocked = false
         }
@@ -137,7 +144,9 @@ public enum PlanReconciler {
     /// date is folded into it: its earlier sessions and phases carry over as history, and
     /// everything it had from that date on is replaced. Plans that had already finished
     /// are left alone.
-    public static func acceptDraft(_ draft: TrainingPlan, in context: ModelContext, calendar: Calendar = .current) throws {
+    public static func acceptDraft(_ draft: TrainingPlan, in context: ModelContext, calendar: Calendar = .current)
+        throws
+    {
         let start = calendar.startOfDay(for: draft.startDate)
         let dayBefore = calendar.date(byAdding: .day, value: -1, to: start) ?? start
         for plan in try context.fetch(FetchDescriptor<TrainingPlan>()) where plan !== draft && !plan.isDraft {

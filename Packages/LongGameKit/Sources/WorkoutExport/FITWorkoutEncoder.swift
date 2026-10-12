@@ -14,7 +14,10 @@ enum FITWorkoutEncoder {
         var records = Data()
 
         // file_id: says this is a workout file and who wrote it.
-        records.append(definition(local: 0, global: 0, fields: [(0, 1, .enum), (1, 2, .uint16), (2, 2, .uint16), (3, 4, .uint32z), (4, 4, .uint32)]))
+        records.append(
+            definition(
+                local: 0, global: 0,
+                fields: [(0, 1, .enum), (1, 2, .uint16), (2, 2, .uint16), (3, 4, .uint32z), (4, 4, .uint32)]))
         records.append(0)
         records.append(FileType.workout)
         records.append(uint16(Manufacturer.development))
@@ -25,7 +28,10 @@ enum FITWorkoutEncoder {
         records.append(uint32(timestamp))
 
         // workout: sport, name and how many steps follow.
-        records.append(definition(local: 1, global: 26, fields: [(4, 1, .enum), (5, 4, .uint32z), (6, 2, .uint16), (8, UInt8(title.count), .string)]))
+        records.append(
+            definition(
+                local: 1, global: 26,
+                fields: [(4, 1, .enum), (5, 4, .uint32z), (6, 2, .uint16), (8, UInt8(title.count), .string)]))
         records.append(1)
         records.append(export.sport == .run ? SportCode.running : SportCode.cycling)
         records.append(uint32(Capability.tcx))
@@ -37,7 +43,8 @@ enum FITWorkoutEncoder {
             definition(
                 local: 2, global: 27,
                 fields: [
-                    (254, 2, .uint16), (0, UInt8(nameSize), .string), (1, 1, .enum), (2, 4, .uint32), (3, 1, .enum), (4, 4, .uint32),
+                    (254, 2, .uint16), (0, UInt8(nameSize), .string), (1, 1, .enum), (2, 4, .uint32), (3, 1, .enum),
+                    (4, 4, .uint32),
                     (5, 4, .uint32), (6, 4, .uint32), (7, 1, .enum),
                 ]))
         for (index, step) in steps.enumerated() {
@@ -84,7 +91,10 @@ enum FITWorkoutEncoder {
             let first = result.count
             result += block.steps.map { step($0, export) }
             if block.repeats > 1 {
-                result.append(Step(durationType: Duration.repeatUntilStepsComplete, durationValue: UInt32(first), targetValue: UInt32(block.repeats)))
+                result.append(
+                    Step(
+                        durationType: Duration.repeatUntilStepsComplete, durationValue: UInt32(first),
+                        targetValue: UInt32(block.repeats)))
             }
         }
         return result
@@ -187,7 +197,9 @@ enum FITWorkoutEncoder {
         case uint32z = 0x8C
     }
 
-    private static func definition(local: UInt8, global: UInt16, fields: [(number: UInt8, size: UInt8, type: BaseType)]) -> Data {
+    private static func definition(local: UInt8, global: UInt16, fields: [(number: UInt8, size: UInt8, type: BaseType)])
+        -> Data
+    {
         // Header bit 6 marks a definition; then reserved, little-endian, message number, field count.
         var data = Data([0x40 | local, 0, 0])
         data.append(uint16(global))
@@ -219,7 +231,8 @@ enum FITWorkoutEncoder {
 
     static func crc(_ data: Data) -> UInt16 {
         let table: [UInt16] = [
-            0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401, 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400,
+            0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401, 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000,
+            0x9C01, 0x8801, 0x4400,
         ]
         var crc: UInt16 = 0
         for byte in data {

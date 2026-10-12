@@ -93,8 +93,12 @@ public struct HealthKitDataSource: HealthDataSource {
 
     // MARK: Workouts
 
-    public func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void) async throws -> WorkoutChanges {
-        let queryAnchor = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
+    public func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void)
+        async throws -> WorkoutChanges
+    {
+        let queryAnchor = anchor.flatMap {
+            try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0)
+        }
         let descriptor = HKAnchoredObjectQueryDescriptor(
             predicates: [.workout(HKQuery.predicateForSamples(withStart: start, end: nil))],
             anchor: queryAnchor
@@ -129,31 +133,34 @@ public struct HealthKitDataSource: HealthDataSource {
             for leg in legs {
                 let type = leg.workoutConfiguration.activityType
                 let end = leg.endDate ?? workout.endDate
-                records.append(try await record(
-                    id: leg.uuid,
-                    sessionID: workout.uuid,
-                    type: type,
-                    sourceName: sourceName,
-                    start: leg.startDate,
-                    end: end,
-                    duration: leg.duration,
-                    statistics: leg.statistics(for:),
-                    effort: nil
-                ))
+                records.append(
+                    try await record(
+                        id: leg.uuid,
+                        sessionID: workout.uuid,
+                        type: type,
+                        sourceName: sourceName,
+                        start: leg.startDate,
+                        end: end,
+                        duration: leg.duration,
+                        statistics: leg.statistics(for:),
+                        effort: nil
+                    ))
             }
             return records
         }
-        return [try await record(
-            id: workout.uuid,
-            sessionID: nil,
-            type: workout.workoutActivityType,
-            sourceName: sourceName,
-            start: workout.startDate,
-            end: workout.endDate,
-            duration: workout.duration,
-            statistics: workout.statistics(for:),
-            effort: effort
-        )]
+        return [
+            try await record(
+                id: workout.uuid,
+                sessionID: nil,
+                type: workout.workoutActivityType,
+                sourceName: sourceName,
+                start: workout.startDate,
+                end: workout.endDate,
+                duration: workout.duration,
+                statistics: workout.statistics(for:),
+                effort: effort
+            )
+        ]
     }
 
     private func record(
@@ -219,10 +226,12 @@ public struct HealthKitDataSource: HealthDataSource {
     /// computer still gets the samples a watch took at the same time.
     private func heartRate(from start: Date, to end: Date) async throws -> [HeartRatePoint] {
         let descriptor = HKSampleQueryDescriptor(
-            predicates: [.quantitySample(
-                type: HKQuantityType(.heartRate),
-                predicate: HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
-            )],
+            predicates: [
+                .quantitySample(
+                    type: HKQuantityType(.heartRate),
+                    predicate: HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+                )
+            ],
             sortDescriptors: [SortDescriptor(\.startDate)]
         )
         let unit = HKUnit.count().unitDivided(by: .minute())
@@ -273,15 +282,16 @@ public struct HealthKitDataSource: HealthDataSource {
 
         let perMinute = HKUnit.count().unitDivided(by: .minute())
         let vo2 = HKUnit(from: "ml/kg*min")
-        let quantities: [(HKQuantityTypeIdentifier, HKStatisticsOptions, HKUnit, WritableKeyPath<HealthDailyRecord, Double?>)] = [
-            (.restingHeartRate, .discreteAverage, perMinute, \.restingHR),
-            (.heartRateVariabilitySDNN, .discreteAverage, .secondUnit(with: .milli), \.hrvSDNN),
-            (.respiratoryRate, .discreteAverage, perMinute, \.respiratoryRate),
-            (.stepCount, .cumulativeSum, .count(), \.steps),
-            (.activeEnergyBurned, .cumulativeSum, .kilocalorie(), \.activeEnergyKcal),
-            (.vo2Max, .discreteAverage, vo2, \.vo2Max),
-            (.bodyMass, .discreteAverage, .gramUnit(with: .kilo), \.bodyMassKg),
-        ]
+        let quantities:
+            [(HKQuantityTypeIdentifier, HKStatisticsOptions, HKUnit, WritableKeyPath<HealthDailyRecord, Double?>)] = [
+                (.restingHeartRate, .discreteAverage, perMinute, \.restingHR),
+                (.heartRateVariabilitySDNN, .discreteAverage, .secondUnit(with: .milli), \.hrvSDNN),
+                (.respiratoryRate, .discreteAverage, perMinute, \.respiratoryRate),
+                (.stepCount, .cumulativeSum, .count(), \.steps),
+                (.activeEnergyBurned, .cumulativeSum, .kilocalorie(), \.activeEnergyKcal),
+                (.vo2Max, .discreteAverage, vo2, \.vo2Max),
+                (.bodyMass, .discreteAverage, .gramUnit(with: .kilo), \.bodyMassKg),
+            ]
         for (identifier, options, unit, keyPath) in quantities {
             let descriptor = HKStatisticsCollectionQueryDescriptor(
                 predicate: .quantitySample(
@@ -304,10 +314,12 @@ public struct HealthKitDataSource: HealthDataSource {
         // Start a day early: the first night begins the evening before.
         let sleepStart = calendar.date(byAdding: .day, value: -1, to: firstDay) ?? firstDay
         let sleepDescriptor = HKSampleQueryDescriptor(
-            predicates: [.categorySample(
-                type: HKCategoryType(.sleepAnalysis),
-                predicate: HKQuery.predicateForSamples(withStart: sleepStart, end: interval.end)
-            )],
+            predicates: [
+                .categorySample(
+                    type: HKCategoryType(.sleepAnalysis),
+                    predicate: HKQuery.predicateForSamples(withStart: sleepStart, end: interval.end)
+                )
+            ],
             sortDescriptors: [SortDescriptor(\.startDate)]
         )
         if let samples = try? await sleepDescriptor.result(for: store) {

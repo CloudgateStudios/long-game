@@ -27,7 +27,9 @@ struct GoalsView: View {
             }
             .overlay {
                 if goals.isEmpty {
-                    ContentUnavailableView("No goals", systemImage: "flag.checkered", description: Text("Add the event or target you are training for."))
+                    ContentUnavailableView(
+                        "No goals", systemImage: "flag.checkered",
+                        description: Text("Add the event or target you are training for."))
                 }
             }
             .navigationTitle("Goals")
@@ -109,7 +111,8 @@ private struct GoalEditor: View {
         }
         _distance = State(initialValue: initialDistance)
         _hasDate = State(initialValue: goal == nil || goal?.targetDate != nil)
-        _date = State(initialValue: goal?.targetDate ?? Calendar.current.date(byAdding: .month, value: 3, to: .now) ?? .now)
+        _date = State(
+            initialValue: goal?.targetDate ?? Calendar.current.date(byAdding: .month, value: 3, to: .now) ?? .now)
         _targetMetric = State(initialValue: goal?.targetMetric ?? "")
         _priority = State(initialValue: goal?.priority ?? .b)
         _status = State(initialValue: goal?.status ?? .active)
@@ -189,7 +192,9 @@ private struct GoalEditor: View {
             target.eventDistanceMeters = nil
         } else if distance != initialDistance || sport != goal?.eventSport {
             // Untouched distances keep their exact stored value rather than a rounded round trip.
-            target.eventDistanceMeters = distance.flatMap { $0 > 0 ? DistanceEntry.meters(value: $0, sport: sport) : nil }
+            target.eventDistanceMeters = distance.flatMap {
+                $0 > 0 ? DistanceEntry.meters(value: $0, sport: sport) : nil
+            }
         }
         target.targetDate = hasDate ? Calendar.current.startOfDay(for: date) : nil
         target.targetMetric = targetMetric.trimmingCharacters(in: .whitespaces)

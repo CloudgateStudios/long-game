@@ -61,7 +61,9 @@ public enum GoalType: String, Codable, Sendable, CaseIterable {
 }
 
 public enum GoalPriority: String, Codable, Sendable, CaseIterable, Comparable {
-    case a = "A", b = "B", c = "C"
+    case a = "A"
+    case b = "B"
+    case c = "C"
 
     public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
 }

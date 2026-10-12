@@ -8,13 +8,16 @@ public enum HeartRateZones {
     /// The max heart rate to build zones from: a manual value wins, otherwise the higher
     /// of the highest reading seen and the age estimate (an athlete who has only logged
     /// easy sessions has not shown their real max yet).
-    public static func maxHeartRate(manual: Double?, observed: Double?, age: Int?) -> (value: Double, source: MaxSource)? {
+    public static func maxHeartRate(manual: Double?, observed: Double?, age: Int?) -> (
+        value: Double, source: MaxSource
+    )? {
         if let manual, manual > 0 { return (manual, .manual) }
         let estimate = age.map { AnalysisConstants.maxHRAgeIntercept - AnalysisConstants.maxHRAgeSlope * Double($0) }
         switch (observed, estimate) {
-        case let (observed?, estimate?): return observed >= estimate ? (observed, .observed) : (estimate, .ageEstimate)
-        case let (observed?, nil): return (observed, .observed)
-        case let (nil, estimate?): return (estimate, .ageEstimate)
+        case (let observed?, let estimate?):
+            return observed >= estimate ? (observed, .observed) : (estimate, .ageEstimate)
+        case (let observed?, nil): return (observed, .observed)
+        case (nil, let estimate?): return (estimate, .ageEstimate)
         case (nil, nil): return nil
         }
     }
@@ -23,7 +26,9 @@ public enum HeartRateZones {
     /// otherwise as fractions of max.
     public static func upperBounds(maxHR: Double, restingHR: Double?) -> [Double] {
         if let restingHR, restingHR > 0, restingHR < maxHR {
-            return AnalysisConstants.zoneUpperFractionsOfReserve.map { (restingHR + $0 * (maxHR - restingHR)).rounded() }
+            return AnalysisConstants.zoneUpperFractionsOfReserve.map {
+                (restingHR + $0 * (maxHR - restingHR)).rounded()
+            }
         }
         return AnalysisConstants.zoneUpperFractionsOfMax.map { ($0 * maxHR).rounded() }
     }
@@ -59,7 +64,10 @@ public enum WorkoutLoad {
         /// The matched planned session's type, used only for the estimate.
         public var sessionType: SessionType?
 
-        public init(sport: Sport, durationSeconds: Double, heartRateHistogram: [Double]? = nil, averagePowerWatts: Double? = nil, sessionType: SessionType? = nil) {
+        public init(
+            sport: Sport, durationSeconds: Double, heartRateHistogram: [Double]? = nil,
+            averagePowerWatts: Double? = nil, sessionType: SessionType? = nil
+        ) {
             self.sport = sport
             self.durationSeconds = durationSeconds
             self.heartRateHistogram = heartRateHistogram
@@ -91,7 +99,8 @@ public enum WorkoutLoad {
             let load = zip(zoneSeconds, AnalysisConstants.zoneLoadWeights).reduce(0) { $0 + $1.0 / 60 * $1.1 }
             return Result(load: load, zoneSeconds: zoneSeconds, method: .heartRate)
         }
-        let intensity = input.sessionType.flatMap { AnalysisConstants.defaultIntensity[$0] } ?? AnalysisConstants.fallbackIntensity
+        let intensity =
+            input.sessionType.flatMap { AnalysisConstants.defaultIntensity[$0] } ?? AnalysisConstants.fallbackIntensity
         return Result(load: input.durationSeconds / 60 * intensity, zoneSeconds: nil, method: .estimated)
     }
 }
@@ -161,8 +170,10 @@ public enum LoadTrend {
             entry.chronic = average(endingOn: day, days: AnalysisConstants.chronicLoadDays)
             // Without a full chronic window the ratio is inflated and would raise false alarms.
             if let earliest, entry.chronic > 0,
-               let windowStart = calendar.date(byAdding: .day, value: -(AnalysisConstants.chronicLoadDays - 1), to: day),
-               earliest <= windowStart {
+                let windowStart = calendar.date(
+                    byAdding: .day, value: -(AnalysisConstants.chronicLoadDays - 1), to: day),
+                earliest <= windowStart
+            {
                 entry.ratio = entry.acute / entry.chronic
             }
             result.append(entry)
@@ -193,11 +204,16 @@ public struct BaselinePoint: Sendable, Equatable, Identifiable {
 
 public enum RecoveryBaseline {
     /// Each reading against the rolling baseline of the days before it.
-    public static func points(_ readings: [(date: Date, value: Double)], direction: RecoveryDirection, calendar: Calendar) -> [BaselinePoint] {
+    public static func points(
+        _ readings: [(date: Date, value: Double)], direction: RecoveryDirection, calendar: Calendar
+    ) -> [BaselinePoint] {
         let sorted = readings.sorted { $0.date < $1.date }
         return sorted.map { reading in
             var point = BaselinePoint(date: reading.date, value: reading.value)
-            guard let windowStart = calendar.date(byAdding: .day, value: -AnalysisConstants.baselineDays, to: reading.date) else { return point }
+            guard
+                let windowStart = calendar.date(
+                    byAdding: .day, value: -AnalysisConstants.baselineDays, to: reading.date)
+            else { return point }
             let window = sorted.filter { $0.date >= windowStart && $0.date < reading.date }.map(\.value)
             guard window.count >= AnalysisConstants.baselineMinimumReadings else { return point }
 

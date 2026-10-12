@@ -37,14 +37,18 @@ public struct KeychainAPIKeyStore: APIKeyStore {
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data else {
+            return nil
+        }
         return String(data: data, encoding: .utf8)
     }
 
     public func save(_ key: String?) throws {
         let trimmed = key?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let deleteStatus = SecItemDelete(query as CFDictionary)
-        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else { throw KeychainError(status: deleteStatus) }
+        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
+            throw KeychainError(status: deleteStatus)
+        }
         guard !trimmed.isEmpty else { return }
 
         var attributes = query

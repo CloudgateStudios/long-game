@@ -201,11 +201,14 @@ public final class PlannedWorkout {
 
     public var structure: StructuredWorkout? {
         get {
-            guard let structureJSON, let workout = try? JSONDecoder().decode(StructuredWorkout.self, from: Data(structureJSON.utf8)) else { return nil }
+            guard let structureJSON,
+                let workout = try? JSONDecoder().decode(StructuredWorkout.self, from: Data(structureJSON.utf8))
+            else { return nil }
             return workout.isEmpty ? nil : workout
         }
         set {
-            guard let workout = newValue?.normalized(), !workout.isEmpty, let data = try? JSONEncoder().encode(workout) else {
+            guard let workout = newValue?.normalized(), !workout.isEmpty, let data = try? JSONEncoder().encode(workout)
+            else {
                 structureJSON = nil
                 return
             }

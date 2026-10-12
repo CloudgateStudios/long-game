@@ -1,6 +1,7 @@
 import Analysis
 import Foundation
 import Testing
+
 @testable import WorkoutExport
 
 enum Sample {
@@ -15,7 +16,12 @@ enum Sample {
         sport: .bike,
         workout: StructuredWorkout(blocks: [
             .init(steps: [Step(.warmup, seconds: 600, target: Target(.ftpPercent, 50, 65))]),
-            .init(repeats: 5, steps: [Step(.work, seconds: 240, target: Target(.ftpPercent, 105, 110)), Step(.recovery, seconds: 180, target: Target(.ftpPercent, 50))]),
+            .init(
+                repeats: 5,
+                steps: [
+                    Step(.work, seconds: 240, target: Target(.ftpPercent, 105, 110)),
+                    Step(.recovery, seconds: 180, target: Target(.ftpPercent, 50)),
+                ]),
             .init(steps: [Step(.work, seconds: 300, target: Target(.hrZone, 2))]),
             .init(steps: [Step(.cooldown, seconds: 600, target: Target(.ftpPercent, 40, 55))]),
         ]),
@@ -28,7 +34,12 @@ enum Sample {
         sport: .run,
         workout: StructuredWorkout(blocks: [
             .init(steps: [Step(.warmup, seconds: 900, target: Target(.hrZone, 2))]),
-            .init(repeats: 6, steps: [Step(.work, meters: 800, target: Target(.pace, 240, 250), note: "5K effort"), Step(.recovery, seconds: 90)]),
+            .init(
+                repeats: 6,
+                steps: [
+                    Step(.work, meters: 800, target: Target(.pace, 240, 250), note: "5K effort"),
+                    Step(.recovery, seconds: 90),
+                ]),
             .init(steps: [Step(.cooldown)]),
         ]),
         thresholds: athlete
@@ -40,7 +51,9 @@ enum Sample {
         let xml = try String(decoding: WorkoutFileFormat.zwo.data(for: Sample.ride), as: UTF8.self)
         #expect(xml.contains("<name>VO2 5 × 4 min</name>"))
         #expect(xml.contains("<Warmup Duration=\"600\" PowerLow=\"0.50\" PowerHigh=\"0.65\"/>"))
-        #expect(xml.contains("<IntervalsT Repeat=\"5\" OnDuration=\"240\" OffDuration=\"180\" OnPower=\"1.08\" OffPower=\"0.50\"/>"))
+        #expect(
+            xml.contains(
+                "<IntervalsT Repeat=\"5\" OnDuration=\"240\" OffDuration=\"180\" OnPower=\"1.08\" OffPower=\"0.50\"/>"))
         // A heart-rate zone becomes the middle of the matching power zone.
         #expect(xml.contains("<SteadyState Duration=\"300\" Power=\"0.66\"/>"))
         #expect(xml.contains("<Cooldown Duration=\"600\" PowerLow=\"0.55\" PowerHigh=\"0.40\"/>"))
@@ -61,7 +74,8 @@ enum Sample {
         let mrc = try String(decoding: WorkoutFileFormat.mrc.data(for: Sample.ride), as: UTF8.self)
         #expect(mrc.contains("MINUTES PERCENT"))
         let lines = mrc.components(separatedBy: "\n")
-        let data = Array(lines[(lines.firstIndex(of: "[COURSE DATA]")! + 1)..<lines.firstIndex(of: "[END COURSE DATA]")!])
+        let data = Array(
+            lines[(lines.firstIndex(of: "[COURSE DATA]")! + 1)..<lines.firstIndex(of: "[END COURSE DATA]")!])
         // 1 warm-up, 10 interval steps, 1 steady, 1 cool-down, two points each.
         #expect(data.count == 26)
         #expect(Array(data.prefix(4)) == ["0.00\t58", "10.00\t58", "10.00\t108", "14.00\t108"])
@@ -94,7 +108,8 @@ enum Sample {
 
 @Suite struct WahooPlanTests {
     @Test func aRideFollowsThePublishedFormat() throws {
-        let object = try JSONSerialization.jsonObject(with: WorkoutFileFormat.wahooPlan.data(for: Sample.ride)) as! [String: Any]
+        let object =
+            try JSONSerialization.jsonObject(with: WorkoutFileFormat.wahooPlan.data(for: Sample.ride)) as! [String: Any]
         let header = object["header"] as! [String: Any]
         #expect(header["version"] as? String == "1.0.0")
         #expect(header["workout_type_family"] as? Int == 0)
@@ -125,7 +140,8 @@ enum Sample {
         // The format has no lap-button step.
         #expect(throws: WorkoutExportError.needsTimedSteps) { try WorkoutFileFormat.wahooPlan.data(for: run) }
         run.workout.blocks.removeLast()
-        let object = try JSONSerialization.jsonObject(with: WorkoutFileFormat.wahooPlan.data(for: run)) as! [String: Any]
+        let object =
+            try JSONSerialization.jsonObject(with: WorkoutFileFormat.wahooPlan.data(for: run)) as! [String: Any]
         #expect((object["header"] as! [String: Any])["workout_type_family"] as? Int == 1)
         let rep = ((object["intervals"] as! [[String: Any]])[1]["intervals"] as! [[String: Any]])[0]
         #expect(rep["exit_trigger_type"] as? String == "distance")
@@ -168,8 +184,13 @@ enum Sample {
         #expect(steps.map { $0.number(254) } == [0, 1, 2, 3, 4, 5])
         // Warm-up: 10 minutes in milliseconds at 50–65% of FTP.
         #expect(steps[0].string(0) == "Warm up")
-        #expect([steps[0].number(1), steps[0].number(2), steps[0].number(3), steps[0].number(5), steps[0].number(6), steps[0].number(7)] == [0, 600_000, 4, 50, 65, 2])
-        #expect([steps[1].number(2), steps[1].number(5), steps[1].number(6), steps[1].number(7)] == [240_000, 105, 110, 0])
+        #expect(
+            [
+                steps[0].number(1), steps[0].number(2), steps[0].number(3), steps[0].number(5), steps[0].number(6),
+                steps[0].number(7),
+            ] == [0, 600_000, 4, 50, 65, 2])
+        #expect(
+            [steps[1].number(2), steps[1].number(5), steps[1].number(6), steps[1].number(7)] == [240_000, 105, 110, 0])
         #expect([steps[2].number(2), steps[2].number(5), steps[2].number(7)] == [180_000, 50, 4])
         // The repeat goes back to step 1 until it has been done five times.
         #expect([steps[3].number(1), steps[3].number(2), steps[3].number(4)] == [6, 1, 5])
@@ -189,7 +210,10 @@ enum Sample {
         #expect([steps[0].number(3), steps[0].number(4)] == [1, 2])
         // 800 m in centimetres at 4.0–4.167 m/s in millimetres per second.
         #expect(steps[1].string(0) == "5K effort")
-        #expect([steps[1].number(1), steps[1].number(2), steps[1].number(3), steps[1].number(5), steps[1].number(6)] == [1, 80_000, 0, 4000, 4167])
+        #expect(
+            [steps[1].number(1), steps[1].number(2), steps[1].number(3), steps[1].number(5), steps[1].number(6)] == [
+                1, 80_000, 0, 4000, 4167,
+            ])
         #expect([steps[2].number(1), steps[2].number(2), steps[2].number(3)] == [0, 90_000, 2])
         #expect([steps[3].number(1), steps[3].number(2), steps[3].number(4)] == [6, 1, 6])
         #expect([steps[4].number(1), steps[4].number(3)] == [5, 2])
@@ -197,8 +221,11 @@ enum Sample {
 
     @Test func absoluteWattsAreOffset() throws {
         var ride = Sample.ride
-        ride.workout = StructuredWorkout(blocks: [.init(steps: [.init(.work, seconds: 1200, target: .init(.power, 220, 240))])])
-        let step = try #require(try FITReader.read(WorkoutFileFormat.fit.data(for: ride, now: created)).first { $0.global == 27 })
+        ride.workout = StructuredWorkout(blocks: [
+            .init(steps: [.init(.work, seconds: 1200, target: .init(.power, 220, 240))])
+        ])
+        let step = try #require(
+            try FITReader.read(WorkoutFileFormat.fit.data(for: ride, now: created)).first { $0.global == 27 })
         #expect([step.number(3), step.number(5), step.number(6)] == [4, 1220, 1240])
     }
 }
@@ -269,7 +296,9 @@ struct SampleFiles {
         for (stem, sample) in [("ride", Sample.ride), ("run", Sample.run), ("run-timed", run)] {
             for format in WorkoutFileFormat.allCases {
                 guard let data = try? format.data(for: sample) else { continue }
-                try data.write(to: directory.appendingPathComponent("\(stem).\(format == .wahooPlan ? "wahoo.json" : format.fileExtension)"))
+                try data.write(
+                    to: directory.appendingPathComponent(
+                        "\(stem).\(format == .wahooPlan ? "wahoo.json" : format.fileExtension)"))
             }
         }
     }

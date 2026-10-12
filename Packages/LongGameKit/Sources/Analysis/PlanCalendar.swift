@@ -12,7 +12,8 @@ public enum PlanCalendar {
     /// the first and after the last day of the month are nil.
     public static func monthGrid(containing date: Date, calendar: Calendar) -> [Date?] {
         guard let month = calendar.dateInterval(of: .month, for: date),
-              let dayCount = calendar.range(of: .day, in: .month, for: date)?.count else { return [] }
+            let dayCount = calendar.range(of: .day, in: .month, for: date)?.count
+        else { return [] }
         let weekday = calendar.component(.weekday, from: month.start)
         let leading = (weekday - calendar.firstWeekday + 7) % 7
         var cells: [Date?] = Array(repeating: nil, count: leading)
@@ -42,7 +43,9 @@ public enum PhaseTemplate {
     public static func suggest(start: Date, end: Date, calendar: Calendar) -> [SuggestedPhase] {
         let first = calendar.startOfDay(for: start)
         let last = calendar.startOfDay(for: end)
-        guard let totalDays = calendar.dateComponents([.day], from: first, to: last).day, totalDays >= 0 else { return [] }
+        guard let totalDays = calendar.dateComponents([.day], from: first, to: last).day, totalDays >= 0 else {
+            return []
+        }
         let weeks = max(1, (totalDays + 1) / 7)
 
         let taper = min(AnalysisConstants.taperWeeks, weeks)
@@ -59,7 +62,8 @@ public enum PhaseTemplate {
         for (index, (kind, length)) in used.enumerated() {
             let isLast = index == used.count - 1
             let extra = index == 0 ? (totalDays + 1) - weeks * 7 : 0
-            let phaseEnd = isLast
+            let phaseEnd =
+                isLast
                 ? last
                 : calendar.date(byAdding: .day, value: length * 7 + extra - 1, to: cursor) ?? last
             phases.append(SuggestedPhase(kind: kind, start: cursor, end: phaseEnd))

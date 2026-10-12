@@ -8,27 +8,36 @@ import Testing
 
     let ride = StructuredWorkout(blocks: [
         .init(steps: [Step(.warmup, seconds: 600, target: Target(.ftpPercent, 50, 65))]),
-        .init(repeats: 5, steps: [Step(.work, seconds: 240, target: Target(.ftpPercent, 105, 110), note: "high cadence"), Step(.recovery, seconds: 180, target: Target(.hrZone, 1))]),
+        .init(
+            repeats: 5,
+            steps: [
+                Step(.work, seconds: 240, target: Target(.ftpPercent, 105, 110), note: "high cadence"),
+                Step(.recovery, seconds: 180, target: Target(.hrZone, 1)),
+            ]),
         .init(steps: [Step(.cooldown, seconds: 600, target: Target(.hrZone, 1))]),
     ])
 
     let run = StructuredWorkout(blocks: [
         .init(steps: [Step(.warmup, seconds: 900, target: Target(.hrZone, 2))]),
-        .init(repeats: 6, steps: [Step(.work, meters: 800, target: Target(.pace, 240, 250)), Step(.recovery, seconds: 90)]),
+        .init(
+            repeats: 6,
+            steps: [Step(.work, meters: 800, target: Target(.pace, 240, 250)), Step(.recovery, seconds: 90)]),
         .init(steps: [Step(.cooldown)]),
     ])
 
     @Test func textIsDerivedFromTheSteps() {
-        #expect(ride.lines() == [
-            "Warm up 10 min at 50–65% FTP",
-            "5 × (4 min at 105–110% FTP (high cadence), recovery 3 min at Z1)",
-            "Cool down 10 min at Z1",
-        ])
-        #expect(run.lines() == [
-            "Warm up 15 min at Z2",
-            "6 × (800 m at 4:00–4:10/km, recovery 1:30 min)",
-            "Cool down until lap",
-        ])
+        #expect(
+            ride.lines() == [
+                "Warm up 10 min at 50–65% FTP",
+                "5 × (4 min at 105–110% FTP (high cadence), recovery 3 min at Z1)",
+                "Cool down 10 min at Z1",
+            ])
+        #expect(
+            run.lines() == [
+                "Warm up 15 min at Z2",
+                "6 × (800 m at 4:00–4:10/km, recovery 1:30 min)",
+                "Cool down until lap",
+            ])
         #expect(run.lines(.init(paceUnit: .perMile))[1] == "6 × (800 m at 6:26–6:42/mi, recovery 1:30 min)")
     }
 
@@ -62,7 +71,9 @@ import Testing
         ]).normalized()
         #expect(messy.blocks.count == 2)
         #expect(messy.blocks[0] == .init(repeats: 1, steps: [Step(.work, meters: 400)]))
-        #expect(messy.blocks[1] == .init(repeats: 99, steps: [Step(.work, seconds: 60, target: Target(.ftpPercent, 90, 120))]))
+        #expect(
+            messy.blocks[1]
+                == .init(repeats: 99, steps: [Step(.work, seconds: 60, target: Target(.ftpPercent, 90, 120))]))
     }
 
     @Test func itSurvivesJSON() throws {

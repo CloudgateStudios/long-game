@@ -27,24 +27,34 @@ struct LogView: View {
 
     var body: some View {
         if workouts.isEmpty, environment.healthState == .syncing {
-            LoadingPlaceholder(title: "Importing your workouts", detail: "The first import reads your last 90 days and can take a minute or two.")
+            LoadingPlaceholder(
+                title: "Importing your workouts",
+                detail: "The first import reads your last 90 days and can take a minute or two.")
         } else if workouts.isEmpty, environment.isImportingFromICloud {
-            LoadingPlaceholder(title: "Waiting for your workouts", detail: "They are read on your iPhone and arrive here through iCloud, which can take a few minutes the first time.")
+            LoadingPlaceholder(
+                title: "Waiting for your workouts",
+                detail:
+                    "They are read on your iPhone and arrive here through iCloud, which can take a few minutes the first time."
+            )
         } else if workouts.isEmpty {
             ContentUnavailableView(
                 "No workouts yet",
                 systemImage: "figure.run",
-                description: Text(environment.healthSource == nil
-                    ? "Workouts are read from Apple Health on your iPhone and arrive here through iCloud."
-                    : "Completed workouts from Apple Health appear here.")
+                description: Text(
+                    environment.healthSource == nil
+                        ? "Workouts are read from Apple Health on your iPhone and arrive here through iCloud."
+                        : "Completed workouts from Apple Health appear here.")
             )
         } else {
             List {
                 if environment.healthSource == nil {
                     Section {
-                        Label("Workouts are read from Apple Health on your iPhone and arrive here through iCloud.", systemImage: "iphone")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        Label(
+                            "Workouts are read from Apple Health on your iPhone and arrive here through iCloud.",
+                            systemImage: "iphone"
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                     }
                 }
                 ForEach(weeks, id: \.start) { week in
@@ -72,7 +82,9 @@ private struct WorkoutRow: View {
         var parts = [Format.duration(workout.durationSeconds)]
         if let distance = workout.distanceMeters { parts.append(Format.distance(distance)) }
         if let heartRate = workout.averageHR { parts.append(Format.heartRate(heartRate)) }
-        if let power = workout.averagePowerWatts { parts.append("\(power.formatted(.number.precision(.fractionLength(0)))) W") }
+        if let power = workout.averagePowerWatts {
+            parts.append("\(power.formatted(.number.precision(.fractionLength(0)))) W")
+        }
         return parts.joined(separator: " · ")
     }
 

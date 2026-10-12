@@ -57,7 +57,9 @@ struct StructuredWorkoutSection: View {
                     Menu("Export File", systemImage: "square.and.arrow.up") {
                         ForEach(WorkoutFileFormat.allCases.filter { $0.supports(session.sport) }) { format in
                             if (try? format.data(for: exportable)) != nil {
-                                ShareLink(format.displayName, item: WorkoutFile(workout: exportable, format: format), preview: SharePreview(format.fileName(for: exportable)))
+                                ShareLink(
+                                    format.displayName, item: WorkoutFile(workout: exportable, format: format),
+                                    preview: SharePreview(format.fileName(for: exportable)))
                             }
                         }
                     }
@@ -70,7 +72,10 @@ struct StructuredWorkoutSection: View {
                 Text("No steps yet. With steps, this session can run on Apple Watch or a bike computer.")
                     .foregroundStyle(.secondary)
             }
-            Button(session.structure == nil ? "Build Steps with Coach" : "Rebuild Steps with Coach", systemImage: "sparkles") {
+            Button(
+                session.structure == nil ? "Build Steps with Coach" : "Rebuild Steps with Coach",
+                systemImage: "sparkles"
+            ) {
                 Task { await build() }
             }
             .disabled(isBuilding || !coach.hasKey)
@@ -83,7 +88,9 @@ struct StructuredWorkoutSection: View {
             } else if let watchMessage {
                 Text(watchMessage)
             } else if !coach.hasKey {
-                Text("Building steps needs an API key, set in Settings. It is built from the saved targets and instructions.")
+                Text(
+                    "Building steps needs an API key, set in Settings. It is built from the saved targets and instructions."
+                )
             } else {
                 Text("Built from the saved targets and instructions. Rebuild after changing them.")
             }
@@ -99,7 +106,10 @@ struct StructuredWorkoutSection: View {
         }
         .workoutPreview(watchPlan ?? WorkoutPlan(.goal(.init(activity: .running))), isPresented: $isShowingPreview)
         if WorkoutScheduler.isSupported {
-            Button("Schedule on Apple Watch for \(session.date.formatted(.dateTime.weekday().day().month(.abbreviated)))", systemImage: "calendar.badge.plus") {
+            Button(
+                "Schedule on Apple Watch for \(session.date.formatted(.dateTime.weekday().day().month(.abbreviated)))",
+                systemImage: "calendar.badge.plus"
+            ) {
                 Task { await schedule(exportable) }
             }
         }
@@ -162,7 +172,8 @@ private struct WorkoutFile: Transferable {
 
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .data) { file in
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(file.format.fileName(for: file.workout))
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(
+                file.format.fileName(for: file.workout))
             try file.format.data(for: file.workout).write(to: url, options: .atomic)
             return SentTransferredFile(url)
         }

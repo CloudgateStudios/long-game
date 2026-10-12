@@ -49,25 +49,34 @@ public struct WorkoutStructurer: Sendable {
         now: Date = Date(),
         calendar: Calendar = .current
     ) async throws -> StructuredWorkout {
-        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw CoachError.missingAPIKey }
+        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CoachError.missingAPIKey
+        }
         guard Self.canStructure(session) else { throw CoachError.malformed }
         let user = try Self.payloadJSON(for: session, in: context, now: now, calendar: calendar)
 
         let message = try await client.send(
-            apiKey: apiKey, model: model, system: CoachConfiguration.structurePrompt, user: user, format: .workoutStructure,
+            apiKey: apiKey, model: model, system: CoachConfiguration.structurePrompt, user: user,
+            format: .workoutStructure,
             effort: CoachConfiguration.structureEffort)
-        guard let workout = try? JSONDecoder().decode(StructuredWorkout.self, from: Data(message.text.utf8)).normalized(), !workout.isEmpty else {
+        guard
+            let workout = try? JSONDecoder().decode(StructuredWorkout.self, from: Data(message.text.utf8)).normalized(),
+            !workout.isEmpty
+        else {
             throw CoachError.malformed
         }
         SpendLedger.record(
-            message.usage, kind: .workoutStructure, sessionID: session.uuid, model: message.model.isEmpty ? model : message.model, requestedModel: model,
+            message.usage, kind: .workoutStructure, sessionID: session.uuid,
+            model: message.model.isEmpty ? model : message.model, requestedModel: model,
             date: now, in: context)
         try context.save()
         return workout
     }
 
     @MainActor
-    static func payloadJSON(for session: PlannedWorkout, in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws -> String {
+    static func payloadJSON(
+        for session: PlannedWorkout, in context: ModelContext, now: Date = Date(), calendar: Calendar = .current
+    ) throws -> String {
         var descriptor = FetchDescriptor<AthleteProfile>(sortBy: [SortDescriptor(\.createdAt)])
         descriptor.fetchLimit = 1
         let profile = try context.fetch(descriptor).first

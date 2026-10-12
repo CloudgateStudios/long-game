@@ -32,7 +32,10 @@ struct PlanWeekView: View {
                     WeekComplianceCard(compliance: plan.compliance(on: days))
                 }
                 // One column on a phone; side by side where there is room.
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading, spacing: 12) {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading,
+                    spacing: 12
+                ) {
                     ForEach(days, id: \.self) { day in
                         DayCard(plan: plan, day: day, sheet: $sheet)
                     }

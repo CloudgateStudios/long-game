@@ -17,7 +17,8 @@ enum ErgWorkout {
         var elapsed = 0
         for step in export.workout.unrolled {
             let timed = try Timed(step, export.thresholds)
-            let value = Int((timed.power?.middle ?? StructuredWorkoutConstants.untargetedFTPFraction).scaledAndRounded(by: scale))
+            let value = Int(
+                (timed.power?.middle ?? StructuredWorkoutConstants.untargetedFTPFraction).scaledAndRounded(by: scale))
             // Two points at the same power make a flat step; the shared minute between
             // steps makes the change a square edge rather than a ramp.
             points.append("\(minutes(elapsed))\t\(value)")
@@ -25,7 +26,10 @@ enum ErgWorkout {
             points.append("\(minutes(elapsed))\t\(value)")
         }
 
-        var header = ["[COURSE HEADER]", "VERSION = 2", "UNITS = ENGLISH", "DESCRIPTION = \(singleLine(export.notes))", "FILE NAME = \(singleLine(export.name))"]
+        var header = [
+            "[COURSE HEADER]", "VERSION = 2", "UNITS = ENGLISH", "DESCRIPTION = \(singleLine(export.notes))",
+            "FILE NAME = \(singleLine(export.name))",
+        ]
         if unit == .watts, let ftp { header.append("FTP = \(Int(ftp.rounded()))") }
         header += [unit == .watts ? "MINUTES WATTS" : "MINUTES PERCENT", "[END COURSE HEADER]", "[COURSE DATA]"]
         return (header + points + ["[END COURSE DATA]"]).joined(separator: "\n") + "\n"

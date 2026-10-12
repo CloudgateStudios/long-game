@@ -19,7 +19,9 @@ struct ReviewDetailView: View {
             } header: {
                 Text("Assessment")
             } footer: {
-                Text("The coach is a training assistant, not a medical service. For pain, illness or readings that worry you, see a professional.")
+                Text(
+                    "The coach is a training assistant, not a medical service. For pain, illness or readings that worry you, see a professional."
+                )
             }
 
             if !review.flags.isEmpty {
@@ -48,12 +50,17 @@ struct ReviewDetailView: View {
 
             Section("About this review") {
                 LabeledContent("When", value: review.date.formatted(date: .abbreviated, time: .shortened))
-                LabeledContent("Covers", value: (review.periodStart..<review.periodEnd).formatted(.interval.day().month(.abbreviated)))
+                LabeledContent(
+                    "Covers",
+                    value: (review.periodStart..<review.periodEnd).formatted(.interval.day().month(.abbreviated)))
                 LabeledContent("Model", value: CoachConfiguration.model(review.model)?.name ?? review.model)
                 if let input = review.inputTokens, let output = review.outputTokens {
                     LabeledContent("Tokens", value: "\(input.formatted()) in · \(output.formatted()) out")
-                    if let cost = CoachConfiguration.cost(model: review.model, inputTokens: input, outputTokens: output) {
-                        LabeledContent("Estimated cost", value: cost.formatted(.currency(code: "USD").precision(.fractionLength(2))))
+                    if let cost = CoachConfiguration.cost(model: review.model, inputTokens: input, outputTokens: output)
+                    {
+                        LabeledContent(
+                            "Estimated cost",
+                            value: cost.formatted(.currency(code: "USD").precision(.fractionLength(2))))
                     }
                 }
                 NavigationLink("What Was Sent") {
@@ -192,15 +199,26 @@ struct SuggestionCard: View {
             guard let after else { return }
             rows.append(Row(field: field, before: suggestion.action == .add ? nil : before, after: after))
         }
-        add("Date", before: current.map { $0.date.formatted(.dateTime.weekday().day().month()) }, after: dateText(proposal.date))
+        add(
+            "Date", before: current.map { $0.date.formatted(.dateTime.weekday().day().month()) },
+            after: dateText(proposal.date))
         add("Sport", before: current?.sport.displayName, after: proposal.sport?.displayName)
         add("Type", before: current?.sessionType.displayName, after: proposal.sessionType?.displayName)
-        add("Duration", before: current?.targetDurationSeconds.map(Format.duration), after: proposal.durationMinutes.map { Format.duration($0 * 60) })
-        add("Distance",
-            before: current.flatMap { session in session.targetDistanceMeters.map { Format.distance($0, sport: session.sport) } },
+        add(
+            "Duration", before: current?.targetDurationSeconds.map(Format.duration),
+            after: proposal.durationMinutes.map { Format.duration($0 * 60) })
+        add(
+            "Distance",
+            before: current.flatMap { session in
+                session.targetDistanceMeters.map { Format.distance($0, sport: session.sport) }
+            },
             after: proposal.distanceKm.map { Format.distance($0 * 1000, sport: sport) })
-        add("Intensity", before: current.flatMap { $0.targetIntensity.isEmpty ? nil : $0.targetIntensity }, after: proposal.intensity)
-        add("Notes", before: current.flatMap { $0.instructions.isEmpty ? nil : $0.instructions }, after: proposal.instructions)
+        add(
+            "Intensity", before: current.flatMap { $0.targetIntensity.isEmpty ? nil : $0.targetIntensity },
+            after: proposal.intensity)
+        add(
+            "Notes", before: current.flatMap { $0.instructions.isEmpty ? nil : $0.instructions },
+            after: proposal.instructions)
         return rows
     }
 

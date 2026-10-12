@@ -1,9 +1,10 @@
 import Analysis
-@testable import Coach
 import Foundation
 import Models
 import SwiftData
 import Testing
+
+@testable import Coach
 
 @MainActor
 @Suite struct CoachPlannerTests {
@@ -17,7 +18,9 @@ import Testing
         container = try LongGameStore.makeContainer(mode: .inMemory)
         context = container.mainContext
         now = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_790_000_000)).addingTimeInterval(9 * 3600)
-        goal = Goal(title: "Half Marathon", eventSport: .run, eventDistanceMeters: 21_097.5, targetDate: calendar.date(byAdding: .day, value: 27, to: now))
+        goal = Goal(
+            title: "Half Marathon", eventSport: .run, eventDistanceMeters: 21_097.5,
+            targetDate: calendar.date(byAdding: .day, value: 27, to: now))
         context.insert(goal)
         let profile = AthleteProfile()
         profile.availabilityHours = [1, 1, 0, 1, 1, 2, 3]
@@ -40,19 +43,30 @@ import Testing
         let items = sessions.map { offset, sport, type, minutes in
             "{\"date\":\"\(text(offset))\",\"sport\":\"\(sport)\",\"sessionType\":\"\(type)\",\"durationMinutes\":\(minutes.map { "\($0)" } ?? "null"),\"distanceKm\":null,\"intensity\":\"Z2\",\"instructions\":null}"
         }.joined(separator: ",")
-        return "{\"summary\":\"Four weeks: two to build, one to sharpen, one to taper.\",\"phases\":[{\"kind\":\"build\",\"start\":\"\(text(0))\",\"end\":\"\(text(13))\"},{\"kind\":\"taper\",\"start\":\"\(text(14))\",\"end\":\"\(text(40))\"}],\"sessions\":[\(items)]}"
+        return
+            "{\"summary\":\"Four weeks: two to build, one to sharpen, one to taper.\",\"phases\":[{\"kind\":\"build\",\"start\":\"\(text(0))\",\"end\":\"\(text(13))\"},{\"kind\":\"taper\",\"start\":\"\(text(14))\",\"end\":\"\(text(40))\"}],\"sessions\":[\(items)]}"
     }
 
     func planner(replying reply: String) -> (CoachPlanner, MockTransport) {
-        let transport = MockTransport([.response(status: 200, lines: MockTransport.events(chunks: [String(reply.prefix(80)), String(reply.dropFirst(80))]))])
+        let transport = MockTransport([
+            .response(
+                status: 200,
+                lines: MockTransport.events(chunks: [String(reply.prefix(80)), String(reply.dropFirst(80))]))
+        ])
         return (CoachPlanner(client: ClaudeClient(transport: transport, retryDelays: [])), transport)
     }
 
     @Test func aGeneratedPlanIsStoredAsADraft() async throws {
-        let reply = reply(sessions: [(0, "run", "easy", 40), (1, "bike", "long", 90), (1, "strength", "strength", 30), (27, "run", "race", nil), (-3, "run", "easy", 30), (60, "run", "easy", 30)])
+        let reply = reply(sessions: [
+            (0, "run", "easy", 40), (1, "bike", "long", 90), (1, "strength", "strength", 30), (27, "run", "race", nil),
+            (-3, "run", "easy", 30), (60, "run", "easy", 30),
+        ])
         let (planner, transport) = planner(replying: reply)
         let progress = PlanProgress()
-        let plan = try await planner.generate(request: request, goal: goal, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar) { progress.values.append($0) }
+        let plan = try await planner.generate(
+            request: request, goal: goal, model: "claude-opus-5-5", apiKey: "k", in: context, now: now,
+            calendar: calendar
+        ) { progress.values.append($0) }
 
         #expect(plan.isDraft)
         #expect(plan.origin == .generated)
@@ -67,7 +81,10 @@ import Testing
         // A phase running past the end is clipped to the plan.
         #expect(plan.sortedPhases.map(\.kind) == [.build, .taper])
         #expect(plan.sortedPhases.last?.endDate == day(27))
-        #expect(progress.values.last == CoachPlanner.Progress(summary: "Four weeks: two to build, one to sharpen, one to taper.", sessionCount: 6))
+        #expect(
+            progress.values.last
+                == CoachPlanner.Progress(
+                    summary: "Four weeks: two to build, one to sharpen, one to taper.", sessionCount: 6))
 
         // The request went out with the plan prompt, the plan schema and what was asked for.
         let body = try jsonBody(transport.requests.first)
@@ -79,7 +96,9 @@ import Testing
         let messages = try #require(body["messages"] as? [[String: Any]])
         let sent = try #require(messages.first?["content"] as? String)
         let payload = try JSONDecoder().decode(CoachPayload.self, from: Data(sent.utf8))
-        #expect(payload.planRequest == .init(start: text(0), end: text(27), weeks: 4, goal: "Half Marathon", goalDate: text(27)))
+        #expect(
+            payload.planRequest
+                == .init(start: text(0), end: text(27), weeks: 4, goal: "Half Marathon", goalDate: text(27)))
         #expect(payload.profile.availabilityHoursMonToSun == [1, 1, 0, 1, 1, 2, 3])
         #expect(payload.reviewType == "planGeneration")
 
@@ -94,26 +113,35 @@ import Testing
         let (planner, _) = planner(replying: reply(sessions: [(-1, "run", "easy", 40), (0, "run", "easy", 40)]))
         // Ask for a plan that starts yesterday, so one session is already in the past.
         let request = PlanRequest(start: day(-1), end: day(27))
-        let plan = try await planner.generate(request: request, goal: nil, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
-        let workout = CompletedWorkout(externalID: UUID(), source: .healthKit, sport: .run, start: day(-1).addingTimeInterval(7 * 3600), durationSeconds: 2400)
+        let plan = try await planner.generate(
+            request: request, goal: nil, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+        let workout = CompletedWorkout(
+            externalID: UUID(), source: .healthKit, sport: .run, start: day(-1).addingTimeInterval(7 * 3600),
+            durationSeconds: 2400)
         context.insert(workout)
 
         try PlanReconciler.reconcile(in: context, now: now, calendar: calendar)
         #expect(workout.plannedWorkout == nil)
         #expect(plan.workouts?.allSatisfy { $0.status == .planned } == true)
-        #expect(try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).payload.plan == nil)
+        #expect(
+            try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).payload.plan
+                == nil)
 
         try PlanReconciler.acceptDraft(plan, in: context, calendar: calendar)
         try PlanReconciler.reconcile(in: context, now: now, calendar: calendar)
         #expect(workout.plannedWorkout != nil)
-        #expect(try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).payload.plan?.sessions.count == 2)
+        #expect(
+            try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).payload.plan?
+                .sessions.count == 2)
     }
 
     @Test func aNewDraftReplacesTheLastOne() async throws {
         let (first, _) = planner(replying: reply(sessions: [(0, "run", "easy", 40)]))
-        _ = try await first.generate(request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+        _ = try await first.generate(
+            request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
         let (second, _) = planner(replying: reply(sessions: [(1, "swim", "easy", 30), (2, "bike", "easy", 60)]))
-        let plan = try await second.generate(request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+        let plan = try await second.generate(
+            request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
 
         let plans = try context.fetch(FetchDescriptor<TrainingPlan>())
         #expect(plans.count == 1)
@@ -141,7 +169,8 @@ import Testing
         try context.save()
 
         let (planner, _) = planner(replying: reply(sessions: [(0, "bike", "easy", 60)]))
-        let draft = try await planner.generate(request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+        let draft = try await planner.generate(
+            request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
         // Until accepted, the old plan is untouched.
         #expect(old.workouts?.count == 3)
 
@@ -165,7 +194,8 @@ import Testing
         let existing = TrainingPlan(name: "Existing", startDate: day(-5), endDate: day(20))
         context.insert(existing)
         let (planner, _) = planner(replying: reply(sessions: [(0, "bike", "easy", 60)]))
-        let draft = try await planner.generate(request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+        let draft = try await planner.generate(
+            request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
         try PlanReconciler.discardDraft(draft, in: context)
         #expect(try context.fetch(FetchDescriptor<TrainingPlan>()).map(\.name) == ["Existing"])
         #expect(try context.fetchCount(FetchDescriptor<PlannedWorkout>()) == 0)
@@ -177,7 +207,8 @@ import Testing
     @Test func aPlanWithNoUsableSessionsIsRejected() async throws {
         let (planner, _) = planner(replying: reply(sessions: [(90, "run", "easy", 40)]))
         await #expect(throws: CoachError.malformed) {
-            _ = try await planner.generate(request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
+            _ = try await planner.generate(
+                request: request, goal: goal, model: "m", apiKey: "k", in: context, now: now, calendar: calendar)
         }
         #expect(try context.fetchCount(FetchDescriptor<TrainingPlan>()) == 0)
         #expect(try context.fetchCount(FetchDescriptor<CoachReview>()) == 0)

@@ -44,9 +44,11 @@ enum ZwiftWorkout {
         // Zwift's warm-up and cool-down are ramps, which suits a range of power.
         switch step.kind {
         case .warmup where isFirst && range:
-            return "<Warmup Duration=\"\(step.seconds)\" PowerLow=\"\(fraction(power.lowerBound))\" PowerHigh=\"\(fraction(power.upperBound))\"/>"
+            return
+                "<Warmup Duration=\"\(step.seconds)\" PowerLow=\"\(fraction(power.lowerBound))\" PowerHigh=\"\(fraction(power.upperBound))\"/>"
         case .cooldown where isLast && range:
-            return "<Cooldown Duration=\"\(step.seconds)\" PowerLow=\"\(fraction(power.upperBound))\" PowerHigh=\"\(fraction(power.lowerBound))\"/>"
+            return
+                "<Cooldown Duration=\"\(step.seconds)\" PowerLow=\"\(fraction(power.upperBound))\" PowerHigh=\"\(fraction(power.lowerBound))\"/>"
         default:
             return "<SteadyState Duration=\"\(step.seconds)\" Power=\"\(fraction(power.middle))\"/>"
         }

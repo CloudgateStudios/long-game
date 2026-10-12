@@ -27,7 +27,7 @@ import Testing
     var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Chicago")!
-        calendar.firstWeekday = 2 // a Monday-first device must still get Sunday-to-Saturday weeks
+        calendar.firstWeekday = 2  // a Monday-first device must still get Sunday-to-Saturday weeks
         return calendar
     }
 
@@ -38,11 +38,11 @@ import Testing
     @Test func splitsSpendByMonthAndSundayToSaturdayWeek() {
         let chat = UUID()
         let entries = [
-            SpendEntry(date: time(9, 30), cost: 1.00, sessionID: UUID()), // last month
-            SpendEntry(date: time(10, 3), cost: 0.50, sessionID: UUID()), // this month, earlier week
-            SpendEntry(date: time(10, 10, 23), cost: 0.25, sessionID: UUID()), // Saturday night: last week
-            SpendEntry(date: time(10, 11, 0), cost: 0.20, sessionID: chat), // Sunday 00:00: this week
-            SpendEntry(date: time(10, 14), cost: 0.05, sessionID: chat), // same conversation, later turn
+            SpendEntry(date: time(9, 30), cost: 1.00, sessionID: UUID()),  // last month
+            SpendEntry(date: time(10, 3), cost: 0.50, sessionID: UUID()),  // this month, earlier week
+            SpendEntry(date: time(10, 10, 23), cost: 0.25, sessionID: UUID()),  // Saturday night: last week
+            SpendEntry(date: time(10, 11, 0), cost: 0.20, sessionID: chat),  // Sunday 00:00: this week
+            SpendEntry(date: time(10, 14), cost: 0.05, sessionID: chat),  // same conversation, later turn
         ]
         // Wednesday 14 October 2026.
         let summary = SpendSummary(entries, now: time(10, 14, 18), calendar: calendar)
@@ -56,7 +56,10 @@ import Testing
 
     @Test func aWeekCanStraddleTwoMonths() {
         // Sunday 27 September to Saturday 3 October; today is Thursday 1 October.
-        let entries = [SpendEntry(date: time(9, 28), cost: 0.4, sessionID: UUID()), SpendEntry(date: time(10, 1), cost: 0.1, sessionID: UUID())]
+        let entries = [
+            SpendEntry(date: time(9, 28), cost: 0.4, sessionID: UUID()),
+            SpendEntry(date: time(10, 1), cost: 0.1, sessionID: UUID()),
+        ]
         let summary = SpendSummary(entries, now: time(10, 1, 20), calendar: calendar)
         #expect(abs(summary.thisWeek - 0.5) < 1e-9)
         #expect(abs(summary.thisMonth - 0.1) < 1e-9)

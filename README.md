@@ -102,6 +102,20 @@ cost money, so they only run when you supply a key:
 cd Packages/LongGameKit && LONGGAME_LIVE_KEY=your-key swift test --filter LiveCoachTests
 ```
 
+## Formatting and CI
+
+Code is formatted with the `swift format` that ships with Xcode, using the rules in
+`.swift-format`:
+
+```bash
+swift format format --in-place --recursive LongGame Packages
+```
+
+On every pull request GitHub Actions checks formatting, runs the tests and builds the app
+for iOS and macOS. Pull request titles follow
+[Conventional Commits](https://www.conventionalcommits.org/), for example
+`fix: count a duplicated ride once`.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

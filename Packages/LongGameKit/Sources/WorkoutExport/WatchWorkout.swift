@@ -30,7 +30,9 @@ public enum WatchWorkout {
                 }
             var alert = source.target.flatMap { self.alert(for: $0, export.thresholds) }
             // An alert the watch cannot give for this activity would make the whole plan invalid.
-            if let candidate = alert, !CustomWorkout.supportsAlert(candidate, activity: activity, location: location) { alert = nil }
+            if let candidate = alert, !CustomWorkout.supportsAlert(candidate, activity: activity, location: location) {
+                alert = nil
+            }
             return WorkoutStep(goal: goal, alert: alert, displayName: source.note)
         }
 
@@ -48,10 +50,14 @@ public enum WatchWorkout {
         }
         let intervals = blocks.map { block in
             IntervalBlock(
-                steps: block.steps.map { IntervalStep($0.kind == .recovery || $0.kind == .cooldown ? .recovery : .work, step: step($0)) },
+                steps: block.steps.map {
+                    IntervalStep($0.kind == .recovery || $0.kind == .cooldown ? .recovery : .work, step: step($0))
+                },
                 iterations: block.repeats)
         }
-        let custom = CustomWorkout(activity: activity, location: location, displayName: export.name, warmup: warmup, blocks: intervals, cooldown: cooldown)
+        let custom = CustomWorkout(
+            activity: activity, location: location, displayName: export.name, warmup: warmup, blocks: intervals,
+            cooldown: cooldown)
         return WorkoutPlan(.custom(custom), id: id)
     }
 

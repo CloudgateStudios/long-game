@@ -44,7 +44,9 @@ public struct StructuredWorkout: Codable, Sendable, Equatable {
         /// A short cue shown beside the step, for example "high cadence".
         public var note: String?
 
-        public init(_ kind: StepKind, seconds: Double? = nil, meters: Double? = nil, target: Target? = nil, note: String? = nil) {
+        public init(
+            _ kind: StepKind, seconds: Double? = nil, meters: Double? = nil, target: Target? = nil, note: String? = nil
+        ) {
             self.kind = kind
             self.durationSeconds = seconds
             self.distanceMeters = meters
@@ -80,28 +82,33 @@ public struct StructuredWorkout: Codable, Sendable, Equatable {
     /// What a model or a hand edit produced, made safe to export: values out of range are
     /// dropped rather than trusted, and empty blocks removed.
     public func normalized() -> StructuredWorkout {
-        StructuredWorkout(blocks: blocks.compactMap { block in
-            let steps = block.steps.map { step -> Step in
-                var step = step
-                if let seconds = step.durationSeconds, !(seconds > 0 && seconds <= StructuredWorkoutLimits.maxStepSeconds) {
-                    step.durationSeconds = nil
+        StructuredWorkout(
+            blocks: blocks.compactMap { block in
+                let steps = block.steps.map { step -> Step in
+                    var step = step
+                    if let seconds = step.durationSeconds,
+                        !(seconds > 0 && seconds <= StructuredWorkoutLimits.maxStepSeconds)
+                    {
+                        step.durationSeconds = nil
+                    }
+                    if let meters = step.distanceMeters,
+                        !(meters > 0 && meters <= StructuredWorkoutLimits.maxStepMeters)
+                    {
+                        step.distanceMeters = nil
+                    }
+                    // A step ends one way. Time wins when both were given.
+                    if step.durationSeconds != nil { step.distanceMeters = nil }
+                    if let target = step.target {
+                        step.target = target.isPlausible ? Target(target.kind, target.low, target.high) : nil
+                    }
+                    if let note = step.note?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                        step.note = note.isEmpty ? nil : note
+                    }
+                    return step
                 }
-                if let meters = step.distanceMeters, !(meters > 0 && meters <= StructuredWorkoutLimits.maxStepMeters) {
-                    step.distanceMeters = nil
-                }
-                // A step ends one way. Time wins when both were given.
-                if step.durationSeconds != nil { step.distanceMeters = nil }
-                if let target = step.target {
-                    step.target = target.isPlausible ? Target(target.kind, target.low, target.high) : nil
-                }
-                if let note = step.note?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    step.note = note.isEmpty ? nil : note
-                }
-                return step
-            }
-            guard !steps.isEmpty else { return nil }
-            return Block(repeats: min(max(block.repeats, 1), StructuredWorkoutLimits.maxRepeats), steps: steps)
-        })
+                guard !steps.isEmpty else { return nil }
+                return Block(repeats: min(max(block.repeats, 1), StructuredWorkoutLimits.maxRepeats), steps: steps)
+            })
     }
 }
 
@@ -146,7 +153,8 @@ public struct TrainingThresholds: Sendable, Equatable {
 extension StructuredWorkout.Target {
     /// Power as a fraction of FTP. Heart-rate zones have no exact power equivalent, so
     /// `approximatingZones` maps them onto the matching power zone for power-only formats.
-    public func ftpFraction(_ thresholds: TrainingThresholds, approximatingZones: Bool = false) -> ClosedRange<Double>? {
+    public func ftpFraction(_ thresholds: TrainingThresholds, approximatingZones: Bool = false) -> ClosedRange<Double>?
+    {
         switch kind {
         case .ftpPercent:
             return (low / 100)...(high / 100)
@@ -179,9 +187,12 @@ extension StructuredWorkout.Target {
             return low...high
         case .hrZone:
             guard let bounds = thresholds.hrZoneUpperBounds else { return nil }
-            let lowZone = Int(low), highZone = Int(high)
+            let lowZone = Int(low)
+            let highZone = Int(high)
             // Zone 1 has no floor of its own; zone 5 runs up to max.
-            let floor = lowZone == 1 ? (bounds[0] * StructuredWorkoutConstants.zoneOneFloorFraction).rounded() : bounds[lowZone - 2]
+            let floor =
+                lowZone == 1
+                ? (bounds[0] * StructuredWorkoutConstants.zoneOneFloorFraction).rounded() : bounds[lowZone - 2]
             let ceiling = highZone == 5 ? max(thresholds.maxHR ?? 0, bounds[3] + 1) : bounds[highZone - 1]
             return floor...ceiling
         default:
@@ -198,7 +209,9 @@ extension StructuredWorkout.Target {
 public enum StructuredWorkoutConstants {
     /// Power zones as fractions of FTP, used only to stand in for a heart-rate zone in
     /// formats that carry nothing but power (ZWO, MRC, ERG).
-    public static let powerZoneFractions: [ClosedRange<Double>] = [0.45...0.55, 0.56...0.75, 0.76...0.90, 0.91...1.05, 1.06...1.20]
+    public static let powerZoneFractions: [ClosedRange<Double>] = [
+        0.45...0.55, 0.56...0.75, 0.76...0.90, 0.91...1.05, 1.06...1.20,
+    ]
     /// Where zone 1 is taken to start, as a fraction of its upper bound.
     public static let zoneOneFloorFraction = 0.85
     /// What power-only formats use for a step with no target.
@@ -251,9 +264,12 @@ extension StructuredWorkout {
         blocks.map { block in
             let steps = block.steps.enumerated().map { index, step in
                 // Inside a repeat the step kind is clear from its place, apart from the recovery.
-                step.text(style, named: block.repeats == 1 || step.kind == .recovery, capitalized: block.repeats == 1 && index == 0)
+                step.text(
+                    style, named: block.repeats == 1 || step.kind == .recovery,
+                    capitalized: block.repeats == 1 && index == 0)
             }
-            return block.repeats > 1 ? "\(block.repeats) × (\(steps.joined(separator: ", ")))" : steps.joined(separator: ", ")
+            return block.repeats > 1
+                ? "\(block.repeats) × (\(steps.joined(separator: ", ")))" : steps.joined(separator: ", ")
         }
     }
 
@@ -277,7 +293,8 @@ extension StructuredWorkout.Step {
     public var lengthText: String {
         if let seconds = durationSeconds { return StructuredWorkout.clock(seconds) }
         if let meters = distanceMeters {
-            return meters < 1000 ? "\(StructuredWorkout.number(meters)) m" : "\(StructuredWorkout.number(meters / 1000)) km"
+            return meters < 1000
+                ? "\(StructuredWorkout.number(meters)) m" : "\(StructuredWorkout.number(meters / 1000)) km"
         }
         return "until lap"
     }

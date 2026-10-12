@@ -11,7 +11,10 @@ public struct ExportableWorkout: Sendable, Equatable {
     /// Indoor sessions are sent to a trainer or treadmill; it changes little but labels.
     public var isIndoor: Bool
 
-    public init(name: String, notes: String = "", sport: Sport, workout: StructuredWorkout, thresholds: TrainingThresholds = .init(), isIndoor: Bool = false) {
+    public init(
+        name: String, notes: String = "", sport: Sport, workout: StructuredWorkout,
+        thresholds: TrainingThresholds = .init(), isIndoor: Bool = false
+    ) {
         self.name = name
         self.notes = notes
         self.sport = sport

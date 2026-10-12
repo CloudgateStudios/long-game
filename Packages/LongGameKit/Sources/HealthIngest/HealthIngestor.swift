@@ -34,14 +34,20 @@ public actor HealthIngestor {
             backfillStart = calendar.date(byAdding: .day, value: -AnalysisConstants.backfillDays, to: today) ?? today
         }
         // Daily values such as sleep and HRV can arrive late, so re-read a few days.
-        let dailyStart = state.date(for: .lastDailySync)
-            .flatMap { calendar.date(byAdding: .day, value: -AnalysisConstants.dailyMetricsLookbackDays, to: calendar.startOfDay(for: $0)) }
+        let dailyStart =
+            state.date(for: .lastDailySync)
+            .flatMap {
+                calendar.date(
+                    byAdding: .day, value: -AnalysisConstants.dailyMetricsLookbackDays, to: calendar.startOfDay(for: $0)
+                )
+            }
             .map { max($0, backfillStart) } ?? backfillStart
 
         onProgress(.readingProfile)
         let profile = try await source.profile()
         onProgress(.readingWorkouts(done: 0, total: 0))
-        let changes = try await source.workoutChanges(since: state.data(for: .workoutAnchor), from: backfillStart) { done, total in
+        let changes = try await source.workoutChanges(since: state.data(for: .workoutAnchor), from: backfillStart) {
+            done, total in
             onProgress(.readingWorkouts(done: done, total: total))
         }
         onProgress(.readingDailyMetrics)
@@ -86,9 +92,10 @@ public actor HealthIngestor {
         guard !ids.isEmpty else { return }
         let optionalIDs: [UUID?] = ids
         // A deleted multisport workout takes all of its legs with it.
-        let doomed = try modelContext.fetch(FetchDescriptor<CompletedWorkout>(
-            predicate: #Predicate { ids.contains($0.externalID) || optionalIDs.contains($0.sessionID) }
-        ))
+        let doomed = try modelContext.fetch(
+            FetchDescriptor<CompletedWorkout>(
+                predicate: #Predicate { ids.contains($0.externalID) || optionalIDs.contains($0.sessionID) }
+            ))
         for workout in doomed {
             modelContext.delete(workout)
         }

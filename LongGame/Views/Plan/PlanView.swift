@@ -76,9 +76,11 @@ struct PlanView: View {
                 ContentUnavailableView {
                     Label("No plan yet", systemImage: "calendar.badge.plus")
                 } description: {
-                    Text(environment.coach.hasKey
-                        ? "The coach can interview you and draft a plan, or you can build one yourself."
-                        : "Create a training plan toward your goal. Add an API key in Settings to have the coach interview you and draft one.")
+                    Text(
+                        environment.coach.hasKey
+                            ? "The coach can interview you and draft a plan, or you can build one yourself."
+                            : "Create a training plan toward your goal. Add an API key in Settings to have the coach interview you and draft one."
+                    )
                 } actions: {
                     if let draft {
                         Button("Review Draft Plan") { reviewingDraft = draft }
@@ -101,16 +103,21 @@ struct PlanView: View {
                         Button("Edit Plan", systemImage: "pencil") { sheet = .editPlan(plan) }
                     }
                     if plans.count > 1 {
-                        Picker("Plan", selection: Binding(
-                            get: { plan?.uuid.uuidString ?? "" },
-                            set: { selectedPlanID = $0 }
-                        )) {
+                        Picker(
+                            "Plan",
+                            selection: Binding(
+                                get: { plan?.uuid.uuidString ?? "" },
+                                set: { selectedPlanID = $0 }
+                            )
+                        ) {
                             ForEach(plans) { Text($0.name).tag($0.uuid.uuidString) }
                         }
                     }
                     Divider()
-                    Button("Plan with the Coach", systemImage: "bubble.left.and.text.bubble.right", action: startInterview)
-                        .disabled(!environment.coach.canChat)
+                    Button(
+                        "Plan with the Coach", systemImage: "bubble.left.and.text.bubble.right", action: startInterview
+                    )
+                    .disabled(!environment.coach.canChat)
                     Button("Generate Plan from a Form", systemImage: "sparkles") { sheet = .generate }
                     Button("New Plan", systemImage: "calendar.badge.plus") { sheet = .newPlan }
                     Button("Goals", systemImage: "flag.checkered") { sheet = .goals }
@@ -189,8 +196,10 @@ extension PlanView {
     /// Opens a conversation in which the coach asks its questions and then drafts a plan.
     /// An unfinished interview is picked up rather than started again.
     fileprivate func startInterview() {
-        let existing = try? context.fetch(FetchDescriptor<CoachConversation>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
-            .first { $0.kind == .interview && $0.draftPlanID == nil }
+        let existing = try? context.fetch(
+            FetchDescriptor<CoachConversation>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+        )
+        .first { $0.kind == .interview && $0.draftPlanID == nil }
         if let existing {
             interview = existing
         } else {

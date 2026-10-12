@@ -42,7 +42,9 @@ public struct FixtureHealthDataSource: HealthDataSource {
     }
 
     /// The fixture never changes, so everything arrives on the first call.
-    public func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void) async throws -> WorkoutChanges {
+    public func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void)
+        async throws -> WorkoutChanges
+    {
         guard anchor == nil else { return WorkoutChanges(anchor: anchor) }
         let records = try await workouts(in: DateInterval(start: start, end: max(start, now)))
         if workoutDelay > .zero {
@@ -58,7 +60,8 @@ public struct FixtureHealthDataSource: HealthDataSource {
     public func workouts(in interval: DateInterval) async throws -> [HealthWorkoutRecord] {
         fixture.workouts.compactMap { item in
             guard let start = date(dayOffset: item.dayOffset, minuteOfDay: item.startMinute),
-                  interval.contains(start) else { return nil }
+                interval.contains(start)
+            else { return nil }
             return HealthWorkoutRecord(
                 id: item.id,
                 sourceName: item.sourceName,

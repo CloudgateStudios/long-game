@@ -65,12 +65,16 @@ final class WeeklyReminder: NSObject, UNUserNotificationCenterDelegate {
         if isDenied, isEnabled { await update(enabled: false, weekday: weekday, minuteOfDay: minuteOfDay) }
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+    ) async {
         guard response.notification.request.identifier == Self.identifier else { return }
         await MainActor.run { openedFromReminder = true }
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
         [.banner, .sound]
     }
 }

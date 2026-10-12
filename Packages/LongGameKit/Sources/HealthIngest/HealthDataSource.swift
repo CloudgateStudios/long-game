@@ -125,7 +125,9 @@ public protocol HealthDataSource: Sendable {
     func profile() async throws -> HealthProfileRecord
     /// Workouts starting on or after `start` that changed since `anchor` (all of them when
     /// nil). `onProgress` is called with how many of the changed workouts have been read.
-    func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (_ done: Int, _ total: Int) -> Void) async throws -> WorkoutChanges
+    func workoutChanges(
+        since anchor: Data?, from start: Date, onProgress: @Sendable (_ done: Int, _ total: Int) -> Void
+    ) async throws -> WorkoutChanges
     func dailyMetrics(in interval: DateInterval) async throws -> [HealthDailyRecord]
     /// Calls `onChange` whenever workouts are added or removed, including while the app
     /// is in the background. Must be called on every launch.

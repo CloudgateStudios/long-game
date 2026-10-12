@@ -62,11 +62,13 @@ struct CoachChatView: View {
                         resumeRow
                     }
                     if conversation.estimatedCost > 0, !isSending {
-                        Text("This conversation has cost about \(conversation.estimatedCost.formatted(.currency(code: "USD").precision(.fractionLength(2)))) so far.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.top, 4)
+                        Text(
+                            "This conversation has cost about \(conversation.estimatedCost.formatted(.currency(code: "USD").precision(.fractionLength(2)))) so far."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 4)
                     }
                     Color.clear.frame(height: 1).id(Self.bottomID)
                 }
@@ -82,7 +84,10 @@ struct CoachChatView: View {
             .onAppear { proxy.scrollTo(Self.bottomID, anchor: .bottom) }
         }
         .safeAreaInset(edge: .bottom) { composer }
-        .navigationTitle(conversation.isTitleSettled ? conversation.title : (conversation.kind == .interview ? "Plan with the Coach" : "Coach"))
+        .navigationTitle(
+            conversation.isTitleSettled
+                ? conversation.title : (conversation.kind == .interview ? "Plan with the Coach" : "Coach")
+        )
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Rename", systemImage: "pencil") { renaming = .conversation(conversation) }
@@ -118,13 +123,19 @@ struct CoachChatView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(conversation.kind == .interview ? "The coach will ask a few questions, then draft a plan." : "Ask about your training, or say what needs to change.")
-                .font(.headline)
-            Text(coach.canChat
-                ? "The coach sees your last four weeks of workouts and recovery, your goals and your plan. Anything it proposes shows up here for you to accept or reject."
-                : "Add an Anthropic API key in Settings to talk to the coach.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text(
+                conversation.kind == .interview
+                    ? "The coach will ask a few questions, then draft a plan."
+                    : "Ask about your training, or say what needs to change."
+            )
+            .font(.headline)
+            Text(
+                coach.canChat
+                    ? "The coach sees your last four weeks of workouts and recovery, your goals and your plan. Anything it proposes shows up here for you to accept or reject."
+                    : "Add an Anthropic API key in Settings to talk to the coach."
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
         }
         .padding(.vertical, 8)
     }
@@ -137,7 +148,9 @@ struct CoachChatView: View {
         case .coach(_, let text):
             Bubble(text: text, isAthlete: false)
         case .suggestions(_, let toolUseID):
-            let cards = (conversation.suggestions ?? []).filter { $0.sourceID == toolUseID }.sorted { $0.createdAt < $1.createdAt }
+            let cards = (conversation.suggestions ?? []).filter { $0.sourceID == toolUseID }.sorted {
+                $0.createdAt < $1.createdAt
+            }
             ForEach(cards) { suggestion in
                 SuggestionCard(suggestion: suggestion)
                     .padding(12)
@@ -151,7 +164,8 @@ struct CoachChatView: View {
                     HStack {
                         Label("Review Draft Plan", systemImage: "sparkles").font(.subheadline.weight(.semibold))
                         Spacer()
-                        Text("\((draftPlan.workouts ?? []).count) sessions").font(.subheadline).foregroundStyle(.secondary)
+                        Text("\((draftPlan.workouts ?? []).count) sessions").font(.subheadline).foregroundStyle(
+                            .secondary)
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                     }
                     .padding(12)
@@ -160,9 +174,12 @@ struct CoachChatView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                Label("The coach drafted a plan here. It has since been accepted, replaced or discarded.", systemImage: "sparkles")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Label(
+                    "The coach drafted a plan here. It has since been accepted, replaced or discarded.",
+                    systemImage: "sparkles"
+                )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             }
         case .saved(_, let text):
             Label(text, systemImage: "checkmark.circle")
@@ -221,8 +238,8 @@ struct CoachChatView: View {
                 .focused($isTyping)
                 .onSubmit(submit)
                 #if os(macOS)
-                // On the Mac the field is rebuilt after each send, which guarantees it is empty.
-                .id(composerID)
+            // On the Mac the field is rebuilt after each send, which guarantees it is empty.
+            .id(composerID)
                 #endif
             if isSending {
                 ProgressView()
@@ -286,7 +303,8 @@ private struct Bubble: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .foregroundStyle(isAthlete ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-                .background(isAthlete ? AnyShapeStyle(.tint) : AnyShapeStyle(.cardBackground), in: .rect(cornerRadius: 18))
+                .background(
+                    isAthlete ? AnyShapeStyle(.tint) : AnyShapeStyle(.cardBackground), in: .rect(cornerRadius: 18))
             if !isAthlete { Spacer(minLength: 40) }
         }
         .accessibilityElement(children: .combine)

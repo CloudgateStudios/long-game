@@ -25,10 +25,13 @@ enum WahooPlan {
             // The value counts repeats after the first time through.
             return [["exit_trigger_type": "repeat", "exit_trigger_value": block.repeats - 1, "intervals": steps]]
         }
-        return try JSONSerialization.data(withJSONObject: ["header": header, "intervals": intervals], options: [.prettyPrinted, .sortedKeys])
+        return try JSONSerialization.data(
+            withJSONObject: ["header": header, "intervals": intervals], options: [.prettyPrinted, .sortedKeys])
     }
 
-    private static func interval(_ step: StructuredWorkout.Step, _ thresholds: TrainingThresholds) throws -> [String: Any] {
+    private static func interval(_ step: StructuredWorkout.Step, _ thresholds: TrainingThresholds) throws -> [String:
+        Any]
+    {
         var interval: [String: Any] = ["intensity_type": intensity(step.kind)]
         if let seconds = step.durationSeconds {
             interval["exit_trigger_type"] = "time"
@@ -45,9 +48,14 @@ enum WahooPlan {
         return interval
     }
 
-    private static func target(_ target: StructuredWorkout.Target, _ thresholds: TrainingThresholds) throws -> [String: Any]? {
+    private static func target(_ target: StructuredWorkout.Target, _ thresholds: TrainingThresholds) throws -> [String:
+        Any]?
+    {
         func entry(_ type: String, _ range: ClosedRange<Double>, digits: Double = 100) -> [String: Any] {
-            ["type": type, "low": (range.lowerBound * digits).rounded() / digits, "high": (range.upperBound * digits).rounded() / digits]
+            [
+                "type": type, "low": (range.lowerBound * digits).rounded() / digits,
+                "high": (range.upperBound * digits).rounded() / digits,
+            ]
         }
         switch target.kind {
         case .ftpPercent:

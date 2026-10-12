@@ -4,6 +4,7 @@ import Foundation
 import Models
 import Observation
 import SwiftData
+
 #if os(iOS)
 import UIKit
 #endif
@@ -49,7 +50,8 @@ final class CoachSession {
     private static let modelKey = "coachModel"
 
     init() {
-        sampleChat = AppEnvironment.usesFixture
+        sampleChat =
+            AppEnvironment.usesFixture
             ? CoachChat(client: ClaudeClient(transport: SampleCoachTransport(), retryDelays: []))
             : nil
         keyStore = KeychainAPIKeyStore(service: Bundle.main.bundleIdentifier ?? "LongGame")
@@ -86,7 +88,9 @@ final class CoachSession {
         let background = BackgroundTime()
         defer { background.end() }
         do {
-            let review = try await reviewer.run(trigger: trigger, model: modelID, apiKey: keyStore.read(), planID: planID, in: context) { [weak self] text in
+            let review = try await reviewer.run(
+                trigger: trigger, model: modelID, apiKey: keyStore.read(), planID: planID, in: context
+            ) { [weak self] text in
                 self?.state = .running(assessment: text)
             }
             state = .idle
@@ -109,7 +113,9 @@ final class CoachSession {
         let background = BackgroundTime()
         defer { background.end() }
         do {
-            let plan = try await planner.generate(request: request, goal: goal, model: modelID, apiKey: keyStore.read(), in: context) { [weak self] progress in
+            let plan = try await planner.generate(
+                request: request, goal: goal, model: modelID, apiKey: keyStore.read(), in: context
+            ) { [weak self] progress in
                 self?.plannedSessionCount = progress.sessionCount
                 self?.state = .running(assessment: progress.summary)
             }
@@ -125,7 +131,8 @@ final class CoachSession {
 
     /// Asks the coach to turn a session into steps. Throws rather than using `state`,
     /// since the result belongs to the session being edited and not to the coach screens.
-    func buildSteps(for session: PlannedWorkout, in context: ModelContext) async throws(CoachError) -> StructuredWorkout {
+    func buildSteps(for session: PlannedWorkout, in context: ModelContext) async throws(CoachError) -> StructuredWorkout
+    {
         let background = BackgroundTime()
         defer { background.end() }
         do {
@@ -155,7 +162,8 @@ final class CoachSession {
         let background = BackgroundTime()
         defer { background.end() }
         do {
-            try await chat.send(text, in: conversation, model: modelID, apiKey: apiKey, context: context) { [weak self] partial in
+            try await chat.send(text, in: conversation, model: modelID, apiKey: apiKey, context: context) {
+                [weak self] partial in
                 self?.streamingReplies[id] = partial
             }
         } catch let error as CoachError {
@@ -176,7 +184,9 @@ final class CoachSession {
     var activityText: String? {
         if isRunning {
             if isWritingPlan {
-                return plannedSessionCount > 0 ? "Coach is writing your plan: \(plannedSessionCount) sessions so far" : "Coach is writing your plan…"
+                return plannedSessionCount > 0
+                    ? "Coach is writing your plan: \(plannedSessionCount) sessions so far"
+                    : "Coach is writing your plan…"
             }
             return "Coach is reviewing your training…"
         }

@@ -1,9 +1,10 @@
 import Analysis
-@testable import Coach
 import Foundation
 import Models
 import SwiftData
 import Testing
+
+@testable import Coach
 
 @MainActor
 @Suite struct WorkoutStructurerTests {
@@ -19,7 +20,9 @@ import Testing
         profile.maxHR = 185
         profile.zoneUpperBoundsOverride = [120, 140, 155, 170]
         context.insert(profile)
-        session = PlannedWorkout(date: Date(), sport: .bike, sessionType: .intervals, targetDurationSeconds: 3600, targetIntensity: "5 × 4 min at 105–110% FTP, 3 min easy")
+        session = PlannedWorkout(
+            date: Date(), sport: .bike, sessionType: .intervals, targetDurationSeconds: 3600,
+            targetIntensity: "5 × 4 min at 105–110% FTP, 3 min easy")
         context.insert(session)
     }
 
@@ -31,21 +34,33 @@ import Testing
         """
 
     func structurer(replying reply: String) -> (WorkoutStructurer, MockTransport) {
-        let transport = MockTransport([.response(status: 200, lines: MockTransport.events(chunks: [String(reply.prefix(60)), String(reply.dropFirst(60))]))])
+        let transport = MockTransport([
+            .response(
+                status: 200,
+                lines: MockTransport.events(chunks: [String(reply.prefix(60)), String(reply.dropFirst(60))]))
+        ])
         return (WorkoutStructurer(client: ClaudeClient(transport: transport, retryDelays: [])), transport)
     }
 
     @Test func aSessionComesBackAsSteps() async throws {
         let (structurer, transport) = structurer(replying: Self.reply)
         let workout = try await structurer.structure(session, model: "claude-haiku-5-5", apiKey: "key", in: context)
-        #expect(workout.lines() == ["Warm up 15 min at 50–65% FTP", "5 × (4 min at 105–110% FTP (smooth), recovery 3 min at 50% FTP)", "Cool down 10 min"])
+        #expect(
+            workout.lines() == [
+                "Warm up 15 min at 50–65% FTP", "5 × (4 min at 105–110% FTP (smooth), recovery 3 min at 50% FTP)",
+                "Cool down 10 min",
+            ])
         #expect(workout.estimatedDurationSeconds == 3600.0)
 
         // Only the session and the athlete's thresholds are sent.
         let body = try jsonBody(transport.requests.first)
         let user = try #require((body["messages"] as? [[String: Any]])?.first?["content"] as? String)
         let sent = try JSONDecoder().decode(WorkoutStructurer.Payload.self, from: Data(user.utf8))
-        #expect(sent.session == .init(sport: "bike", sessionType: "intervals", durationMinutes: 60, intensity: "5 × 4 min at 105–110% FTP, 3 min easy"))
+        #expect(
+            sent.session
+                == .init(
+                    sport: "bike", sessionType: "intervals", durationMinutes: 60,
+                    intensity: "5 × 4 min at 105–110% FTP, 3 min easy"))
         #expect(sent.athlete == .init(ftpWatts: 250, zoneUpperBounds: [120, 140, 155, 170], maxHR: 185))
         #expect((body["output_config"] as? [String: Any])?["effort"] as? String == "low")
 
