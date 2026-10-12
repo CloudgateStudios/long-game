@@ -77,13 +77,9 @@ private struct DayCard: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 Spacer()
-                Button("Add session on \(day.formatted(.dateTime.weekday(.wide)))", systemImage: "plus") {
-                    sheet = .newWorkout(day)
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .frame(minWidth: 44, minHeight: 32)
-                .contentShape(.rect)
+                AddToDayMenu(plan: plan, day: day, sheet: $sheet)
+                    .frame(minWidth: 44, minHeight: 32)
+                    .contentShape(.rect)
             }
             ForEach(workouts) { workout in
                 PlannedWorkoutRow(workout: workout, sheet: $sheet)

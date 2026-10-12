@@ -38,7 +38,7 @@ public struct WorkoutStructurer: Sendable {
     }
 
     public static func canStructure(_ session: PlannedWorkout) -> Bool {
-        StructuredWorkoutLimits.sports.contains(session.sport) && session.sessionType != .rest
+        StructuredWorkoutLimits.sports.contains(session.sport) && !session.isDayMarker
     }
 
     /// Returns the steps without storing them, so the caller can show them first.

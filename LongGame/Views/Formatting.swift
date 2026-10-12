@@ -30,6 +30,8 @@ enum Format {
     }
 
     static func targets(of workout: PlannedWorkout) -> String {
+        // A rest or flex day has no targets; its note is all there is to say about it.
+        if workout.isDayMarker { return workout.instructions }
         var parts: [String] = []
         if let seconds = workout.targetDurationSeconds { parts.append(duration(seconds)) }
         if let meters = workout.targetDistanceMeters { parts.append(distance(meters, sport: workout.sport)) }
@@ -39,11 +41,27 @@ enum Format {
 
     static func title(of workout: PlannedWorkout) -> String {
         switch workout.sessionType {
-        case .rest: "Rest"
+        case .rest: "Rest day"
+        case .flex: "Flex day"
         case .strength where workout.sport == .strength: "Strength"
         default: "\(workout.sessionType.displayName) \(workout.sport.displayName.lowercased())"
         }
     }
+}
+
+extension SessionType {
+    /// Symbol for a rest or flex day, which has no sport to show.
+    var dayMarkerSymbolName: String? {
+        switch self {
+        case .rest: "moon.zzz"
+        case .flex: "shuffle"
+        default: nil
+        }
+    }
+}
+
+extension PlannedWorkout {
+    var symbolName: String { sessionType.dayMarkerSymbolName ?? sport.symbolName }
 }
 
 /// Distances are stored in meters and typed in the unit that suits the sport and locale.

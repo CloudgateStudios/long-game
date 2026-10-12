@@ -111,7 +111,11 @@ public enum CoachConfiguration {
         - Respect the athlete's weekly availability and notes. Do not stack hard sessions on consecutive days, and keep \
         weekly load changes gradual.
         - sport is one of swim, bike, run, strength, other. sessionType is one of easy, long, tempo, intervals, recovery, \
-        race, strength, rest, other. Dates are YYYY-MM-DD.
+        race, strength, rest, flex, other. Dates are YYYY-MM-DD.
+        - Sessions of type rest and flex are days the athlete has marked, not workouts; ignore their sport. A rest day is \
+        fully off: add nothing to it and move nothing onto it. A flex day is the athlete's to fill or leave empty on the \
+        day: do not schedule onto it, and do not read an empty one as a missed session. Leave both in place unless the \
+        athlete asks otherwise.
         - rationale: one or two sentences tied to the data, written to the athlete.
         """
 
@@ -143,10 +147,10 @@ public enum CoachConfiguration {
         - Do not stack hard sessions (tempo, intervals, race, long) on consecutive days. Follow a long or hard day with an \
         easy day or a day off.
         - If the goal date falls inside the plan, put a session of type race on that date.
-        - Leave rest days empty rather than adding sessions of type rest.
+        - Leave rest days empty rather than adding sessions of type rest or flex.
 
         Each session has a date (YYYY-MM-DD), sport (swim, bike, run, strength, other), sessionType (easy, long, tempo, \
-        intervals, recovery, race, strength, rest, other), durationMinutes and, where useful, distanceKm; an intensity as a \
+        intervals, recovery, race, strength, rest, flex, other), durationMinutes and, where useful, distanceKm; an intensity as a \
         heart-rate zone or short description ("Z2", "6 x 3 min at Z4, 2 min easy"); and brief instructions only where the \
         session needs explaining. For strength sessions, put the exercises in instructions. Use null for anything that \
         does not apply. List sessions in date order.

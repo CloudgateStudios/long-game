@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 
 extension PlannedWorkout {
-    public var isRest: Bool { sessionType == .rest }
+    public var isDayMarker: Bool { sessionType.isDayMarker }
 
     public var session: PlannedSession {
         PlannedSession(
@@ -40,9 +40,9 @@ extension CompletedWorkout {
 }
 
 extension TrainingPlan {
-    /// Compliance for the planned sessions on the given days, rest days excluded.
+    /// Compliance for the planned sessions on the given days, rest and flex days excluded.
     public func compliance(on days: [Date], calendar: Calendar = .current) -> WeekCompliance {
-        WeekCompliance(days.flatMap { workouts(on: $0, calendar: calendar) }.filter { !$0.isRest }.map(\.outcome))
+        WeekCompliance(days.flatMap { workouts(on: $0, calendar: calendar) }.filter { !$0.isDayMarker }.map(\.outcome))
     }
 }
 
@@ -68,7 +68,7 @@ public enum PlanReconciler {
         let heldByHand = Set(planned.filter(\.isManualMatch).compactMap { $0.matchedWorkout?.externalID })
         let candidates = completed.filter { $0.isPrimary && !$0.isMatchLocked && !heldByHand.contains($0.externalID) }
         let matches = PlanMatcher.match(
-            planned: automatic.filter { !$0.isRest }.map(\.session),
+            planned: automatic.filter { !$0.isDayMarker }.map(\.session),
             completed: candidates.map(\.session),
             calendar: calendar
         )
@@ -87,7 +87,7 @@ public enum PlanReconciler {
 
         for session in planned {
             let status: PlannedStatus =
-                session.isRest
+                session.isDayMarker
                 ? .planned
                 : Compliance.status(
                     planned: session.session, matched: session.matchedWorkout?.session, today: now, calendar: calendar)

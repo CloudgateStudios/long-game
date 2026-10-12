@@ -90,7 +90,7 @@ struct DashboardView: View {
                                 }
                             }
                         } icon: {
-                            Image(systemName: workout.sessionType == .rest ? "moon.zzz" : workout.sport.symbolName)
+                            Image(systemName: workout.symbolName)
                         }
                         .badge(workout.status == .planned ? nil : Text(workout.status.label))
                     }

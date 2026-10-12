@@ -37,7 +37,7 @@ public enum Sport: String, Codable, Sendable, CaseIterable, Identifiable {
 }
 
 public enum SessionType: String, Codable, Sendable, CaseIterable, Identifiable {
-    case easy, long, tempo, intervals, recovery, race, strength, rest, other
+    case easy, long, tempo, intervals, recovery, race, strength, rest, flex, other
 
     public var id: String { rawValue }
 
@@ -51,9 +51,15 @@ public enum SessionType: String, Codable, Sendable, CaseIterable, Identifiable {
         case .race: "Race"
         case .strength: "Strength"
         case .rest: "Rest"
+        case .flex: "Flex"
         case .other: "Other"
         }
     }
+
+    /// Rest and flex mark a whole day rather than a session to complete: rest is fully
+    /// off, flex is left for the athlete to decide on the day. Neither has a sport or
+    /// targets, is matched to a workout, or counts toward compliance.
+    public var isDayMarker: Bool { self == .rest || self == .flex }
 }
 
 public enum GoalType: String, Codable, Sendable, CaseIterable {
