@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Keep in step with the Xcode used locally: swift-format's output can change between
+  # toolchains, and the format check must agree with what `swift format` does on a Mac.
+  DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+
+jobs:
+  format:
+    name: Format
+    # Xcode 27 on macOS 27. Still a preview image; move to macos-27 once that exists.
+    runs-on: xcode-27
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check formatting
+        run: swift format lint --strict --recursive --parallel LongGame Packages
+
+  test:
+    name: Test
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # LiveCoachTests skip themselves because LONGGAME_LIVE_KEY is not set.
+      - name: Run tests
+        working-directory: Packages/LongGameKit
+        run: swift test
+
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: xcode-27
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS Simulator, macOS]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build app
+        run: |
+          xcodebuild build \
+            -project LongGame.xcodeproj \
+            -scheme LongGame \
+            -destination 'generic/platform=${{ matrix.platform }}' \
+            CODE_SIGNING_ALLOWED=NO

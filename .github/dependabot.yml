@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # LongGameKit has no external packages yet; this picks them up when it does.
+  - package-ecosystem: swift
+    directory: /Packages/LongGameKit
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
