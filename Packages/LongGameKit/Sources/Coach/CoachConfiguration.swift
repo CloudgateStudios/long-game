@@ -161,7 +161,7 @@ public enum CoachConfiguration {
 
         You receive JSON: the session (sport, sessionType, durationMinutes, distanceKm, intensity and instructions as the \
         coach wrote them) and the athlete's numbers where known (ftpWatts, heart-rate zoneUpperBounds for zones 1 to 4 in \
-        beats per minute, maxHR, thresholdRunPaceSecPerKm).
+        beats per minute, maxHR, thresholdRunPaceSecPerKm, and for runs runTargets).
 
         Reply with blocks, in the order they are done. Each block has repeats (1 for a plain step) and its steps. Each \
         step has:
@@ -180,8 +180,9 @@ public enum CoachConfiguration {
         minutes and end with a cool-down of 5 to 10 minutes, inside the session's total time. An easy, long or recovery \
         session can be a single work step, or a short warm-up, one steady step and a short cool-down.
         - Choose the target the athlete can follow on a device. Rides: ftpPercent when ftpWatts is known, otherwise \
-        hrZone. Runs: pace when the session gives a pace or thresholdRunPaceSecPerKm is known and the session is \
-        pace-based, otherwise hrZone. Use the unit the session itself uses when it names one.
+        hrZone. Runs: follow athlete.runTargets. For "pace", give every step a pace when the session gives one or \
+        thresholdRunPaceSecPerKm is known (easy running is roughly 15 to 30 percent slower than threshold pace), and \
+        fall back to hrZone otherwise. For "heartRate", use hrZone throughout.
         - Recoveries between hard efforts are short and easy: give them a target of hrZone 1 or about 50 percent of FTP, \
         or none.
         - A set repeated several times is one block with repeats, not the same steps written out.

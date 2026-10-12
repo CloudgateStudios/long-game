@@ -156,6 +156,9 @@ public final class PlannedWorkout {
     /// A run or ride as steps for a watch or bike computer, stored as JSON. Nil for a
     /// session described only in words.
     public var structureJSON: String?
+    /// Whether this run's steps are followed by pace or heart rate. Nil follows the
+    /// athlete's usual choice.
+    public var runTargetsRaw: String?
     public var statusRaw: String = PlannedStatus.planned.rawValue
     public var isManualMatch: Bool = false
     public var createdAt: Date = Date()
@@ -197,6 +200,11 @@ public final class PlannedWorkout {
     public var status: PlannedStatus {
         get { PlannedStatus(rawValue: statusRaw) ?? .planned }
         set { statusRaw = newValue.rawValue }
+    }
+
+    public var runTargets: RunTargetMode? {
+        get { runTargetsRaw.flatMap(RunTargetMode.init(rawValue:)) }
+        set { runTargetsRaw = newValue?.rawValue }
     }
 
     public var structure: StructuredWorkout? {

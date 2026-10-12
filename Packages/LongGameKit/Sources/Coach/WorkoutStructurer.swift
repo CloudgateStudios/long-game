@@ -23,6 +23,8 @@ public struct WorkoutStructurer: Sendable {
             var zoneUpperBounds: [Double]?
             var maxHR: Double?
             var thresholdRunPaceSecPerKm: Double?
+            /// For runs: "pace" or "heartRate", as the athlete prefers to follow them.
+            var runTargets: String?
         }
 
         var session: Session
@@ -94,7 +96,8 @@ public struct WorkoutStructurer: Sendable {
                 ftpWatts: zones.ftpWatts?.rounded(),
                 zoneUpperBounds: zones.bounds,
                 maxHR: zones.maxHR?.rounded(),
-                thresholdRunPaceSecPerKm: profile?.thresholdRunPaceSecondsPerKm?.rounded()
+                thresholdRunPaceSecPerKm: profile?.thresholdRunPaceSecondsPerKm?.rounded(),
+                runTargets: session.sport == .run ? (session.runTargets ?? zones.runTargets).rawValue : nil
             )
         )
         let encoder = JSONEncoder()

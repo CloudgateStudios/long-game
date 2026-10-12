@@ -11,6 +11,8 @@ public struct ResolvedZones: Sendable, Equatable {
     public var bounds: [Double]?
     public var isOverridden = false
     public var ftpWatts: Double?
+    public var thresholdRunPaceSecondsPerKm: Double?
+    public var runTargets: RunTargetMode = .heartRate
 
     public init(
         maxHR: Double? = nil,
@@ -30,7 +32,9 @@ public struct ResolvedZones: Sendable, Equatable {
 
     /// The athlete's numbers in the form structured workouts are exported against.
     public var thresholds: TrainingThresholds {
-        TrainingThresholds(ftpWatts: ftpWatts, hrZoneUpperBounds: bounds, maxHR: maxHR)
+        TrainingThresholds(
+            ftpWatts: ftpWatts, hrZoneUpperBounds: bounds, maxHR: maxHR,
+            thresholdRunPaceSecondsPerKm: thresholdRunPaceSecondsPerKm)
     }
 }
 
@@ -57,7 +61,7 @@ public enum LoadRecalculator {
         }
 
         let override = profile?.zoneUpperBoundsOverride
-        return ResolvedZones(
+        var zones = ResolvedZones(
             maxHR: max?.value,
             maxHRSource: max?.source,
             restingHR: resting,
@@ -65,6 +69,9 @@ public enum LoadRecalculator {
             isOverridden: override.map(HeartRateZones.isValid) ?? false,
             ftpWatts: profile?.ftpWatts
         )
+        zones.thresholdRunPaceSecondsPerKm = profile?.thresholdRunPaceSecondsPerKm
+        zones.runTargets = profile?.runTargets ?? .heartRate
+        return zones
     }
 
     /// Returns how many workouts changed. Run after matching, since an unmeasured
