@@ -100,6 +100,7 @@ struct PlanView: View {
                 Menu("Plan Options", systemImage: "ellipsis.circle") {
                     if let plan {
                         Button("Add Session", systemImage: "plus") { sheet = .newWorkout(anchor) }
+                        DayMarkerButtons(plan: plan, day: anchor)
                         Button("Edit Plan", systemImage: "pencil") { sheet = .editPlan(plan) }
                     }
                     if plans.count > 1 {
@@ -221,7 +222,7 @@ struct PlannedWorkoutRow: View {
             sheet = .editWorkout(workout)
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: workout.sessionType == .rest ? "moon.zzz" : workout.sport.symbolName)
+                Image(systemName: workout.symbolName)
                     .foregroundStyle(.tint)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
@@ -293,7 +294,51 @@ struct PlannedWorkoutRow: View {
     }
 }
 
+/// The "+" on a day: a full session, or a one-tap rest or flex day.
+struct AddToDayMenu: View {
+    let plan: TrainingPlan
+    let day: Date
+    @Binding var sheet: PlanSheet?
+
+    var body: some View {
+        Menu("Add to \(day.formatted(.dateTime.weekday(.wide)))", systemImage: "plus") {
+            Button("Session", systemImage: "figure.run") { sheet = .newWorkout(day) }
+            DayMarkerButtons(plan: plan, day: day)
+        }
+        .labelStyle(.iconOnly)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+}
+
+struct DayMarkerButtons: View {
+    let plan: TrainingPlan
+    let day: Date
+
+    var body: some View {
+        ForEach([SessionType.rest, .flex]) { type in
+            Button("\(type.displayName) Day", systemImage: type.dayMarkerSymbolName ?? "calendar") {
+                withAnimation { plan.markDay(day, as: type) }
+            }
+        }
+    }
+}
+
 extension TrainingPlan {
+    /// Marks `date` as a rest or flex day. A day already marked changes kind rather than
+    /// gaining a second marker; sessions planned on it are left for the user to deal with.
+    func markDay(_ date: Date, as type: SessionType) {
+        if let existing = workouts(on: date).first(where: \.isDayMarker) {
+            existing.sessionType = type
+        } else {
+            let marker = PlannedWorkout(date: Calendar.current.startOfDay(for: date), sport: .other, sessionType: type)
+            modelContext?.insert(marker)
+            marker.plan = self
+        }
+        try? modelContext?.save()
+    }
+
     /// Moves the session with this identifier (from a drag) to `date`.
     func moveWorkout(withID id: String, to date: Date) -> Bool {
         guard let workout = (workouts ?? []).first(where: { $0.uuid.uuidString == id }) else { return false }

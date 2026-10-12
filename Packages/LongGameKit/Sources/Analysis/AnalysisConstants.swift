@@ -48,6 +48,7 @@ public enum AnalysisConstants {
     /// or power to measure it. On the same scale as `zoneLoadWeights`.
     public static let defaultIntensity: [SessionType: Double] = [
         .recovery: 1.5, .easy: 2, .long: 2, .tempo: 3.5, .intervals: 4, .race: 4, .strength: 2, .other: 2, .rest: 0,
+        .flex: 0,
     ]
     public static let fallbackIntensity = 2.0
     public static let acuteLoadDays = 7

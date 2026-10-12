@@ -51,7 +51,7 @@ public enum PlanMatcher {
     /// Pairs planned sessions with completed workouts, one to one: same sport on the
     /// same day first, then within `matchDayTolerance` days. Returns planned ID → completed ID.
     ///
-    /// Pass only what may be matched automatically: no rest days, no duplicates, and
+    /// Pass only what may be matched automatically: no rest or flex days, no duplicates, and
     /// nothing the user has matched or un-matched by hand.
     public static func match(planned: [PlannedSession], completed: [CompletedSession], calendar: Calendar) -> [UUID:
         UUID]
@@ -169,7 +169,7 @@ public struct WeekCompliance: Sendable, Equatable {
     public var plannedLoad = 0.0
     public var achievedLoad = 0.0
 
-    /// Rest days are left out before calling this.
+    /// Rest and flex days are left out before calling this.
     public init(_ outcomes: [SessionOutcome]) {
         for outcome in outcomes {
             planned += 1
