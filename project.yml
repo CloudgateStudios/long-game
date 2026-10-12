@@ -39,6 +39,8 @@ targets:
       path: LongGame/Resources/Info.plist
       properties:
         CFBundleDisplayName: Long Game
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         ITSAppUsesNonExemptEncryption: false
         LGCloudKitContainer: $(LG_ICLOUD_CONTAINER)
