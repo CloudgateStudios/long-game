@@ -54,6 +54,15 @@ import Testing
         #expect(grid.allSatisfy { $0 != nil })
     }
 
+    @Test func monthsCoverEveryMonthAPlanTouches() {
+        let months = PlanCalendar.months(from: day(2026, 11, 20), through: day(2027, 1, 1), calendar: calendar)
+        #expect(months.map(ymd) == [[2026, 11, 1], [2026, 12, 1], [2027, 1, 1]])
+
+        let single = PlanCalendar.months(from: day(2026, 10, 12), through: day(2026, 10, 12), calendar: calendar)
+        #expect(single.map(ymd) == [[2026, 10, 1]])
+        #expect(PlanCalendar.months(from: day(2026, 10, 12), through: day(2026, 9, 1), calendar: calendar).isEmpty)
+    }
+
     @Test func weekdaySymbolsFollowFirstWeekday() {
         #expect(PlanCalendar.weekdaySymbols(calendar: calendar).count == 7)
         var sundayFirst = calendar

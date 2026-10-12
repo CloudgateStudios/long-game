@@ -25,6 +25,7 @@
 		7167F7838671847B26FDA3C0 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B6673A8F71752F2E6722AC /* LogView.swift */; };
 		72DA303520248F34EC677643 /* ActivityBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92764D4F6D41A665BEC824BE /* ActivityBanner.swift */; };
 		78DB92297F3CA811DE1243D4 /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3AD45C7D7AAA116098B6EDC /* WorkoutDetailView.swift */; };
+		83FAC1E81A7DBB427233DDEA /* PlanCalendarPDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0D1FC1899A2A618FA91A96 /* PlanCalendarPDF.swift */; };
 		8A6EE45526B32D794F6D0659 /* Coach in Frameworks */ = {isa = PBXBuildFile; productRef = 5DA5264B65DA13C81797B248 /* Coach */; };
 		8AFCEF205AED77A931275624 /* SampleCoachTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82386CD9EB51E73947CB2069 /* SampleCoachTransport.swift */; };
 		8BE49A1488F4E0B4460C891A /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14494458368FDB59FEF94181 /* ProfileView.swift */; };
@@ -47,6 +48,7 @@
 		0076A754ED283827F48C27F6 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		00C009EA0D1A6ADC75F152F2 /* TrendCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendCharts.swift; sourceTree = "<group>"; };
 		04608E5E9FB71AFCF65D8D26 /* StructuredWorkoutSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StructuredWorkoutSection.swift; sourceTree = "<group>"; };
+		0B0D1FC1899A2A618FA91A96 /* PlanCalendarPDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanCalendarPDF.swift; sourceTree = "<group>"; };
 		0C52C40DD64B608C45C91954 /* LongGameKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LongGameKit; path = Packages/LongGameKit; sourceTree = SOURCE_ROOT; };
 		13F4516297160BB2276CF9CF /* PlanMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanMonthView.swift; sourceTree = "<group>"; };
 		14494458368FDB59FEF94181 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 			isa = PBXGroup;
 			children = (
 				B0E26EB1E611C75AE538EA28 /* GoalsView.swift */,
+				0B0D1FC1899A2A618FA91A96 /* PlanCalendarPDF.swift */,
 				57231C60AA09ABFC6D6A9542 /* PlanEditor.swift */,
 				D966F93CE48DBFB9FE213EC0 /* PlanGeneratorView.swift */,
 				13F4516297160BB2276CF9CF /* PlanMonthView.swift */,
@@ -304,6 +307,7 @@
 				C4B469ED8ED6D5D07232DA44 /* GoalsView.swift in Sources */,
 				7167F7838671847B26FDA3C0 /* LogView.swift in Sources */,
 				0946525560E687FBE3838907 /* LongGameApp.swift in Sources */,
+				83FAC1E81A7DBB427233DDEA /* PlanCalendarPDF.swift in Sources */,
 				D1BB7196328E18B516D1F3B0 /* PlanEditor.swift in Sources */,
 				21E5FA94AA921D5BC61847ED /* PlanGeneratorView.swift in Sources */,
 				309F7393E921594474122827 /* PlanMonthView.swift in Sources */,

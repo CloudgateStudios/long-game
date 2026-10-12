@@ -18,7 +18,8 @@ that is.
 ## What it does
 
 - **Plan** – build a training plan by hand, or have the coach interview you and draft one.
-  Week and month calendar views; sessions can be edited, moved and deleted.
+  Week and month calendar views; sessions can be edited, moved and deleted. A plan can be
+  shared or saved as a PDF calendar, one month to a page.
 - **Track** – workouts from Apple Health are matched to planned sessions and marked done,
   partly done, overdone, missed or unplanned. The same session recorded by two devices
   (a watch and a bike computer, say) is counted once.
