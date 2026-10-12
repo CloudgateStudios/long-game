@@ -40,6 +40,7 @@ struct PlanView: View {
     @AppStorage("planMode") private var mode: PlanMode = .week
     @State private var anchor = Date()
     @State private var sheet: PlanSheet?
+    @State private var exporting: TrainingPlan?
 
     private var plans: [TrainingPlan] { allPlans.filter { !$0.isDraft } }
     private var draft: TrainingPlan? { allPlans.first(where: \.isDraft) }
@@ -101,6 +102,15 @@ struct PlanView: View {
                     if let plan {
                         Button("Add Session", systemImage: "plus") { sheet = .newWorkout(anchor) }
                         Button("Edit Plan", systemImage: "pencil") { sheet = .editPlan(plan) }
+                        ShareLink(
+                            item: PlanCalendarDocument(plan: plan),
+                            preview: SharePreview(plan.name, image: Image(systemName: "calendar"))
+                        ) {
+                            Label("Share Calendar PDF", systemImage: "square.and.arrow.up")
+                        }
+                        #if os(macOS)
+                        Button("Save Calendar as PDF…", systemImage: "arrow.down.doc") { exporting = plan }
+                        #endif
                     }
                     if plans.count > 1 {
                         Picker(
@@ -144,6 +154,14 @@ struct PlanView: View {
                 PlanGeneratorView { reviewingDraft = $0 }
             }
         }
+        #if os(macOS)
+        .fileExporter(
+            isPresented: Binding(get: { exporting != nil }, set: { if !$0 { exporting = nil } }),
+            item: exporting.map { PlanCalendarDocument(plan: $0) },
+            contentTypes: [.pdf],
+            defaultFilename: exporting.map { PlanCalendarDocument(plan: $0).fileName }
+        ) { _ in }
+        #endif
         .navigationDestination(item: $interview) { conversation in
             CoachChatView(conversation: conversation)
         }
@@ -295,5 +313,37 @@ extension TrainingPlan {
         workout.date = Calendar.current.startOfDay(for: date)
         try? workout.modelContext?.save()
         return true
+    }
+}
+
+extension PlanCalendarDocument {
+    /// Captures what the printed calendar shows of `plan`.
+    init(plan: TrainingPlan, calendar: Calendar = .current) {
+        self.init(
+            name: plan.name,
+            start: calendar.startOfDay(for: plan.startDate),
+            end: calendar.startOfDay(for: plan.endDate),
+            goalTitle: plan.goal?.title,
+            goalDate: plan.goal?.targetDate,
+            phases: plan.sortedPhases.map {
+                Phase(
+                    name: $0.kind.displayName,
+                    start: calendar.startOfDay(for: $0.startDate),
+                    end: calendar.startOfDay(for: $0.endDate))
+            }
+        )
+        let byDay = Dictionary(grouping: plan.workouts ?? []) { calendar.startOfDay(for: $0.date) }
+        sessions = byDay.mapValues { workouts in
+            workouts
+                .sorted { ($0.createdAt, $0.uuid.uuidString) < ($1.createdAt, $1.uuid.uuidString) }
+                .map {
+                    Session(
+                        id: $0.uuid,
+                        symbolName: $0.sessionType == .rest ? "moon.zzz" : $0.sport.symbolName,
+                        title: Format.title(of: $0),
+                        targets: Format.targets(of: $0),
+                        instructions: $0.instructions)
+                }
+        }
     }
 }

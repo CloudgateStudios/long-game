@@ -22,6 +22,18 @@ public enum PlanCalendar {
         return cells
     }
 
+    /// The first day of every month touched by `start` through `end`, in order.
+    public static func months(from start: Date, through end: Date, calendar: Calendar) -> [Date] {
+        guard var month = calendar.dateInterval(of: .month, for: start)?.start else { return [] }
+        var months: [Date] = []
+        while month <= end {
+            months.append(month)
+            guard let next = calendar.date(byAdding: .month, value: 1, to: month) else { break }
+            month = next
+        }
+        return months
+    }
+
     /// Weekday symbols ordered to match `weekDays` and `monthGrid`.
     public static func weekdaySymbols(calendar: Calendar) -> [String] {
         let symbols = calendar.veryShortStandaloneWeekdaySymbols
