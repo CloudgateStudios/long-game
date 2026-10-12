@@ -1,14 +1,16 @@
 #!/bin/sh
-# Renders the app icons from the SVG artwork in Design/ into the asset catalog.
-# Uses only tools that ship with macOS. Run from the project root: sh Scripts/make_icons.sh
+# Renders the app icon artwork from the SVG in Design/ into the Icon Composer file.
+# The artwork is full-bleed: each platform applies its own icon shape, so nothing is
+# pre-rounded here. Uses only tools that ship with macOS.
+# Run from the project root: sh Scripts/make_icons.sh
 set -e
-OUT="LongGame/Resources/Assets.xcassets/AppIcon.appiconset"
+OUT="LongGame/Resources/AppIcon.icon/Assets"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-qlmanage -t -s 1024 -o "$TMP" Design/app-icon.svg Design/app-icon-mac.svg >/dev/null 2>&1
+qlmanage -t -s 1024 -o "$TMP" Design/app-icon.svg >/dev/null 2>&1
 
-# iOS icons must be opaque, so the alpha channel is dropped by redrawing on a solid canvas.
+# The artwork must be opaque, so the alpha channel is dropped by redrawing on a solid canvas.
 cat > "$TMP/flatten.swift" <<'SWIFT'
 import AppKit
 let arguments = CommandLine.arguments
@@ -20,9 +22,5 @@ context.draw(image, in: CGRect(x: 0, y: 0, width: 1024, height: 1024))
 let bitmap = NSBitmapImageRep(cgImage: context.makeImage()!)
 try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: arguments[2]))
 SWIFT
-swift "$TMP/flatten.swift" "$TMP/app-icon.svg.png" "$OUT/icon-ios-1024.png"
-
-for size in 16 32 64 128 256 512 1024; do
-  sips -z "$size" "$size" "$TMP/app-icon-mac.svg.png" --out "$OUT/icon-mac-$size.png" >/dev/null
-done
-echo "Icons written to $OUT"
+swift "$TMP/flatten.swift" "$TMP/app-icon.svg.png" "$OUT/artwork.png"
+echo "Icon artwork written to $OUT"
