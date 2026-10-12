@@ -129,8 +129,8 @@ public final class CompletedWorkout {
 
 @Model
 public final class DailyMetrics {
-    /// The day as a `CalendarDay` stamp. Read and write it through `date`.
-    @Attribute(originalName: "date") public var day: Date = CalendarDay.stamp(for: Date())
+    /// The day as a `CalendarDay` stamp, not an instant. Read and write it through `day`.
+    public var date: Date = CalendarDay.stamp(for: Date())
     @Attribute(.allowsCloudEncryption) public var restingHR: Double?
     @Attribute(.allowsCloudEncryption) public var hrvSDNN: Double?
     @Attribute(.allowsCloudEncryption) public var sleepSeconds: Double?
@@ -145,13 +145,13 @@ public final class DailyMetrics {
     @Attribute(.allowsCloudEncryption) public var bodyMassKg: Double?
 
     public init(date: Date) {
-        self.day = CalendarDay.stamp(for: date)
+        self.date = CalendarDay.stamp(for: date)
     }
 
     /// Start of the day in the device's calendar.
-    public var date: Date {
-        get { CalendarDay.date(for: day) }
-        set { day = CalendarDay.stamp(for: newValue) }
+    public var day: Date {
+        get { CalendarDay.date(for: date) }
+        set { date = CalendarDay.stamp(for: newValue) }
     }
 }
 
@@ -161,8 +161,8 @@ public final class DailyMetrics {
 @Model
 public final class ThresholdSnapshot {
     public var uuid: UUID = UUID()
-    /// The first day these numbers apply, as a `CalendarDay` stamp.
-    public var day: Date = CalendarDay.stamp(for: Date())
+    /// The first day these numbers apply, as a `CalendarDay` stamp. Use `day`.
+    public var date: Date = CalendarDay.stamp(for: Date())
     public var createdAt: Date = Date()
     /// Upper bounds of zones 1–4 in bpm, whole numbers.
     @Attribute(.allowsCloudEncryption) public var zoneUpperBounds: [Double]?
@@ -173,11 +173,11 @@ public final class ThresholdSnapshot {
     @Attribute(.allowsCloudEncryption) public var thresholdSwimPaceSecondsPer100m: Double?
 
     public init(date: Date) {
-        self.day = CalendarDay.stamp(for: date)
+        self.date = CalendarDay.stamp(for: date)
     }
 
-    public var date: Date {
-        get { CalendarDay.date(for: day) }
-        set { day = CalendarDay.stamp(for: newValue) }
+    public var day: Date {
+        get { CalendarDay.date(for: date) }
+        set { date = CalendarDay.stamp(for: newValue) }
     }
 }

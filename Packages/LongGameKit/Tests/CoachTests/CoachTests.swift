@@ -487,7 +487,7 @@ actor Collector {
         try SuggestionApplier.accept(
             try record(CoachSuggestion(action: .move, date: newDate, rationale: "r"), target: moved), in: context,
             calendar: calendar)
-        #expect(calendar.isDate(moved.date, inSameDayAs: day(5)))
+        #expect(calendar.isDate(moved.day, inSameDayAs: day(5)))
 
         let removal = try record(CoachSuggestion(action: .remove, rationale: "r"), target: removed)
         try SuggestionApplier.accept(removal, in: context, calendar: calendar)

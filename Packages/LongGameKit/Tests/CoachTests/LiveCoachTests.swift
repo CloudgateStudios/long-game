@@ -91,12 +91,12 @@ struct LiveCoachTests {
         #expect(sessions.count > 20)
         #expect(!plan.sortedPhases.isEmpty)
         // Friday has zero hours available, so nothing should land on it.
-        let onFriday = sessions.filter { calendar.component(.weekday, from: $0.date) == 6 }
+        let onFriday = sessions.filter { calendar.component(.weekday, from: $0.day) == 6 }
         let hasRace = !plan.workouts(on: goalDate, calendar: calendar).filter { $0.sessionType == .race }.isEmpty
         let record = try #require(try context.fetch(FetchDescriptor<CoachReview>()).first)
         let cost = CoachConfiguration.cost(
             model: record.model, inputTokens: record.inputTokens ?? 0, outputTokens: record.outputTokens ?? 0)
-        let weekly = Dictionary(grouping: sessions) { calendar.dateInterval(of: .weekOfYear, for: $0.date)!.start }
+        let weekly = Dictionary(grouping: sessions) { calendar.dateInterval(of: .weekOfYear, for: $0.day)!.start }
             .sorted { $0.key < $1.key }
             .map { Int($0.value.reduce(0) { $0 + ($1.targetDurationSeconds ?? 0) } / 60) }
         print(

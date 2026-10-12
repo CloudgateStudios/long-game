@@ -436,12 +436,12 @@ enum CoachTools {
         }
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
         let found = try sessions(in: context)
-            .filter { calendar.startOfDay(for: $0.date) >= from && calendar.startOfDay(for: $0.date) <= to }
-            .sorted { $0.day == $1.day ? PlannedWorkout.inDayOrder($0, $1) : $0.day < $1.day }
+            .filter { calendar.startOfDay(for: $0.day) >= from && calendar.startOfDay(for: $0.day) <= to }
+            .sorted { $0.date == $1.date ? PlannedWorkout.inDayOrder($0, $1) : $0.date < $1.date }
             .map { session in
                 CoachPayload.Session(
                     id: shortID(session),
-                    date: session.date.formatted(style),
+                    date: session.day.formatted(style),
                     sport: session.sport.rawValue,
                     type: session.sessionType.rawValue,
                     minutes: session.targetDurationSeconds.map { ($0 / 60).rounded() },
@@ -481,7 +481,7 @@ enum CoachTools {
                     problems.append("no session with id \(proposal.sessionId ?? "null")")
                     continue
                 }
-                if calendar.startOfDay(for: target.date) < today {
+                if calendar.startOfDay(for: target.day) < today {
                     problems.append("session \(shortID(target)) is in the past")
                     continue
                 }
@@ -541,8 +541,8 @@ enum CoachTools {
         let goals = try context.fetch(FetchDescriptor<Goal>()).filter { $0.status == .active }
         let goal =
             goals.first { $0.title.caseInsensitiveCompare(plan.goalTitle ?? "") == .orderedSame }
-            ?? goals.filter { ($0.targetDate ?? .distantPast) >= start }.min {
-                ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture)
+            ?? goals.filter { ($0.targetDay ?? .distantPast) >= start }.min {
+                ($0.priority, $0.targetDay ?? .distantFuture) < ($1.priority, $1.targetDay ?? .distantFuture)
             }
         let response = PlanResponse(summary: plan.summary, phases: plan.phases, sessions: plan.sessions)
         let draft: TrainingPlan
@@ -614,7 +614,7 @@ enum CoachTools {
         // Null means "not discussed", so what is already known is kept.
         if let sport = details.sport { goal.eventSport = sport }
         if let km = details.distanceKm, km > 0 { goal.eventDistanceMeters = km * 1000 }
-        if let date = SuggestionApplier.date(from: details.date, calendar: calendar) { goal.targetDate = date }
+        if let date = SuggestionApplier.date(from: details.date, calendar: calendar) { goal.targetDay = date }
         if let target = details.target { goal.targetMetric = target }
         return Outcome(text: existing == nil ? "Goal created." : "Goal updated.")
     }

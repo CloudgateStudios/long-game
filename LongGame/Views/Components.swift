@@ -73,13 +73,13 @@ extension PlannedWorkout {
     }
 
     func move(byDays days: Int) {
-        guard let date = Calendar.current.date(byAdding: .day, value: days, to: date) else { return }
-        withAnimation { self.date = date }
+        guard let date = Calendar.current.date(byAdding: .day, value: days, to: day) else { return }
+        withAnimation { self.day = date }
         try? modelContext?.save()
     }
 
     func duplicate(daysLater days: Int) {
-        guard let date = Calendar.current.date(byAdding: .day, value: days, to: date) else { return }
+        guard let date = Calendar.current.date(byAdding: .day, value: days, to: day) else { return }
         let copy = PlannedWorkout(
             date: date,
             sport: sport,

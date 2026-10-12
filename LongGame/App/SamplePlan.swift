@@ -139,7 +139,7 @@ enum SamplePlan {
             suggestion.review = review
             suggestion.targetWorkout = target
             suggestion.targetSummary =
-                target.map { "\($0.date.formatted(style)), \($0.sessionType.rawValue) \($0.sport.rawValue)" } ?? ""
+                target.map { "\($0.day.formatted(style)), \($0.sessionType.rawValue) \($0.sport.rawValue)" } ?? ""
         }
         try? context.save()
     }

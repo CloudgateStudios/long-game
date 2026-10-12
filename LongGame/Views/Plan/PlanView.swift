@@ -33,7 +33,7 @@ enum PlanSheet: Identifiable {
 struct PlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \TrainingPlan.startDay) private var allPlans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDate) private var allPlans: [TrainingPlan]
     @State private var reviewingDraft: TrainingPlan?
     @State private var interview: CoachConversation?
     @AppStorage("selectedPlanID") private var selectedPlanID = ""
@@ -50,7 +50,7 @@ struct PlanView: View {
     /// The chosen plan, else the one covering today, else the most recent.
     private var plan: TrainingPlan? {
         plans.first { $0.uuid.uuidString == selectedPlanID }
-            ?? plans.first { $0.startDate <= .now && .now <= $0.endDate }
+            ?? plans.first { $0.startDay <= .now && .now <= $0.endDay }
             ?? plans.last
     }
 
@@ -164,7 +164,7 @@ struct PlanView: View {
             case .newWorkout(let date):
                 if let plan { PlannedWorkoutEditor(plan: plan, workout: nil, date: date) }
             case .editWorkout(let workout):
-                if let plan = workout.plan { PlannedWorkoutEditor(plan: plan, workout: workout, date: workout.date) }
+                if let plan = workout.plan { PlannedWorkoutEditor(plan: plan, workout: workout, date: workout.day) }
             case .newPlan:
                 PlanEditor(plan: nil) { selectedPlanID = $0.uuid.uuidString }
             case .editPlan(let plan):
@@ -231,7 +231,7 @@ private func matchingSignature(_ plan: TrainingPlan) -> Int {
     var hasher = Hasher()
     for workout in (plan.workouts ?? []).sorted(by: { $0.uuid.uuidString < $1.uuid.uuidString }) {
         hasher.combine(workout.uuid)
-        hasher.combine(workout.date)
+        hasher.combine(workout.day)
         hasher.combine(workout.sportRaw)
         hasher.combine(workout.sessionTypeRaw)
         hasher.combine(workout.targetDurationSeconds)
@@ -372,7 +372,7 @@ extension TrainingPlan {
     /// Moves the session with this identifier (from a drag) to `date`.
     func moveWorkout(withID id: String, to date: Date) -> Bool {
         guard let workout = (workouts ?? []).first(where: { $0.uuid.uuidString == id }) else { return false }
-        workout.date = Calendar.current.startOfDay(for: date)
+        workout.day = Calendar.current.startOfDay(for: date)
         try? workout.modelContext?.save()
         return true
     }
@@ -383,18 +383,18 @@ extension PlanCalendarDocument {
     init(plan: TrainingPlan, calendar: Calendar = .current) {
         self.init(
             name: plan.name,
-            start: calendar.startOfDay(for: plan.startDate),
-            end: calendar.startOfDay(for: plan.endDate),
+            start: calendar.startOfDay(for: plan.startDay),
+            end: calendar.startOfDay(for: plan.endDay),
             goalTitle: plan.goal?.title,
-            goalDate: plan.goal?.targetDate,
+            goalDate: plan.goal?.targetDay,
             phases: plan.sortedPhases.map {
                 Phase(
                     name: $0.kind.displayName,
-                    start: calendar.startOfDay(for: $0.startDate),
-                    end: calendar.startOfDay(for: $0.endDate))
+                    start: calendar.startOfDay(for: $0.startDay),
+                    end: calendar.startOfDay(for: $0.endDay))
             }
         )
-        let byDay = Dictionary(grouping: plan.workouts ?? []) { calendar.startOfDay(for: $0.date) }
+        let byDay = Dictionary(grouping: plan.workouts ?? []) { calendar.startOfDay(for: $0.day) }
         sessions = byDay.mapValues { workouts in
             workouts
                 .sorted(by: PlannedWorkout.inDayOrder)

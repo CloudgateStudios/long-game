@@ -94,7 +94,7 @@ import Testing
         try reconcile()
         #expect(run.status == .missed)
 
-        run.date = day(-2)
+        run.day = day(-2)
         try reconcile()
         #expect(run.matchedWorkout === workout)
         #expect(run.status == .done)

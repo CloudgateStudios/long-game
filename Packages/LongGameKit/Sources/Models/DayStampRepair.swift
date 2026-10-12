@@ -18,21 +18,21 @@ public enum DayStampRepair {
             return CalendarDay.stamp(for: day, calendar: calendar)
         }
         for session in try context.fetch(FetchDescriptor<PlannedWorkout>()) {
-            if let day = repaired(session.day) { session.day = day }
+            if let day = repaired(session.date) { session.date = day }
         }
         for metrics in try context.fetch(FetchDescriptor<DailyMetrics>()) {
-            if let day = repaired(metrics.day) { metrics.day = day }
+            if let day = repaired(metrics.date) { metrics.date = day }
         }
         for phase in try context.fetch(FetchDescriptor<PlanPhase>()) {
-            if let day = repaired(phase.startDay) { phase.startDay = day }
-            if let day = repaired(phase.endDay) { phase.endDay = day }
+            if let day = repaired(phase.startDate) { phase.startDate = day }
+            if let day = repaired(phase.endDate) { phase.endDate = day }
         }
         for plan in try context.fetch(FetchDescriptor<TrainingPlan>()) {
-            if let day = repaired(plan.startDay) { plan.startDay = day }
-            if let day = repaired(plan.endDay) { plan.endDay = day }
+            if let day = repaired(plan.startDate) { plan.startDate = day }
+            if let day = repaired(plan.endDate) { plan.endDate = day }
         }
         for goal in try context.fetch(FetchDescriptor<Goal>()) {
-            if let day = goal.targetDay.flatMap(repaired) { goal.targetDay = day }
+            if let day = goal.targetDate.flatMap(repaired) { goal.targetDate = day }
         }
         return changed
     }

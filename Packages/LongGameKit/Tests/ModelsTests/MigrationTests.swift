@@ -87,7 +87,7 @@ private enum Development {
             for: LongGameStore.schema, migrationPlan: LongGameMigrationPlan.self,
             configurations: [ModelConfiguration(schema: LongGameStore.schema, url: url, cloudKitDatabase: .none)])
         let context = container.mainContext
-        // Renamed fields arrive holding the old local midnights until they are repaired.
+        // The day fields still hold the old local midnights until they are repaired.
         // Two on the plan and one each on the session, the day and the goal. A machine set
         // to UTC has nothing to repair: its midnights are stamps already.
         #expect(try DayStampRepair.run(in: context, calendar: calendar) == (CalendarDay.isStamp(today) ? 0 : 5))
@@ -96,20 +96,20 @@ private enum Development {
 
         let plan = try #require(try context.fetch(FetchDescriptor<Models.TrainingPlan>()).first)
         #expect(plan.name == "Spring")
-        #expect(plan.startDate == day(0))
-        #expect(plan.endDate == day(27))
+        #expect(plan.startDay == day(0))
+        #expect(plan.endDay == day(27))
         let session = try #require(plan.workouts?.first)
-        #expect(session.date == day(3))
-        #expect(CalendarDay.isStamp(session.day))
+        #expect(session.day == day(3))
+        #expect(CalendarDay.isStamp(session.date))
         #expect(session.instructions == "Steady")
         #expect(session.orderInDay == 0)
         #expect(session.brickID == nil)
         let metrics = try #require(try context.fetch(FetchDescriptor<Models.DailyMetrics>()).first)
-        #expect(metrics.date == day(-1))
+        #expect(metrics.day == day(-1))
         #expect(metrics.restingHR == 51)
         let goal = try #require(try context.fetch(FetchDescriptor<Models.Goal>()).first)
         #expect(goal.title == "Half Marathon")
-        #expect(goal.targetDate == day(90))
+        #expect(goal.targetDay == day(90))
     }
 
     @Test func sessionsOnADayFollowTheirOrder() throws {
@@ -138,10 +138,10 @@ private enum Development {
         #expect(bike.isInBrick && run.isInBrick && !swim.isInBrick)
 
         // Moved to another day, the run is on its own again and so is the bike.
-        run.date = Calendar.current.date(byAdding: .day, value: 1, to: .now)!
+        run.day = Calendar.current.date(byAdding: .day, value: 1, to: .now)!
         #expect(!run.isInBrick && !bike.isInBrick)
         run.follow(bike)
-        #expect(run.day == bike.day)
+        #expect(run.date == bike.date)
         #expect(run.isInBrick)
 
         run.follow(nil)

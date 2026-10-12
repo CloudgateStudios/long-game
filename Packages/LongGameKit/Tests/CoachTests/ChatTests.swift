@@ -340,7 +340,7 @@ enum Turn {
         let goals = try context.fetch(FetchDescriptor<Goal>())
         #expect(goals.count == 1)
         #expect(goals.first?.targetMetric == "Under 1:50")
-        #expect(goals.first?.targetDate != nil)
+        #expect(goals.first?.targetDay != nil)
 
         let draft = try #require(try context.fetch(FetchDescriptor<TrainingPlan>()).first)
         #expect(draft.isDraft)

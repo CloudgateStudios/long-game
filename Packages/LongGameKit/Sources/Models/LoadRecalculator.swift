@@ -58,7 +58,7 @@ public enum LoadRecalculator {
             let since = CalendarDay.stamp(
                 for: calendar.date(byAdding: .day, value: -AnalysisConstants.baselineDays, to: now) ?? now,
                 calendar: calendar)
-            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.day >= since }))
+            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= since }))
                 .compactMap(\.restingHR)
             if !recent.isEmpty { resting = recent.reduce(0, +) / Double(recent.count) }
         }

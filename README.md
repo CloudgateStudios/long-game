@@ -87,8 +87,8 @@ first. Then, before the first release and after every later model change:
 2. In the CloudKit Console, compare the Development schema with
    `Packages/LongGameKit/Sources/Models`, then choose Deploy Schema Changes.
 
-If Development still holds a schema from before a field was encrypted or renamed, step 1
-can fail or leave the old fields behind. Reset the Development environment in the Console first. That erases the data
+If Development still holds a schema from before a field was encrypted, step 1 fails with
+"invalid attempt to set value type ENCRYPTED_STRING". Reset the Development environment in the Console first. That erases the data
 CloudKit holds for Development, so do it only when the copy on your devices is one you can
 afford to lose or rebuild.
 

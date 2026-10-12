@@ -8,7 +8,7 @@ extension PlannedWorkout {
     public var session: PlannedSession {
         PlannedSession(
             id: uuid,
-            date: date,
+            date: day,
             sport: sport,
             sessionType: sessionType,
             targetDurationSeconds: targetDurationSeconds,
@@ -56,7 +56,7 @@ public enum PlanReconciler {
     {
         // Sessions in a draft plan are proposals, not commitments.
         let planned = try context.fetch(FetchDescriptor<PlannedWorkout>()).filter { $0.plan?.isDraft != true }
-        guard let first = planned.map(\.date).min(), let last = planned.map(\.date).max() else { return 0 }
+        guard let first = planned.map(\.day).min(), let last = planned.map(\.day).max() else { return 0 }
         let from = first.addingTimeInterval(-2 * 86_400)
         let to = last.addingTimeInterval(3 * 86_400)
         let completed = try context.fetch(
@@ -124,8 +124,8 @@ public enum PlanReconciler {
         session.isManualMatch = false
 
         let reach = Double(AnalysisConstants.matchDayTolerance + 1) * 86_400
-        let from = session.date.addingTimeInterval(-reach)
-        let to = session.date.addingTimeInterval(reach + 86_400)
+        let from = session.day.addingTimeInterval(-reach)
+        let to = session.day.addingTimeInterval(reach + 86_400)
         let sportRaw = session.sportRaw
         let released = try context.fetch(
             FetchDescriptor<CompletedWorkout>(
@@ -147,18 +147,18 @@ public enum PlanReconciler {
     public static func acceptDraft(_ draft: TrainingPlan, in context: ModelContext, calendar: Calendar = .current)
         throws
     {
-        let start = calendar.startOfDay(for: draft.startDate)
+        let start = calendar.startOfDay(for: draft.startDay)
         let dayBefore = calendar.date(byAdding: .day, value: -1, to: start) ?? start
         for plan in try context.fetch(FetchDescriptor<TrainingPlan>()) where plan !== draft && !plan.isDraft {
-            guard calendar.startOfDay(for: plan.endDate) >= start else { continue }
-            for session in plan.workouts ?? [] where calendar.startOfDay(for: session.date) < start {
+            guard calendar.startOfDay(for: plan.endDay) >= start else { continue }
+            for session in plan.workouts ?? [] where calendar.startOfDay(for: session.day) < start {
                 session.plan = draft
             }
-            for phase in plan.phases ?? [] where calendar.startOfDay(for: phase.startDate) < start {
-                if calendar.startOfDay(for: phase.endDate) >= start { phase.endDate = dayBefore }
+            for phase in plan.phases ?? [] where calendar.startOfDay(for: phase.startDay) < start {
+                if calendar.startOfDay(for: phase.endDay) >= start { phase.endDay = dayBefore }
                 phase.plan = draft
             }
-            if plan.startDate < draft.startDate { draft.startDate = plan.startDate }
+            if plan.startDay < draft.startDay { draft.startDay = plan.startDay }
             if draft.goal == nil { draft.goal = plan.goal }
             // What is left on the old plan is exactly what the draft replaces.
             context.delete(plan)

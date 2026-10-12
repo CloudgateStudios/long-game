@@ -51,7 +51,7 @@ struct StructuredWorkoutSection: View {
     private var exportable: ExportableWorkout? {
         guard let structure else { return nil }
         return ExportableWorkout(
-            name: "\(Format.title(of: session)) \(session.date.formatted(.dateTime.day().month(.abbreviated)))",
+            name: "\(Format.title(of: session)) \(session.day.formatted(.dateTime.day().month(.abbreviated)))",
             notes: session.instructions,
             sport: session.sport,
             workout: structure,
@@ -150,7 +150,7 @@ struct StructuredWorkoutSection: View {
         .workoutPreview(watchPlan ?? WorkoutPlan(.goal(.init(activity: .running))), isPresented: $isShowingPreview)
         if WorkoutScheduler.isSupported {
             Button(
-                "Schedule on Apple Watch for \(session.date.formatted(.dateTime.weekday().day().month(.abbreviated)))",
+                "Schedule on Apple Watch for \(session.day.formatted(.dateTime.weekday().day().month(.abbreviated)))",
                 systemImage: "calendar.badge.plus"
             ) {
                 Task { await schedule(exportable) }
@@ -175,7 +175,7 @@ struct StructuredWorkoutSection: View {
     /// Puts the workout in the Workout app's list on the paired watch for the session's day.
     private func schedule(_ exportable: ExportableWorkout) async {
         guard let plan = try? WatchWorkout.plan(for: exportable, id: session.uuid) else { return }
-        var day = Calendar.current.dateComponents([.year, .month, .day], from: session.date)
+        var day = Calendar.current.dateComponents([.year, .month, .day], from: session.day)
         day.hour = WatchSchedule.hour
         isScheduling = true
         watchMessage = "Sending to Apple Watch…"

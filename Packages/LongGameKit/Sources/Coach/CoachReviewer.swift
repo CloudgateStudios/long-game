@@ -120,7 +120,7 @@ public enum SuggestionApplier {
 
     static func summary(of session: PlannedWorkout, calendar: Calendar) -> String {
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
-        var parts = [session.date.formatted(style), "\(session.sessionType.rawValue) \(session.sport.rawValue)"]
+        var parts = [session.day.formatted(style), "\(session.sessionType.rawValue) \(session.sport.rawValue)"]
         if let seconds = session.targetDurationSeconds { parts.append("\(Int((seconds / 60).rounded())) min") }
         return parts.joined(separator: ", ")
     }
@@ -137,7 +137,7 @@ public enum SuggestionApplier {
         case .move:
             guard let session = suggestion.targetWorkout else { throw SuggestionError.sessionGone }
             guard let date = date(from: proposal.date, calendar: calendar) else { throw SuggestionError.incomplete }
-            session.date = date
+            session.day = date
         case .remove:
             guard let session = suggestion.targetWorkout else { throw SuggestionError.sessionGone }
             context.delete(session)
@@ -145,8 +145,8 @@ public enum SuggestionApplier {
             guard let date = date(from: proposal.date, calendar: calendar), let sport = proposal.sport else {
                 throw SuggestionError.incomplete
             }
-            let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDay)]))
-            guard let plan = plans.first(where: { $0.startDate <= date && date <= $0.endDate }) ?? plans.last else {
+            let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)]))
+            guard let plan = plans.first(where: { $0.startDay <= date && date <= $0.endDay }) ?? plans.last else {
                 throw SuggestionError.noPlan
             }
             let session = PlannedWorkout(date: date, sport: sport, sessionType: proposal.sessionType ?? .easy)
@@ -166,7 +166,7 @@ public enum SuggestionApplier {
 
     /// Fields left null in the proposal are left as they are.
     private static func apply(_ proposal: CoachSuggestion, to session: PlannedWorkout, calendar: Calendar) {
-        if let date = date(from: proposal.date, calendar: calendar) { session.date = date }
+        if let date = date(from: proposal.date, calendar: calendar) { session.day = date }
         if let sport = proposal.sport { session.sport = sport }
         if let type = proposal.sessionType { session.sessionType = type }
         if let minutes = proposal.durationMinutes { session.targetDurationSeconds = minutes > 0 ? minutes * 60 : nil }

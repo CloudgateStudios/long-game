@@ -15,7 +15,7 @@ struct PlanGeneratorView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDay) private var goals: [Goal]
+    @Query(sort: \Goal.targetDate) private var goals: [Goal]
     @Query(sort: \AthleteProfile.createdAt) private var profiles: [AthleteProfile]
     @Query(sort: \CompletedWorkout.start, order: .reverse) private var workouts: [CompletedWorkout]
 
@@ -38,7 +38,7 @@ struct PlanGeneratorView: View {
     private var isValid: Bool { startDate <= endDate && hours.contains { $0 > 0 } && !sports.isEmpty }
 
     private var request: PlanRequest {
-        PlanRequest(start: startDate, end: endDate, goalTitle: goal?.title, goalDate: goal?.targetDate)
+        PlanRequest(start: startDate, end: endDate, goalTitle: goal?.title, goalDate: goal?.targetDay)
     }
 
     var body: some View {
@@ -125,7 +125,7 @@ struct PlanGeneratorView: View {
             )
         }
         .onChange(of: goalID) {
-            if let date = goal?.targetDate, date >= startDate { endDate = date }
+            if let date = goal?.targetDay, date >= startDate { endDate = date }
         }
 
         Section {
@@ -232,9 +232,9 @@ struct PlanGeneratorView: View {
         }
         let upcoming =
             activeGoals
-            .filter { ($0.targetDate ?? .distantPast) > startDate }
-            .min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
-        if let upcoming, let date = upcoming.targetDate {
+            .filter { ($0.targetDay ?? .distantPast) > startDate }
+            .min { ($0.priority, $0.targetDay ?? .distantFuture) < ($1.priority, $1.targetDay ?? .distantFuture) }
+        if let upcoming, let date = upcoming.targetDay {
             goalID = upcoming.uuid
             endDate = date
         }
@@ -284,7 +284,7 @@ struct DraftPlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \TrainingPlan.startDay) private var allPlans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDate) private var allPlans: [TrainingPlan]
 
     let draft: TrainingPlan
     /// Called with the plan once it has been accepted.
@@ -300,18 +300,18 @@ struct DraftPlanView: View {
     init(draft: TrainingPlan, onAccept: @escaping (TrainingPlan) -> Void) {
         self.draft = draft
         self.onAccept = onAccept
-        _anchor = State(initialValue: draft.startDate)
+        _anchor = State(initialValue: draft.startDay)
     }
 
     /// Whether accepting would remove sessions from a plan already in use.
     private var replacesExisting: Bool {
-        allPlans.contains { !$0.isDraft && $0.endDate >= draft.startDate }
+        allPlans.contains { !$0.isDraft && $0.endDay >= draft.startDay }
     }
 
     private var totals: String {
         let sessions = draft.workouts ?? []
         let weeks = max(
-            1, ((Calendar.current.dateComponents([.day], from: draft.startDate, to: draft.endDate).day ?? 0) + 1) / 7)
+            1, ((Calendar.current.dateComponents([.day], from: draft.startDay, to: draft.endDay).day ?? 0) + 1) / 7)
         return "\(sessions.count) sessions over \(weeks) weeks"
     }
 
@@ -377,7 +377,7 @@ struct DraftPlanView: View {
             }
         }
         .confirmationDialog(
-            "Replace your current plan from \(draft.startDate.formatted(date: .abbreviated, time: .omitted))?",
+            "Replace your current plan from \(draft.startDay.formatted(date: .abbreviated, time: .omitted))?",
             isPresented: $confirmingAccept,
             titleVisibility: .visible
         ) {
@@ -398,7 +398,7 @@ struct DraftPlanView: View {
             case .newWorkout(let date):
                 PlannedWorkoutEditor(plan: draft, workout: nil, date: date)
             case .editWorkout(let workout):
-                PlannedWorkoutEditor(plan: draft, workout: workout, date: workout.date)
+                PlannedWorkoutEditor(plan: draft, workout: workout, date: workout.day)
             default:
                 EmptyView()
             }

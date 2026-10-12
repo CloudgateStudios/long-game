@@ -179,7 +179,7 @@ struct PlannedWorkoutEditor: View {
             context.insert(target)
             target.plan = plan
         }
-        target.date = Calendar.current.startOfDay(for: date)
+        target.day = Calendar.current.startOfDay(for: date)
         target.sessionType = sessionType
         target.sport = sport
         target.instructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -253,8 +253,8 @@ private struct MatchPicker: View {
 
     init(session: PlannedWorkout) {
         self.session = session
-        let from = session.date.addingTimeInterval(-7 * 86_400)
-        let to = session.date.addingTimeInterval(8 * 86_400)
+        let from = session.day.addingTimeInterval(-7 * 86_400)
+        let to = session.day.addingTimeInterval(8 * 86_400)
         _candidates = Query(
             filter: #Predicate { $0.isPrimary && $0.start >= from && $0.start <= to },
             sort: \CompletedWorkout.start,

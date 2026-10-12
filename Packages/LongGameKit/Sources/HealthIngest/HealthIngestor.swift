@@ -168,9 +168,9 @@ public actor HealthIngestor {
         let stamps = records.map { CalendarDay.stamp(for: $0.date, calendar: calendar) }
         guard let first = stamps.min(), let last = stamps.max() else { return }
         let existing = try modelContext.fetch(
-            FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.day >= first && $0.day <= last })
+            FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= first && $0.date <= last })
         )
-        var byDay = Dictionary(existing.map { ($0.day, $0) }, uniquingKeysWith: { first, _ in first })
+        var byDay = Dictionary(existing.map { ($0.date, $0) }, uniquingKeysWith: { first, _ in first })
 
         for (record, stamp) in zip(records, stamps) {
             let day: DailyMetrics
@@ -178,7 +178,7 @@ public actor HealthIngestor {
                 day = found
             } else {
                 day = DailyMetrics(date: record.date)
-                day.day = stamp
+                day.date = stamp
                 modelContext.insert(day)
                 byDay[stamp] = day
             }
