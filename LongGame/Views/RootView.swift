@@ -20,7 +20,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .today: "sun.max"
         case .plan: "calendar"
         case .log: "list.bullet.rectangle"
-        case .coach: "bubble.left.and.text.bubble.right"
+        case .coach: "text.bubble"
         case .settings: "gearshape"
         }
     }

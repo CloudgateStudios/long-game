@@ -17,13 +17,6 @@ struct PlanMonthView: View {
         let cells = PlanCalendar.monthGrid(containing: anchor, calendar: calendar)
         ScrollView {
             VStack(spacing: 12) {
-                PeriodHeader(
-                    title: anchor.formatted(.dateTime.month(.wide).year()),
-                    subtitle: plan.phase(on: anchor).map { "\($0.kind.displayName) phase" } ?? "",
-                    step: { shift(months: $0) },
-                    today: { withAnimation { anchor = .now } }
-                )
-
                 LazyVGrid(columns: columns, spacing: 4) {
                     ForEach(Array(PlanCalendar.weekdaySymbols(calendar: calendar).enumerated()), id: \.offset) {
                         _, symbol in
@@ -36,6 +29,7 @@ struct PlanMonthView: View {
                                 day: day,
                                 height: cellHeight,
                                 isSelected: calendar.isDate(day, inSameDayAs: anchor),
+                                isAlternatePhase: phaseIndex(on: day).map { !$0.isMultiple(of: 2) },
                                 select: { anchor = day }
                             )
                         } else {
@@ -44,13 +38,54 @@ struct PlanMonthView: View {
                     }
                 }
 
+                let phases = phaseSummary(for: cells.compactMap { $0 })
+                if !phases.isEmpty {
+                    Text(phases)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 selectedDay
             }
             .padding(.horizontal)
-            .padding(.bottom)
+            .padding(.vertical, 12)
             .frame(maxWidth: 900)
             .frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            PeriodHeader(
+                title: anchor.formatted(.dateTime.month(.wide).year()),
+                subtitle: plan.phase(on: anchor).map { "\($0.kind.displayName) phase" } ?? "",
+                step: { shift(months: $0) },
+                today: { withAnimation { anchor = .now } }
+            )
+            .padding(.horizontal)
+            .padding(.bottom, 6)
+            .frame(maxWidth: 900)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+        }
+    }
+
+    private func phaseIndex(on day: Date) -> Int? {
+        guard let phase = plan.phase(on: day) else { return nil }
+        return plan.sortedPhases.firstIndex { $0 === phase }
+    }
+
+    /// Which phases the month on screen runs through, in words, to go with the bands.
+    private func phaseSummary(for days: [Date]) -> String {
+        var seen: [PlanPhase] = []
+        for day in days {
+            if let phase = plan.phase(on: day), !seen.contains(where: { $0 === phase }) { seen.append(phase) }
+        }
+        guard seen.count > 1 else { return "" }
+        return seen.enumerated().map { index, phase in
+            index == 0
+                ? phase.kind.displayName
+                : "\(phase.kind.displayName) from \(phase.startDate.formatted(.dateTime.day().month(.abbreviated)))"
+        }
+        .joined(separator: " · ")
     }
 
     private var selectedDay: some View {
@@ -86,28 +121,50 @@ private struct MonthCell: View {
     let day: Date
     let height: CGFloat
     let isSelected: Bool
+    /// Nil outside any phase; otherwise alternates from one phase to the next so the
+    /// band along the bottom of the cells changes where the phase does.
+    let isAlternatePhase: Bool?
     let select: () -> Void
     @State private var isTargeted = false
 
+    /// One mark for the day's outcome. Nothing while every session is still ahead.
+    private func outcome(of sessions: [PlannedWorkout]) -> (symbol: String, color: Color)? {
+        let statuses = sessions.map(\.status)
+        if statuses.contains(where: { $0 == .missed || $0 == .skipped }) { return ("xmark.circle.fill", .red) }
+        if statuses.contains(.partial) { return ("circle.lefthalf.filled", .orange) }
+        if !statuses.isEmpty, statuses.allSatisfy({ $0 == .done || $0 == .overdone }) {
+            return ("checkmark.circle.fill", .green)
+        }
+        return nil
+    }
+
     var body: some View {
         let workouts = plan.workouts(on: day)
+        let sessions = workouts.filter { !$0.isDayMarker }
+        let marker = workouts.first(where: \.isDayMarker)
         let isToday = Calendar.current.isDateInToday(day)
         Button(action: select) {
             VStack(spacing: 4) {
                 Text(day.formatted(.dateTime.day()))
                     .font(.callout.weight(isToday ? .bold : .regular))
-                    .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
-                HStack(spacing: 2) {
-                    ForEach(workouts.prefix(3)) { workout in
-                        Image(systemName: workout.symbolName)
-                            .font(.caption2)
-                            .imageScale(.small)
-                            .foregroundStyle(workout.status.color)
+                    .foregroundStyle(isToday ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                    .padding(.horizontal, 5)
+                    .background {
+                        if isToday { Capsule().fill(.tint) }
                     }
-                    if workouts.count > 3 {
+                // Color says which sport; the mark in the corner says how the day went.
+                HStack(spacing: 3) {
+                    ForEach(sessions.prefix(3)) { workout in
+                        Circle().fill(workout.tintColor).frame(width: 6, height: 6)
+                    }
+                    if sessions.count > 3 {
                         Text("+").font(.caption2)
                     }
+                    if sessions.isEmpty, let marker {
+                        Image(systemName: marker.symbolName).font(.caption2).imageScale(.small)
+                    }
                 }
+                .frame(height: 8)
                 .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
@@ -116,6 +173,25 @@ private struct MonthCell: View {
                 isSelected ? AnyShapeStyle(.tint.opacity(0.18)) : AnyShapeStyle(.cardBackground),
                 in: .rect(cornerRadius: 10)
             )
+            .overlay(alignment: .topTrailing) {
+                if let outcome = outcome(of: sessions) {
+                    Image(systemName: outcome.symbol)
+                        .font(.system(size: 9))
+                        .foregroundStyle(outcome.color)
+                        .padding(4)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let isAlternatePhase {
+                    Rectangle()
+                        .fill(
+                            isAlternatePhase
+                                ? AnyShapeStyle(.tint.opacity(0.55)) : AnyShapeStyle(.secondary.opacity(0.35))
+                        )
+                        .frame(height: 3)
+                }
+            }
+            .clipShape(.rect(cornerRadius: 10))
             .overlay {
                 if isTargeted {
                     RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)

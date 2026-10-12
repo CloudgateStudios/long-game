@@ -49,7 +49,8 @@ targets:
         LGCloudKitEnvironment: $(LG_ICLOUD_ENVIRONMENT)
         NSHealthShareUsageDescription: Long Game reads your workouts and recovery data to compare them with your training plan. It never writes to Health.
         UIBackgroundModes: [remote-notification]
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
     settings:
