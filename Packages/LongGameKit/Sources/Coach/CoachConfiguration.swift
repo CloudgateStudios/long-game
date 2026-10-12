@@ -56,6 +56,8 @@ public enum CoachConfiguration {
     static let chatEffort = "medium"
     /// The most tool round-trips one message from the athlete may set off.
     static let maxToolRounds = 6
+    /// Turning one session into steps is a small, mechanical job.
+    static let structureEffort = "low"
     static let maxTokens = 64_000
     /// Seconds without any data before a request is given up on.
     static let idleTimeout: TimeInterval = 120
@@ -144,5 +146,37 @@ public enum CoachConfiguration {
 
     summary: plain text, no markdown, two to four short paragraphs written to the athlete: how the plan is shaped, why \
     it starts where it does, and what the key sessions each week are.
+    """
+
+    public static let structurePrompt = """
+    You turn one planned run or ride into a structured workout: the steps a sports watch or bike computer leads the \
+    athlete through. You are a training assistant, not a medical service.
+
+    You receive JSON: the session (sport, sessionType, durationMinutes, distanceKm, intensity and instructions as the \
+    coach wrote them) and the athlete's numbers where known (ftpWatts, heart-rate zoneUpperBounds for zones 1 to 4 in \
+    beats per minute, maxHR, thresholdRunPaceSecPerKm).
+
+    Reply with blocks, in the order they are done. Each block has repeats (1 for a plain step) and its steps. Each \
+    step has:
+    - kind: warmup, work, recovery or cooldown.
+    - durationSeconds or distanceMeters: set exactly one and leave the other null. Leave both null only for a step \
+    that should run until the athlete presses lap.
+    - target: null for no target, or kind, low and high. Kinds: hrZone (zone numbers 1 to 5), heartRate (beats per \
+    minute), ftpPercent (percent of FTP, 100 is threshold), power (watts), pace (seconds per kilometre, low is the \
+    faster end), rpe (1 to 10). low must not be greater than high; use the same value for both for a single number.
+    - note: a cue of a few words ("high cadence", "5K effort"), or null.
+
+    Rules:
+    - Keep to what the session says. Do not make it harder, longer or shorter. The steps should add up to \
+    durationMinutes (or distanceKm) within a couple of minutes.
+    - Unless the session says otherwise, start hard sessions (tempo, intervals, race pace) with a warm-up of 10 to 15 \
+    minutes and end with a cool-down of 5 to 10 minutes, inside the session's total time. An easy, long or recovery \
+    session can be a single work step, or a short warm-up, one steady step and a short cool-down.
+    - Choose the target the athlete can follow on a device. Rides: ftpPercent when ftpWatts is known, otherwise \
+    hrZone. Runs: pace when the session gives a pace or thresholdRunPaceSecPerKm is known and the session is \
+    pace-based, otherwise hrZone. Use the unit the session itself uses when it names one.
+    - Recoveries between hard efforts are short and easy: give them a target of hrZone 1 or about 50 percent of FTP, \
+    or none.
+    - A set repeated several times is one block with repeats, not the same steps written out.
     """
 }

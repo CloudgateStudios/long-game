@@ -44,11 +44,34 @@ enum SamplePlan {
                     targetDurationSeconds: minutes * 60,
                     targetIntensity: intensity
                 )
+                session.structure = sampleStructure(sport, type)
                 context.insert(session)
                 session.plan = plan
             }
         }
         try? context.save()
+    }
+
+    /// Steps for the sample plan's two hard sessions, so sending a workout to a watch or
+    /// exporting a file can be tried without asking the coach.
+    private static func sampleStructure(_ sport: Sport, _ type: SessionType) -> StructuredWorkout? {
+        typealias Step = StructuredWorkout.Step
+        switch (sport, type) {
+        case (.run, .intervals):
+            return StructuredWorkout(blocks: [
+                .init(steps: [Step(.warmup, seconds: 720, target: .init(.hrZone, 2))]),
+                .init(repeats: 6, steps: [Step(.work, seconds: 180, target: .init(.hrZone, 4), note: "hard but even"), Step(.recovery, seconds: 120, target: .init(.hrZone, 1))]),
+                .init(steps: [Step(.cooldown, seconds: 180, target: .init(.hrZone, 1))]),
+            ])
+        case (.bike, .tempo):
+            return StructuredWorkout(blocks: [
+                .init(steps: [Step(.warmup, seconds: 600, target: .init(.ftpPercent, 50, 70))]),
+                .init(repeats: 3, steps: [Step(.work, seconds: 600, target: .init(.ftpPercent, 83, 90)), Step(.recovery, seconds: 240, target: .init(.ftpPercent, 55))]),
+                .init(steps: [Step(.cooldown, seconds: 480, target: .init(.ftpPercent, 45, 55))]),
+            ])
+        default:
+            return nil
+        }
     }
 
     /// A canned review so the suggestion screens have something to show without an API

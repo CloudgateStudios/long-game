@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "Models", targets: ["Models"]),
         .library(name: "HealthIngest", targets: ["HealthIngest"]),
         .library(name: "Coach", targets: ["Coach"]),
+        .library(name: "WorkoutExport", targets: ["WorkoutExport"]),
     ],
     targets: [
         // Pure Swift (Foundation only). Domain value types and all deterministic rules.
@@ -22,9 +23,12 @@ let package = Package(
             resources: [.process("Fixtures")]
         ),
         .target(name: "Coach", dependencies: ["Analysis", "Models"]),
+        // Structured workouts as files (FIT, ZWO, MRC, ERG, Wahoo) and as WorkoutKit plans.
+        .target(name: "WorkoutExport", dependencies: ["Analysis"]),
         .testTarget(name: "AnalysisTests", dependencies: ["Analysis"]),
         .testTarget(name: "ModelsTests", dependencies: ["Models"]),
         .testTarget(name: "HealthIngestTests", dependencies: ["HealthIngest", "Models"]),
+        .testTarget(name: "WorkoutExportTests", dependencies: ["WorkoutExport", "Analysis"]),
         .testTarget(name: "CoachTests", dependencies: ["Coach", "Models", "Analysis", "HealthIngest"]),
     ],
     swiftLanguageModes: [.v6]

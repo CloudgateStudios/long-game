@@ -1,4 +1,5 @@
 import Analysis
+import Coach
 import Models
 import SwiftData
 import SwiftUI
@@ -85,6 +86,10 @@ struct PlannedWorkoutEditor: View {
                 Section(sport == .strength && !isRest ? "Exercises and sets" : "Instructions") {
                     TextField("Notes for this session", text: $instructions, axis: .vertical)
                         .lineLimit(3...10)
+                }
+
+                if let workout, WorkoutStructurer.canStructure(workout) {
+                    StructuredWorkoutSection(session: workout)
                 }
 
                 if let workout, !workout.isRest, !plan.isDraft {

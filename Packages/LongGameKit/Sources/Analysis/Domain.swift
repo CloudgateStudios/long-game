@@ -119,5 +119,5 @@ public enum ConversationKind: String, Codable, Sendable, CaseIterable {
 }
 
 public enum CoachChargeKind: String, Codable, Sendable, CaseIterable {
-    case review, planGeneration, conversation
+    case review, planGeneration, conversation, workoutStructure
 }

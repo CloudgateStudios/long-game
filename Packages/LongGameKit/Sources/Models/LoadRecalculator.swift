@@ -27,6 +27,11 @@ public struct ResolvedZones: Sendable, Equatable {
         self.isOverridden = isOverridden
         self.ftpWatts = ftpWatts
     }
+
+    /// The athlete's numbers in the form structured workouts are exported against.
+    public var thresholds: TrainingThresholds {
+        TrainingThresholds(ftpWatts: ftpWatts, hrZoneUpperBounds: bounds, maxHR: maxHR)
+    }
 }
 
 /// Works out zone times and training load for every completed workout and stores them,

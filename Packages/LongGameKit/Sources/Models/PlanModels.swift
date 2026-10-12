@@ -153,6 +153,9 @@ public final class PlannedWorkout {
     /// Free text. Strength sessions hold exercises and sets here in v1; a structured
     /// child model can be added later as a new optional relationship.
     public var instructions: String = ""
+    /// A run or ride as steps for a watch or bike computer, stored as JSON. Nil for a
+    /// session described only in words.
+    public var structureJSON: String?
     public var statusRaw: String = PlannedStatus.planned.rawValue
     public var isManualMatch: Bool = false
     public var createdAt: Date = Date()
@@ -194,5 +197,19 @@ public final class PlannedWorkout {
     public var status: PlannedStatus {
         get { PlannedStatus(rawValue: statusRaw) ?? .planned }
         set { statusRaw = newValue.rawValue }
+    }
+
+    public var structure: StructuredWorkout? {
+        get {
+            guard let structureJSON, let workout = try? JSONDecoder().decode(StructuredWorkout.self, from: Data(structureJSON.utf8)) else { return nil }
+            return workout.isEmpty ? nil : workout
+        }
+        set {
+            guard let workout = newValue?.normalized(), !workout.isEmpty, let data = try? JSONEncoder().encode(workout) else {
+                structureJSON = nil
+                return
+            }
+            structureJSON = String(decoding: data, as: UTF8.self)
+        }
     }
 }
