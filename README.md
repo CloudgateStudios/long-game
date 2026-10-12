@@ -71,6 +71,35 @@ Development environment by default; `LG_ICLOUD_ENVIRONMENT` in `Config/Shared.xc
 switches to Production, which needs the schema deployed from the CloudKit Console first.
 All your devices must use the same environment to see the same data.
 
+## TestFlight
+
+Releases go to TestFlight through Xcode Cloud, which signs the builds itself, so no
+certificates or keys are kept in this repository. The workflow is set up in Xcode or App
+Store Connect, not in a file here. The one piece in the repository is
+`ci_scripts/ci_post_clone.sh`, which writes `Config/Local.xcconfig` on the build machine
+from the workflow's environment variables.
+
+One-time setup:
+
+1. Create the app in App Store Connect with your bundle identifier, for iOS and macOS.
+2. Add an internal testing group and install TestFlight on each device.
+3. Create a `release` branch. It marks what is on your devices: move it forward when you
+   want to ship.
+4. In Xcode, choose Integrate > Create Workflow and connect the repository. Give the
+   workflow:
+   - Environment variables `DEVELOPMENT_TEAM`, `LG_BUNDLE_ID` and `LG_ICLOUD_CONTAINER`,
+     with the same values as your `Local.xcconfig`. Mark them as secret.
+   - Start conditions on the `release` branch: on every change, and on a weekly schedule.
+   - An Archive action for iOS and another for macOS, each with TestFlight (Internal
+     Testing Only) distribution.
+   - A TestFlight Internal Testing post-action for each archive, sent to your group.
+
+TestFlight builds expire after 90 days. The weekly schedule rebuilds `release` so every
+device always has a live build, without shipping unreleased work from `main`.
+
+These builds use CloudKit Production. Deploy the schema from the CloudKit Console before
+the first release and again before moving `release` past a data model change.
+
 ## Project layout
 
 ```
