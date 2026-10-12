@@ -5,8 +5,12 @@ import SwiftData
 import SwiftUI
 
 struct ReviewDetailView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(AppEnvironment.self) private var environment
     let review: CoachReview
     @State private var renaming: NamedSession?
+
+    private var pending: [PlanSuggestion] { suggestions.filter { $0.status == .pending } }
 
     private var suggestions: [PlanSuggestion] {
         (review.suggestions ?? []).sorted { $0.createdAt < $1.createdAt }
@@ -36,14 +40,19 @@ struct ReviewDetailView: View {
                 }
             }
 
-            if suggestions.isEmpty {
-                Section("Suggestions") {
+            Section {
+                if suggestions.isEmpty {
                     Text("No changes suggested.").foregroundStyle(.secondary)
                 }
-            } else {
-                ForEach(Array(suggestions.enumerated()), id: \.element.uuid) { index, suggestion in
-                    Section(index == 0 ? "Suggestions" : "") {
-                        SuggestionCard(suggestion: suggestion)
+                ForEach(suggestions, id: \.uuid) { suggestion in
+                    SuggestionCard(suggestion: suggestion)
+                }
+            } header: {
+                HStack {
+                    Text("Suggestions")
+                    Spacer()
+                    if !suggestions.isEmpty {
+                        Text("\(suggestions.count - pending.count) of \(suggestions.count) decided")
                     }
                 }
             }
@@ -69,6 +78,20 @@ struct ReviewDetailView: View {
             }
         }
         .readableWidth()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if pending.count > 1 {
+                Button(action: acceptAll) {
+                    Text("Accept All \(pending.count) Remaining").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .frame(maxWidth: 760)
+                .frame(maxWidth: .infinity)
+                .background(.bar)
+            }
+        }
         .navigationTitle(review.displayTitle)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -79,6 +102,19 @@ struct ReviewDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+}
+
+extension ReviewDetailView {
+    /// Applies every suggestion still pending. One that can no longer be applied is left
+    /// pending, where its own Accept explains why.
+    fileprivate func acceptAll() {
+        withAnimation {
+            for suggestion in pending {
+                try? SuggestionApplier.accept(suggestion, in: context)
+            }
+        }
+        environment.reconcilePlan()
     }
 }
 
@@ -100,21 +136,35 @@ struct SuggestionCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        if suggestion.status == .pending {
+            pendingCard
+        } else {
+            // Decided: one line is enough to say what it was and which way it went.
             HStack(alignment: .firstTextBaseline) {
                 Label(headline, systemImage: symbol)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                if suggestion.status != .pending {
-                    Text(suggestion.status == .accepted ? "Accepted" : "Rejected")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(suggestion.status == .accepted ? .green : .secondary)
-                }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 8)
+                Chip(
+                    text: suggestion.status == .accepted ? "Accepted" : "Rejected",
+                    tint: suggestion.status == .accepted ? .green : .secondary)
             }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private var pendingCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(headline, systemImage: symbol)
+                .font(.subheadline.weight(.semibold))
+
+            // The reason comes first: it is the argument, the rows below are the detail.
+            Text(suggestion.rationale).font(.subheadline)
 
             if suggestion.action == .remove {
-                Text(target).strikethrough().foregroundStyle(.secondary)
-            } else {
+                Text(target).font(.subheadline).strikethrough().foregroundStyle(.secondary)
+            } else if !rows.isEmpty {
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
                     ForEach(rows) { row in
                         GridRow(alignment: .firstTextBaseline) {
@@ -131,24 +181,26 @@ struct SuggestionCard: View {
                 .font(.subheadline)
             }
 
-            Text(suggestion.rationale).font(.subheadline).foregroundStyle(.secondary)
-
             if let failure {
                 Label(failure, systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
 
-            if suggestion.status == .pending {
-                HStack {
-                    Button("Accept", action: accept)
-                        .buttonStyle(.borderedProminent)
-                    Button("Reject") {
-                        try? SuggestionApplier.reject(suggestion, in: context)
-                    }
-                    .buttonStyle(.bordered)
+            HStack(spacing: 10) {
+                Button {
+                    withAnimation { try? SuggestionApplier.reject(suggestion, in: context) }
+                } label: {
+                    Text("Reject").frame(maxWidth: .infinity)
                 }
-                .controlSize(.small)
+                .buttonStyle(.bordered)
+                .tint(.secondary)
+                Button {
+                    withAnimation { accept() }
+                } label: {
+                    Text("Accept").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
         .padding(.vertical, 4)
@@ -196,7 +248,8 @@ struct SuggestionCard: View {
         let sport = proposal.sport ?? current?.sport ?? .run
         var rows: [Row] = []
         func add(_ field: String, before: String?, after: String?) {
-            guard let after else { return }
+            // A field the coach restated without changing is not a change.
+            guard let after, suggestion.action == .add || before != after else { return }
             rows.append(Row(field: field, before: suggestion.action == .add ? nil : before, after: after))
         }
         add(

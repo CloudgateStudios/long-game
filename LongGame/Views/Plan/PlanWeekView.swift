@@ -20,7 +20,23 @@ struct PlanWeekView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
+            // One column on a phone; side by side where there is room.
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading,
+                spacing: 12
+            ) {
+                ForEach(days, id: \.self) { day in
+                    DayCard(plan: plan, day: day, sheet: $sheet)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: 1280)
+            .frame(maxWidth: .infinity)
+        }
+        // The week and its progress stay put while the days scroll underneath.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 8) {
                 PeriodHeader(
                     title: title,
                     subtitle: subtitle,
@@ -29,28 +45,21 @@ struct PlanWeekView: View {
                 )
                 // A draft has not been trained against, so it has no compliance to show.
                 if !plan.isDraft {
-                    WeekComplianceCard(compliance: plan.compliance(on: days))
-                }
-                // One column on a phone; side by side where there is room.
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading,
-                    spacing: 12
-                ) {
-                    ForEach(days, id: \.self) { day in
-                        DayCard(plan: plan, day: day, sheet: $sheet)
-                    }
+                    WeekComplianceSummary(compliance: plan.compliance(on: days))
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom)
+            .padding(.bottom, 10)
             .frame(maxWidth: 1280)
             .frame(maxWidth: .infinity)
+            .background(.bar)
         }
     }
 
+    /// The phase of the selected day, which is also what the month view names.
     private var subtitle: String {
         var parts: [String] = []
-        if let phase = days.first.flatMap({ plan.phase(on: $0) }) { parts.append("\(phase.kind.displayName) phase") }
+        if let phase = plan.phase(on: anchor) { parts.append("\(phase.kind.displayName) phase") }
         if plannedSeconds > 0 { parts.append("\(Format.duration(plannedSeconds)) planned") }
         return parts.joined(separator: " · ")
     }
@@ -68,12 +77,13 @@ private struct DayCard: View {
     @State private var isTargeted = false
 
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
+    private var isPast: Bool { day < Calendar.current.startOfDay(for: .now) }
 
     var body: some View {
         let workouts = plan.workouts(on: day)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(day.formatted(.dateTime.weekday(.wide).day()))
+                Text(isToday ? "Today · \(dayTitle)" : dayTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 Spacer()
@@ -88,9 +98,13 @@ private struct DayCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.cardBackground, in: .rect(cornerRadius: 16))
+        // Days already behind step back so the eye lands on today and what is ahead.
+        .opacity(isPast && !plan.isDraft ? 0.72 : 1)
         .overlay {
             if isTargeted {
                 RoundedRectangle(cornerRadius: 16).strokeBorder(.tint, lineWidth: 2)
+            } else if isToday {
+                RoundedRectangle(cornerRadius: 16).strokeBorder(.tint.opacity(0.7), lineWidth: 1.5)
             }
         }
         .dropDestination(for: String.self) { ids, _ in
@@ -99,42 +113,35 @@ private struct DayCard: View {
             isTargeted = $0
         }
     }
+
+    private var dayTitle: String { day.formatted(.dateTime.weekday(.wide).day()) }
 }
 
-/// Sessions done and planned load achieved for the week on screen.
-private struct WeekComplianceCard: View {
+/// Sessions done and planned load achieved for the week on screen, as one bar and a line.
+struct WeekComplianceSummary: View {
     let compliance: WeekCompliance
 
     var body: some View {
         if compliance.planned > 0 {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(compliance.completed) of \(compliance.planned) sessions done")
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    if let fraction = compliance.loadFraction {
-                        Text("\(Format.percent(fraction)) of planned load")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                if let fraction = compliance.loadFraction {
-                    ProgressView(value: min(fraction, 1))
-                        .accessibilityHidden(true)
-                }
-                let details = [
-                    compliance.partial > 0 ? "\(compliance.partial) partly done" : nil,
-                    compliance.missed > 0 ? "\(compliance.missed) missed" : nil,
-                    compliance.upcoming > 0 ? "\(compliance.upcoming) to go" : nil,
-                ].compactMap { $0 }
-                if !details.isEmpty {
-                    Text(details.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 5) {
+                ProgressView(value: min(compliance.loadFraction ?? fractionDone, 1))
+                    .accessibilityHidden(true)
+                Text(details.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
             }
-            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.cardBackground, in: .rect(cornerRadius: 16))
+            .accessibilityElement(children: .combine)
         }
+    }
+
+    private var fractionDone: Double { Double(compliance.completed) / Double(max(compliance.planned, 1)) }
+
+    private var details: [String] {
+        [
+            "\(compliance.completed) of \(compliance.planned) done",
+            compliance.loadFraction.map { "\(Format.percent($0)) of planned load" },
+            compliance.partial > 0 ? "\(compliance.partial) partly done" : nil,
+            compliance.missed > 0 ? "\(compliance.missed) missed" : nil,
+        ].compactMap { $0 }
     }
 }
 

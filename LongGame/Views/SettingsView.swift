@@ -19,12 +19,11 @@ struct SettingsView: View {
             }
 
             CoachSettingsSection()
-            SpendingSection()
             ReminderSection()
 
             Section("Sync") {
                 switch environment.storeKind {
-                case .cloudKit(let containerID):
+                case .cloudKit:
                     LabeledContent("iCloud", value: "On")
                     if environment.iCloudAccountAvailable == false {
                         Label(
@@ -34,8 +33,6 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     }
-                    LabeledContent("Container", value: containerID)
-                    LabeledContent("Environment", value: cloudEnvironmentText)
                     LabeledContent("Status") {
                         HStack(spacing: 8) {
                             if environment.isImportingFromICloud || environment.isExportingToICloud {
@@ -113,14 +110,23 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Stored") {
-                LabeledContent("Goals", value: goals.count.formatted())
-                LabeledContent("Workouts", value: workouts.count.formatted())
-                LabeledContent("Days of metrics", value: days.count.formatted())
+            Section {
+                NavigationLink("Advanced") {
+                    AdvancedSettingsView(
+                        containerID: containerID, cloudEnvironment: cloudEnvironmentText, goals: goals.count,
+                        workouts: workouts.count, days: days.count)
+                }
+            } footer: {
+                Text("What is stored on this device and which iCloud container it syncs with.")
             }
         }
         .formStyle(.grouped)
         .readableWidth()
+    }
+
+    private var containerID: String? {
+        if case .cloudKit(let containerID) = environment.storeKind { return containerID }
+        return nil
     }
 
     private var sourceText: String {
@@ -205,6 +211,7 @@ private struct CoachSettingsSection: View {
                     Text(model.name).tag(model.id)
                 }
             }
+            SpendingRow()
         } header: {
             Text("Coach")
         } footer: {
@@ -270,26 +277,80 @@ private struct ReminderSection: View {
 }
 
 /// What the coach has cost so far, from the record kept of every API call.
-private struct SpendingSection: View {
+private struct SpendingView: View {
     @Query private var charges: [CoachCharge]
 
     var body: some View {
         let summary = SpendSummary(charges.map(\.spendEntry), now: .now, calendar: .current)
-        Section {
-            LabeledContent("Total", value: money(summary.total))
-            LabeledContent("This month", value: money(summary.thisMonth))
-            LabeledContent("This week", value: money(summary.thisWeek))
-            LabeledContent("Average per session", value: summary.averagePerSession.map(money) ?? "–")
-        } header: {
-            Text("Coach spending")
-        } footer: {
-            Text(
-                "\(summary.sessions) coaching session\(summary.sessions == 1 ? "" : "s") so far. A session is one review, one generated plan or one whole conversation. Weeks run Sunday to Saturday. These are estimates from token counts at list prices; the Anthropic Console has the billed amounts."
-            )
+        Form {
+            Section {
+                LabeledContent("Total", value: SpendSummary.money(summary.total))
+                LabeledContent("This month", value: SpendSummary.money(summary.thisMonth))
+                LabeledContent("This week", value: SpendSummary.money(summary.thisWeek))
+                LabeledContent(
+                    "Average per session", value: summary.averagePerSession.map(SpendSummary.money) ?? "–")
+            } footer: {
+                Text(
+                    "\(summary.sessions) coaching session\(summary.sessions == 1 ? "" : "s") so far. A session is one review, one generated plan or one whole conversation. Weeks run Sunday to Saturday. These are estimates from token counts at list prices; the Anthropic Console has the billed amounts."
+                )
+            }
+        }
+        .formStyle(.grouped)
+        .readableWidth()
+        .navigationTitle("Coach Spending")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+}
+
+/// This month's coach spending on one row, with the breakdown behind it.
+private struct SpendingRow: View {
+    @Query private var charges: [CoachCharge]
+
+    var body: some View {
+        let summary = SpendSummary(charges.map(\.spendEntry), now: .now, calendar: .current)
+        NavigationLink {
+            SpendingView()
+        } label: {
+            LabeledContent("Spending this month", value: SpendSummary.money(summary.thisMonth))
         }
     }
+}
 
-    private func money(_ value: Double) -> String {
+extension SpendSummary {
+    fileprivate static func money(_ value: Double) -> String {
         value.formatted(.currency(code: "USD").precision(.fractionLength(2)))
+    }
+}
+
+/// Diagnostics: where the data syncs to and how much of it there is.
+private struct AdvancedSettingsView: View {
+    let containerID: String?
+    let cloudEnvironment: String
+    let goals: Int
+    let workouts: Int
+    let days: Int
+
+    var body: some View {
+        Form {
+            if let containerID {
+                Section("iCloud") {
+                    LabeledContent("Container", value: containerID)
+                    LabeledContent("Environment", value: cloudEnvironment)
+                }
+            }
+            Section("Stored") {
+                LabeledContent("Goals", value: goals.formatted())
+                LabeledContent("Workouts", value: workouts.formatted())
+                LabeledContent("Days of metrics", value: days.formatted())
+            }
+        }
+        .formStyle(.grouped)
+        .readableWidth()
+        .navigationTitle("Advanced")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

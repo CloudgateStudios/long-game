@@ -43,48 +43,73 @@ struct WorkoutDetailView: View {
                 header
             }
 
-            Section("Summary") {
-                LabeledContent("Duration", value: Format.duration(workout.durationSeconds))
-                if let distance = workout.distanceMeters {
-                    LabeledContent("Distance", value: Format.distance(distance, sport: distanceSport))
+            Section {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 14) {
+                    StatTile(title: "Time", value: Format.duration(workout.durationSeconds))
+                    if let distance = workout.distanceMeters {
+                        StatTile(title: "Distance", value: Format.distance(distance, sport: distanceSport))
+                    }
+                    if let pace = Format.pace(of: workout) {
+                        StatTile(title: workout.sport == .bike ? "Speed" : "Pace", value: pace)
+                    }
+                    if let load = workout.load {
+                        StatTile(
+                            title: "Training load", value: Format.load(load),
+                            caption: workout.confidence == .estimated ? "estimated" : nil)
+                    }
                 }
-                if let pace = Format.pace(of: workout) {
-                    LabeledContent(workout.sport == .bike ? "Average speed" : "Average pace", value: pace)
-                }
-                if let energy = workout.activeEnergyKcal {
-                    LabeledContent(
-                        "Active energy", value: "\(energy.formatted(.number.precision(.fractionLength(0)))) kcal")
-                }
-                if let effort = workout.effortScore {
-                    LabeledContent(
-                        "Effort", value: "\(effort.formatted(.number.precision(.fractionLength(0...1)))) / 10")
-                }
-                if let load = workout.load {
-                    LabeledContent(
-                        "Training load",
-                        value: workout.confidence == .estimated ? "\(Format.load(load)) (estimated)" : Format.load(load)
-                    )
-                }
+                .padding(.vertical, 6)
             }
 
-            if workout.averageHR != nil || workout.maxHR != nil {
-                Section("Heart rate") {
-                    if let average = workout.averageHR {
-                        LabeledContent("Average", value: Format.heartRate(average))
-                    }
-                    if let max = workout.maxHR {
-                        LabeledContent("Maximum", value: Format.heartRate(max))
-                    }
-                    if let zones = workout.zoneSeconds, zones.contains(where: { $0 > 0 }) {
-                        ForEach(Array(zones.enumerated()), id: \.offset) { index, seconds in
-                            LabeledContent("Zone \(index + 1)", value: Format.duration(seconds))
+            if let planned = workout.plannedWorkout {
+                Section("Planned session") {
+                    NavigationLink {
+                        PlannedWorkoutDetailView(workout: planned)
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(Format.title(of: planned))
+                                let targets = Format.targets(of: planned)
+                                if !targets.isEmpty {
+                                    Text(targets).font(.subheadline).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: 8)
+                            StatusChip(workout: planned)
                         }
                     }
                 }
             }
 
-            if workout.averagePowerWatts != nil || workout.averageCadence != nil {
-                Section(workout.sport == .bike ? "Power and cadence" : "Cadence") {
+            if workout.averageHR != nil || workout.maxHR != nil {
+                Section("Heart rate") {
+                    HStack(alignment: .top) {
+                        if let average = workout.averageHR {
+                            StatTile(title: "Average", value: Format.heartRate(average))
+                        }
+                        if let max = workout.maxHR {
+                            StatTile(title: "Maximum", value: Format.heartRate(max))
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    if let zones = workout.zoneSeconds, zones.contains(where: { $0 > 0 }) {
+                        ZoneBar(seconds: zones)
+                    }
+                }
+            }
+
+            if workout.activeEnergyKcal != nil || workout.effortScore != nil || workout.averagePowerWatts != nil
+                || workout.averageCadence != nil
+            {
+                Section("More") {
+                    if let energy = workout.activeEnergyKcal {
+                        LabeledContent(
+                            "Active energy", value: "\(energy.formatted(.number.precision(.fractionLength(0)))) kcal")
+                    }
+                    if let effort = workout.effortScore {
+                        LabeledContent(
+                            "Effort", value: "\(effort.formatted(.number.precision(.fractionLength(0...1)))) / 10")
+                    }
                     if let power = workout.averagePowerWatts {
                         LabeledContent(
                             "Average power", value: "\(power.formatted(.number.precision(.fractionLength(0)))) W")
@@ -94,28 +119,6 @@ struct WorkoutDetailView: View {
                         LabeledContent(
                             "Average cadence",
                             value: "\(cadence.formatted(.number.precision(.fractionLength(0)))) \(unit)")
-                    }
-                }
-            }
-
-            if let planned = workout.plannedWorkout {
-                Section("Planned session") {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Format.title(of: planned))
-                        let targets = Format.targets(of: planned)
-                        if !targets.isEmpty {
-                            Text(targets).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }
-                    if let symbol = planned.status.symbolName {
-                        LabeledContent {
-                            if let ratio = planned.complianceRatio {
-                                Text("\(Format.percent(ratio)) of target")
-                            }
-                        } label: {
-                            Label(planned.status.label, systemImage: symbol)
-                                .foregroundStyle(planned.status.color)
-                        }
                     }
                 }
             }
@@ -203,7 +206,7 @@ struct WorkoutDetailView: View {
         HStack(spacing: 14) {
             Image(systemName: workout.sport.symbolName)
                 .font(.title)
-                .foregroundStyle(.tint)
+                .foregroundStyle(workout.sport.chartColor)
                 .frame(width: 44)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {

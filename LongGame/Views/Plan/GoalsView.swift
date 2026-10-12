@@ -133,6 +133,8 @@ private struct GoalEditor: View {
                 Picker("Status", selection: $status) {
                     ForEach(GoalStatus.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                 }
+            } footer: {
+                Text("A is the goal your training is built around. B and C goals are fitted in around it.")
             }
 
             if type == .event {

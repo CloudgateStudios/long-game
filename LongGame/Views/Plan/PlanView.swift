@@ -41,6 +41,8 @@ struct PlanView: View {
     @State private var anchor = Date()
     @State private var sheet: PlanSheet?
     @State private var exporting: TrainingPlan?
+    /// The draft whose banner was put off; it stays reachable from the options menu.
+    @AppStorage("dismissedDraftID") private var dismissedDraftID = ""
 
     private var plans: [TrainingPlan] { allPlans.filter { !$0.isDraft } }
     private var draft: TrainingPlan? { allPlans.first(where: \.isDraft) }
@@ -56,17 +58,11 @@ struct PlanView: View {
         Group {
             if let plan {
                 VStack(spacing: 0) {
-                    if let draft {
-                        DraftBanner(draft: draft) { reviewingDraft = draft }
+                    if let draft, draft.uuid.uuidString != dismissedDraftID {
+                        DraftBanner(
+                            review: { reviewingDraft = draft },
+                            later: { withAnimation { dismissedDraftID = draft.uuid.uuidString } })
                     }
-                    Picker("View", selection: $mode) {
-                        ForEach(PlanMode.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-
                     switch mode {
                     case .week: PlanWeekView(plan: plan, anchor: $anchor, sheet: $sheet)
                     case .month: PlanMonthView(plan: plan, anchor: $anchor, sheet: $sheet)
@@ -96,12 +92,36 @@ struct PlanView: View {
                 }
             }
         }
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
+            if plan != nil {
+                ToolbarItem(placement: .principal) {
+                    Picker("View", selection: $mode) {
+                        ForEach(PlanMode.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(maxWidth: 220)
+                }
+            }
+            if let plan {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu("Add to \(anchor.formatted(.dateTime.weekday(.wide).day()))", systemImage: "plus") {
+                        Button("Session", systemImage: "figure.run") { sheet = .newWorkout(anchor) }
+                        DayMarkerButtons(plan: plan, day: anchor)
+                    } primaryAction: {
+                        sheet = .newWorkout(anchor)
+                    }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu("Plan Options", systemImage: "ellipsis.circle") {
+                    if let draft {
+                        Button("Review Draft Plan", systemImage: "sparkles") { reviewingDraft = draft }
+                    }
                     if let plan {
-                        Button("Add Session", systemImage: "plus") { sheet = .newWorkout(anchor) }
-                        DayMarkerButtons(plan: plan, day: anchor)
                         Button("Edit Plan", systemImage: "pencil") { sheet = .editPlan(plan) }
                         ShareLink(
                             item: PlanCalendarDocument(plan: plan),
@@ -173,22 +193,33 @@ struct PlanView: View {
 }
 
 private struct DraftBanner: View {
-    let draft: TrainingPlan
     let review: () -> Void
+    let later: () -> Void
 
     var body: some View {
-        Button(action: review) {
-            HStack {
-                Label("Draft plan ready to review", systemImage: "sparkles")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+        HStack(spacing: 4) {
+            Button(action: review) {
+                HStack {
+                    Label("Draft plan ready to review", systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                }
+                .contentShape(.rect)
             }
-            .padding(12)
-            .background(.tint.opacity(0.15), in: .rect(cornerRadius: 12))
-            .contentShape(.rect)
+            .buttonStyle(.plain)
+            Button("Later", systemImage: "xmark", action: later)
+                .labelStyle(.iconOnly)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+                .frame(minWidth: 32, minHeight: 32)
+                .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .padding(.leading, 12)
+        .padding(.trailing, 4)
+        .padding(.vertical, 6)
+        .background(.tint.opacity(0.15), in: .rect(cornerRadius: 12))
         .padding(.horizontal)
         .padding(.top, 8)
     }
@@ -229,53 +260,38 @@ extension PlanView {
     }
 }
 
-/// One planned session; tap to edit, drag or use the menu to move it.
+/// One planned session; tap to open it, drag or use the menu to move it. A rest or flex
+/// day has nothing to read, so it opens straight in the editor.
 struct PlannedWorkoutRow: View {
     @Environment(\.modelContext) private var context
     let workout: PlannedWorkout
     @Binding var sheet: PlanSheet?
 
     var body: some View {
-        Button {
-            sheet = .editWorkout(workout)
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: workout.symbolName)
-                    .foregroundStyle(.tint)
-                    .frame(width: 28)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Format.title(of: workout)).foregroundStyle(.primary)
-                    let targets = Format.targets(of: workout)
-                    if !targets.isEmpty {
-                        Text(targets).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    if let structure = workout.structure {
-                        WorkoutProfileChart(segments: structure.profile(sport: workout.sport), isCompact: true)
-                            .frame(maxWidth: 220)
-                            .padding(.top, 2)
-                    }
+        Group {
+            if workout.isDayMarker {
+                Button {
+                    sheet = .editWorkout(workout)
+                } label: {
+                    label
                 }
-                Spacer(minLength: 0)
-                if let symbol = workout.status.symbolName {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Image(systemName: symbol).foregroundStyle(workout.status.color)
-                        if let ratio = workout.complianceRatio {
-                            Text(Format.percent(ratio)).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(statusDescription)
+            } else {
+                NavigationLink {
+                    PlannedWorkoutDetailView(workout: workout)
+                } label: {
+                    label
                 }
             }
-            .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .draggable(workout.uuid.uuidString)
         .contextMenu {
             Button("Edit", systemImage: "pencil") { sheet = .editWorkout(workout) }
-            Button("Move to Previous Day", systemImage: "arrow.up") { move(by: -1) }
-            Button("Move to Next Day", systemImage: "arrow.down") { move(by: 1) }
-            Button("Duplicate to Next Week", systemImage: "plus.square.on.square") { duplicate(daysLater: 7) }
+            Button("Move to Previous Day", systemImage: "arrow.up") { workout.move(byDays: -1) }
+            Button("Move to Next Day", systemImage: "arrow.down") { workout.move(byDays: 1) }
+            Button("Duplicate to Next Week", systemImage: "plus.square.on.square") {
+                workout.duplicate(daysLater: 7)
+            }
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) {
                 context.delete(workout)
@@ -284,31 +300,27 @@ struct PlannedWorkoutRow: View {
         }
     }
 
-    private var statusDescription: String {
-        guard let ratio = workout.complianceRatio else { return workout.status.label }
-        return "\(workout.status.label), \(Format.percent(ratio)) of target"
-    }
-
-    private func move(by days: Int) {
-        guard let date = Calendar.current.date(byAdding: .day, value: days, to: workout.date) else { return }
-        withAnimation { workout.date = date }
-        try? context.save()
-    }
-
-    private func duplicate(daysLater days: Int) {
-        guard let date = Calendar.current.date(byAdding: .day, value: days, to: workout.date) else { return }
-        let copy = PlannedWorkout(
-            date: date,
-            sport: workout.sport,
-            sessionType: workout.sessionType,
-            targetDurationSeconds: workout.targetDurationSeconds,
-            targetDistanceMeters: workout.targetDistanceMeters,
-            targetIntensity: workout.targetIntensity,
-            instructions: workout.instructions
-        )
-        context.insert(copy)
-        copy.plan = workout.plan
-        try? context.save()
+    private var label: some View {
+        HStack(spacing: 12) {
+            Image(systemName: workout.symbolName)
+                .foregroundStyle(workout.tintColor)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Format.title(of: workout)).foregroundStyle(.primary)
+                let targets = Format.targets(of: workout)
+                if !targets.isEmpty {
+                    Text(targets).font(.subheadline).foregroundStyle(.secondary)
+                }
+                if let structure = workout.structure {
+                    WorkoutProfileChart(segments: structure.profile(sport: workout.sport), isCompact: true)
+                        .frame(maxWidth: 220)
+                        .padding(.top, 2)
+                }
+            }
+            Spacer(minLength: 0)
+            StatusChip(workout: workout)
+        }
+        .contentShape(.rect)
     }
 }
 

@@ -22,47 +22,99 @@ struct CoachView: View {
     @State private var exportText: String?
     @State private var previewJSON: String?
     @State private var didCopy = false
+    @SceneStorage("selectedSection") private var selection: AppSection = .coach
 
     private var coach: CoachSession { environment.coach }
     private var planID: UUID? { UUID(uuidString: selectedPlanID) }
 
+    /// The newest review still waiting on decisions.
+    private var undecided: (review: CoachReview, count: Int)? {
+        for review in reviews {
+            let count = (review.suggestions ?? []).filter { $0.status == .pending }.count
+            if count > 0 { return (review, count) }
+        }
+        return nil
+    }
+
+    /// Reviews and conversations together, newest first.
+    private var history: [HistoryItem] {
+        let items =
+            reviews.map(HistoryItem.review)
+            + conversations.filter { $0.messagesJSON != "[]" }.map(HistoryItem.conversation)
+        return items.sorted { $0.date > $1.date }
+    }
+
     var body: some View {
         List {
+            if let undecided {
+                Section {
+                    NavigationLink {
+                        ReviewDetailView(review: undecided.review)
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(undecided.count) suggestion\(undecided.count == 1 ? "" : "s") to decide")
+                                    .font(.headline)
+                                Text(undecided.review.displayTitle).font(.subheadline).foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "checklist")
+                        }
+                    }
+                    .listRowBackground(Color.accentColor.opacity(0.15))
+                }
+            }
+
             Section {
-                Button {
-                    Task { await run(.onDemand) }
-                } label: {
-                    Label(coach.isRunning ? "Reviewing…" : "Review My Training", systemImage: "sparkles")
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Weekly review").font(.headline)
+                        Text(
+                            coach.hasKey
+                                ? "Looks at your last four weeks of training and recovery and suggests changes to the sessions ahead."
+                                : "Reviews here need an Anthropic API key. Without one, Copy for Claude gives you the same data and prompt to paste into the Claude app."
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    }
+                    if coach.hasKey {
+                        Button {
+                            Task { await run(.onDemand) }
+                        } label: {
+                            Label(coach.isRunning ? "Reviewing…" : "Review My Training", systemImage: "sparkles")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(coach.isRunning)
+                    } else {
+                        Button {
+                            selection = .settings
+                        } label: {
+                            Label("Add API Key in Settings", systemImage: "key").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        Button(action: copyForClaude) {
+                            Label(
+                                didCopy ? "Copied" : "Copy for Claude",
+                                systemImage: didCopy ? "checkmark" : "doc.on.doc"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Button(action: startConversation) {
+                        Label("Talk to the Coach", systemImage: "bubble.left.and.text.bubble.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!coach.canChat)
                 }
-                .disabled(!coach.hasKey || coach.isRunning)
-
-                Button {
-                    let conversation = CoachConversation(kind: .discussion)
-                    context.insert(conversation)
-                    openConversation = conversation
-                } label: {
-                    Label("Talk to the Coach", systemImage: "bubble.left.and.text.bubble.right")
-                }
-                .disabled(!coach.canChat)
-
-                Button {
-                    copyForClaude()
-                } label: {
-                    Label(didCopy ? "Copied" : "Copy for Claude", systemImage: didCopy ? "checkmark" : "doc.on.doc")
-                }
-                Button {
-                    previewJSON = try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, planID: planID).json
-                } label: {
-                    Label("See What Will Be Sent", systemImage: "eye")
-                }
+                .controlSize(.large)
+                .padding(.vertical, 6)
             } footer: {
-                if !coach.hasKey {
+                if didCopy {
                     Text(
-                        "Add an Anthropic API key in Settings to run reviews here. Copy for Claude needs no key: it copies the same data and prompt for you to paste into the Claude app."
-                    )
-                } else if didCopy {
-                    Text(
-                        "Paste it into a new chat in the Claude app. Suggestions from there are applied to the plan by hand."
+                        "Copied. Paste it into a new chat in the Claude app. Suggestions from there are applied to the plan by hand."
                     )
                 }
             }
@@ -104,66 +156,52 @@ struct CoachView: View {
                 }
             }
 
-            if reviews.isEmpty, conversations.allSatisfy({ $0.messagesJSON == "[]" }), coach.state == .idle {
+            if history.isEmpty, coach.state == .idle {
                 Section {
                     ContentUnavailableView(
                         "No reviews yet",
                         systemImage: "bubble.left.and.text.bubble.right",
-                        description: Text(
-                            "A review looks at your last four weeks of training and recovery and suggests changes to the sessions ahead. Or talk to the coach to ask questions and say what needs to change."
-                        )
+                        description: Text("Reviews and conversations with the coach are kept here.")
                     )
                 }
-            }
-
-            if conversations.contains(where: { $0.messagesJSON != "[]" }) {
-                Section("Conversations") {
-                    ForEach(conversations.filter { $0.messagesJSON != "[]" }) { conversation in
+            } else if !history.isEmpty {
+                Section("History") {
+                    ForEach(history) { item in
                         NavigationLink {
-                            CoachChatView(conversation: conversation)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(conversation.title.isEmpty ? "Conversation" : conversation.title).lineLimit(2)
-                                Text(
-                                    "\(conversation.kind == .interview ? "Plan interview" : "Discussion") · \(conversation.updatedAt.formatted(.dateTime.weekday().day().month()))"
-                                )
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            switch item {
+                            case .review(let review): ReviewDetailView(review: review)
+                            case .conversation(let conversation): CoachChatView(conversation: conversation)
                             }
+                        } label: {
+                            HistoryRow(item: item)
                         }
                         .contextMenu {
-                            Button("Rename", systemImage: "pencil") { renaming = .conversation(conversation) }
+                            Button("Rename", systemImage: "pencil") { renaming = item.named }
                         }
                         .swipeActions(edge: .leading) {
-                            Button("Rename", systemImage: "pencil") { renaming = .conversation(conversation) }
+                            Button("Rename", systemImage: "pencil") { renaming = item.named }
                         }
                     }
                     .onDelete { offsets in
-                        let shown = conversations.filter { $0.messagesJSON != "[]" }
-                        for index in offsets { context.delete(shown[index]) }
+                        let shown = history
+                        for index in offsets {
+                            switch shown[index] {
+                            case .review(let review): context.delete(review)
+                            case .conversation(let conversation): context.delete(conversation)
+                            }
+                        }
                         environment.saveChanges()
                     }
                 }
             }
-
-            if !reviews.isEmpty {
-                Section("Reviews") {
-                    ForEach(reviews) { review in
-                        NavigationLink {
-                            ReviewDetailView(review: review)
-                        } label: {
-                            ReviewRow(review: review)
-                        }
-                        .contextMenu {
-                            Button("Rename", systemImage: "pencil") { renaming = .review(review) }
-                        }
-                        .swipeActions(edge: .leading) {
-                            Button("Rename", systemImage: "pencil") { renaming = .review(review) }
-                        }
-                    }
-                    .onDelete { offsets in
-                        for index in offsets { context.delete(reviews[index]) }
-                        environment.saveChanges()
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu("Coach Options", systemImage: "ellipsis.circle") {
+                    Button(didCopy ? "Copied" : "Copy for Claude", systemImage: "doc.on.doc", action: copyForClaude)
+                    Button("See What Will Be Sent", systemImage: "eye") {
+                        previewJSON =
+                            try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, planID: planID).json
                     }
                 }
             }
@@ -208,6 +246,12 @@ struct CoachView: View {
         }
     }
 
+    private func startConversation() {
+        let conversation = CoachConversation(kind: .discussion)
+        context.insert(conversation)
+        openConversation = conversation
+    }
+
     private func run(_ trigger: ReviewTrigger) async {
         opened = await coach.run(trigger, planID: planID, in: context)
     }
@@ -241,35 +285,65 @@ private struct IdentifiedText: Identifiable {
     var id: Int { text.hashValue }
 }
 
-private struct ReviewRow: View {
-    let review: CoachReview
+/// A review or a conversation, so both can sit in one dated list.
+private enum HistoryItem: Identifiable {
+    case review(CoachReview)
+    case conversation(CoachConversation)
+
+    var id: UUID { named.id }
+
+    var date: Date {
+        switch self {
+        case .review(let review): review.date
+        case .conversation(let conversation): conversation.updatedAt
+        }
+    }
+
+    var named: NamedSession {
+        switch self {
+        case .review(let review): .review(review)
+        case .conversation(let conversation): .conversation(conversation)
+        }
+    }
+}
+
+private struct HistoryRow: View {
+    let item: HistoryItem
+
+    private var title: String {
+        switch item {
+        case .review(let review): review.displayTitle
+        case .conversation(let conversation): conversation.title.isEmpty ? "Conversation" : conversation.title
+        }
+    }
+
+    private var kind: String {
+        switch item {
+        case .review: "Review"
+        case .conversation(let conversation): conversation.kind == .interview ? "Plan interview" : "Conversation"
+        }
+    }
 
     private var pending: Int {
-        (review.suggestions ?? []).filter { $0.status == .pending }.count
+        guard case .review(let review) = item else { return 0 }
+        return (review.suggestions ?? []).filter { $0.status == .pending }.count
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
-                Text(review.displayTitle).lineLimit(2)
+                Text(title).lineLimit(2)
                 Spacer()
                 if pending > 0 {
-                    Text("\(pending) to decide")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(.tint.opacity(0.18), in: .capsule)
+                    Chip(text: "\(pending) to decide", tint: .accentColor, isFilled: true)
                 }
             }
-            // A named review still says when it was; an unnamed one is already listed by date.
-            Text(
-                review.title.isEmpty
-                    ? review.assessment
-                    : "\(review.date.formatted(.dateTime.weekday().day().month())) · \(review.assessment)"
-            )
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
+            Text("\(kind) · \(item.date.formatted(.dateTime.weekday().day().month()))")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if case .review(let review) = item {
+                Text(review.assessment).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+            }
         }
     }
 }

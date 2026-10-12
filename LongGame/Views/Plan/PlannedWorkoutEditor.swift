@@ -88,7 +88,10 @@ struct PlannedWorkoutEditor: View {
                                 }
                             }
                         }
-                        TextField("Intensity (zone or description)", text: $intensity)
+                        LabeledContent("Intensity") {
+                            TextField("Zone or description", text: $intensity)
+                                .multilineTextAlignment(.trailing)
+                        }
                     }
                 }
 
@@ -98,14 +101,6 @@ struct PlannedWorkoutEditor: View {
                         axis: .vertical
                     )
                     .lineLimit(3...10)
-                }
-
-                if let workout, WorkoutStructurer.canStructure(workout) {
-                    StructuredWorkoutSection(session: workout)
-                }
-
-                if let workout, !workout.isDayMarker, !plan.isDraft {
-                    MatchSection(session: workout)
                 }
 
                 if let workout {
@@ -184,28 +179,15 @@ struct PlannedWorkoutEditor: View {
     }
 }
 
-/// Shows what a session was matched to and lets the user override it. Changes here apply
-/// straight away rather than waiting for Save.
-private struct MatchSection: View {
+/// Shows what a session was matched to and lets the user override it.
+struct MatchSection: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     let session: PlannedWorkout
 
     var body: some View {
         Section {
-            if let matched = session.matchedWorkout {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(matched.displayName)
-                        Spacer()
-                        if let symbol = session.status.symbolName {
-                            Label(session.status.label, systemImage: symbol)
-                                .font(.subheadline)
-                                .foregroundStyle(session.status.color)
-                        }
-                    }
-                    Text(summary(of: matched)).font(.subheadline).foregroundStyle(.secondary)
-                }
+            if session.matchedWorkout != nil {
                 NavigationLink("Choose a Different Workout") { MatchPicker(session: session) }
                 Button("Remove Match") {
                     PlanReconciler.unmatch(session)
@@ -226,20 +208,12 @@ private struct MatchSection: View {
                 }
             }
         } header: {
-            Text("Completed workout")
+            Text("Match")
         } footer: {
             if session.isManualMatch {
                 Text("You set this by hand, so automatic matching leaves it alone.")
             }
         }
-    }
-
-    private func summary(of workout: CompletedWorkout) -> String {
-        var parts = [
-            workout.start.formatted(.dateTime.weekday().day().month()), Format.duration(workout.durationSeconds),
-        ]
-        if let ratio = session.complianceRatio { parts.append("\(Format.percent(ratio)) of target") }
-        return parts.joined(separator: " · ")
     }
 }
 

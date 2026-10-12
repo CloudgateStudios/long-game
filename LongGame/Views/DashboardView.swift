@@ -9,6 +9,9 @@ struct DashboardView: View {
     @Query(sort: \CompletedWorkout.start, order: .reverse) private var workouts: [CompletedWorkout]
     @Query(sort: \DailyMetrics.date) private var days: [DailyMetrics]
     @Query(sort: \PlannedWorkout.createdAt) private var planned: [PlannedWorkout]
+    @Query(sort: \TrainingPlan.startDate) private var plans: [TrainingPlan]
+    @SceneStorage("selectedSection") private var selection: AppSection = .today
+    @State private var isShowingGoals = false
 
     private static let trendDays = 42
     private static let weeklyChartWeeks = 8
@@ -26,6 +29,21 @@ struct DashboardView: View {
         goals
             .filter { $0.status == .active && ($0.targetDate ?? .distantPast) >= today }
             .sorted { ($0.targetDate ?? .distantFuture, $0.priority) < ($1.targetDate ?? .distantFuture, $1.priority) }
+    }
+
+    /// The goal the header names: the highest priority still ahead, soonest first among equals.
+    private var headlineGoal: Goal? {
+        upcomingGoals.min {
+            ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture)
+        }
+    }
+
+    /// The plan in use today, if there is one.
+    private var currentPlan: TrainingPlan? {
+        plans.first {
+            !$0.isDraft && calendar.startOfDay(for: $0.startDate) <= today
+                && today <= calendar.startOfDay(for: $0.endDate)
+        }
     }
 
     private var lastSevenDays: [CompletedWorkout] {
@@ -73,30 +91,14 @@ struct DashboardView: View {
                 }
             }
 
-            if !upcomingGoals.isEmpty {
-                Section(upcomingGoals.count == 1 ? "Next goal" : "Goals") {
-                    ForEach(upcomingGoals) { goal in
-                        GoalCountdownRow(goal: goal)
+            if let goal = headlineGoal {
+                Section {
+                    Button {
+                        isShowingGoals = true
+                    } label: {
+                        GoalHeadline(goal: goal, others: upcomingGoals.count - 1)
                     }
-                }
-            }
-
-            if !plannedToday.isEmpty {
-                Section("Planned today") {
-                    ForEach(plannedToday) { workout in
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(Format.title(of: workout))
-                                let targets = Format.targets(of: workout)
-                                if !targets.isEmpty {
-                                    Text(targets).font(.subheadline).foregroundStyle(.secondary)
-                                }
-                            }
-                        } icon: {
-                            Image(systemName: workout.symbolName)
-                        }
-                        .badge(workout.status == .planned ? nil : Text(workout.status.label))
-                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -115,11 +117,51 @@ struct DashboardView: View {
                 }
             }
 
+            if !plannedToday.isEmpty || currentPlan != nil {
+                Section {
+                    if plannedToday.isEmpty {
+                        Label("Nothing planned today", systemImage: "calendar")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(plannedToday) { workout in
+                        if workout.isDayMarker {
+                            TodaySessionCard(workout: workout)
+                        } else {
+                            NavigationLink {
+                                PlannedWorkoutDetailView(workout: workout)
+                            } label: {
+                                TodaySessionCard(workout: workout)
+                            }
+                        }
+                    }
+                } header: {
+                    Text(todayHeader)
+                }
+            }
+
+            if let plan = currentPlan {
+                let week = PlanCalendar.weekDays(containing: today, calendar: calendar)
+                let compliance = plan.compliance(on: week)
+                if compliance.planned > 0 {
+                    Section {
+                        Button {
+                            selection = .plan
+                        } label: {
+                            WeekStrip(plan: plan, days: week)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens the plan")
+                    } header: {
+                        Text("This week · \(compliance.completed) of \(compliance.planned) done")
+                    }
+                }
+            }
+
             if loadDays.contains(where: { $0.total > 0 }) {
                 loadSection(loadDays)
             }
 
-            Section("Last 7 days") {
+            Section {
                 if workouts.isEmpty, let waiting = waitingText {
                     // The banner says what is happening; this says what to expect.
                     HStack(spacing: 12) {
@@ -127,40 +169,43 @@ struct DashboardView: View {
                         Text(waiting).foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
-                } else if lastSevenDays.isEmpty {
+                } else if workouts.isEmpty {
                     Text(
-                        environment.healthSource == nil && workouts.isEmpty
+                        environment.healthSource == nil
                             ? "No workouts yet. They arrive from your iPhone through iCloud."
-                            : "No workouts in the last 7 days."
+                            : "No workouts yet."
                     )
                     .foregroundStyle(.secondary)
                 } else {
-                    sportTable
-                }
-            }
-
-            // Recovery signals are optional: a denied Health permission just leaves them empty.
-            if !hrv.isEmpty || !restingHR.isEmpty || !sleep.isEmpty {
-                Section {
-                    if !hrv.isEmpty {
-                        RecoveryChart(title: "HRV", points: hrv) { "\(Format.load($0)) ms" }
+                    NavigationLink {
+                        TrendsView(
+                            weeks: WeekLoad.weeks(from: loadDays, calendar: calendar),
+                            lastSevenDays: lastSevenDays, hrv: hrv, restingHR: restingHR, sleep: sleep)
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Trends")
+                                Text("Load by sport, the last 7 days, recovery")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "chart.xyaxis.line")
+                        }
                     }
-                    if !restingHR.isEmpty {
-                        RecoveryChart(title: "Resting heart rate", points: restingHR, format: Format.heartRate)
-                    }
-                    if !sleep.isEmpty {
-                        RecoveryChart(title: "Sleep (hours)", points: sleep, axisDivisor: 3600, format: Format.duration)
-                    }
-                } header: {
-                    Text("Recovery · last 4 weeks")
-                } footer: {
-                    Text(
-                        "The shaded band is your normal range: the average of the previous 28 days, give or take one standard deviation. Diamonds mark days on the wrong side of it."
-                    )
                 }
             }
         }
+        .sheet(isPresented: $isShowingGoals) {
+            UpcomingGoalsSheet(goals: upcomingGoals)
+        }
         .readableWidth(820)
+    }
+
+    private var todayHeader: String {
+        var parts = [today.formatted(.dateTime.weekday(.wide).day().month(.wide))]
+        if let phase = currentPlan?.phase(on: today) { parts.append("\(phase.kind.displayName) phase") }
+        return parts.joined(separator: " · ")
     }
 
     /// What an empty dashboard is waiting on, if anything is actually in progress.
@@ -218,10 +263,6 @@ struct DashboardView: View {
                 "Load is minutes weighted by heart-rate zone, or by power for rides when FTP is set. The ratio compares the last 7 days with the last 28; \(Format.ratio(AnalysisConstants.loadRatioRange.lowerBound))–\(Format.ratio(AnalysisConstants.loadRatioRange.upperBound)) is the steady range."
             )
         }
-
-        Section("Weekly load by sport") {
-            WeeklyLoadChart(weeks: WeekLoad.weeks(from: loadDays, calendar: calendar))
-        }
     }
 
     private func ratioCaption(_ day: LoadDay?) -> String {
@@ -229,46 +270,6 @@ struct DashboardView: View {
         if ratio > AnalysisConstants.loadRatioRange.upperBound { return "ramping fast" }
         if ratio < AnalysisConstants.loadRatioRange.lowerBound { return "dropping" }
         return "steady"
-    }
-
-    /// The numbers behind the charts, by sport, so nothing depends on telling colors apart.
-    private var sportTable: some View {
-        Grid(alignment: .trailing, horizontalSpacing: 16, verticalSpacing: 10) {
-            GridRow {
-                Text("Sport").gridColumnAlignment(.leading)
-                Text("Sessions")
-                Text("Time")
-                Text("Load")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            ForEach(Sport.allCases) { sport in
-                let matching = lastSevenDays.filter { $0.sport == sport }
-                if !matching.isEmpty {
-                    GridRow {
-                        Label {
-                            Text(sport.displayName)
-                        } icon: {
-                            Image(systemName: sport.symbolName).foregroundStyle(sport.chartColor)
-                        }
-                        Text(matching.count.formatted())
-                        Text(Format.duration(matching.reduce(0) { $0 + $1.durationSeconds }))
-                        Text(Format.load(matching.reduce(0) { $0 + ($1.load ?? 0) }))
-                    }
-                    .monospacedDigit()
-                }
-            }
-            Divider()
-            GridRow {
-                Text("Total").gridColumnAlignment(.leading)
-                Text(lastSevenDays.count.formatted())
-                Text(Format.duration(lastSevenDays.reduce(0) { $0 + $1.durationSeconds }))
-                Text(Format.load(lastSevenDays.reduce(0) { $0 + ($1.load ?? 0) }))
-            }
-            .fontWeight(.semibold)
-            .monospacedDigit()
-        }
-        .padding(.vertical, 4)
     }
 
     // MARK: Flags
@@ -307,30 +308,61 @@ struct DashboardView: View {
     }
 }
 
-/// A headline number with a label, used in place of a chart for a single value.
-private struct StatTile: View {
-    let title: String
-    let value: String
-    var caption: String?
-    var isFlagged = false
+/// The goal the athlete is building toward, on one line. Tapping it lists every goal ahead.
+private struct GoalHeadline: View {
+    let goal: Goal
+    let others: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title2.weight(.semibold)).monospacedDigit()
-            if let caption {
-                HStack(spacing: 3) {
-                    if isFlagged {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    }
-                    Text(caption)
+        HStack(spacing: 10) {
+            Image(systemName: "flag.checkered").foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(goal.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                if others > 0 {
+                    Text("and \(others) more goal\(others == 1 ? "" : "s")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            if let days = goal.daysAway {
+                Text("\(days) day\(days == 1 ? "" : "s")")
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Shows all your goals")
+    }
+}
+
+/// Every goal still ahead with its countdown.
+private struct UpcomingGoalsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let goals: [Goal]
+
+    var body: some View {
+        NavigationStack {
+            List(goals) { goal in
+                GoalCountdownRow(goal: goal)
+            }
+            .navigationTitle("Goals")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        .presentationDetents([.medium, .large])
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 360)
+        #endif
     }
 }
 
@@ -341,14 +373,18 @@ private struct GoalCountdownRow: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(goal.title).font(.headline)
-                if let date = goal.targetDate {
-                    Text(date.formatted(date: .long, time: .omitted))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("\(goal.priority.rawValue) goal")
+                    if let date = goal.targetDate {
+                        Text("·")
+                        Text(date.formatted(date: .long, time: .omitted))
+                    }
                 }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
             Spacer()
-            if let date = goal.targetDate, let days = daysUntil(date) {
+            if let days = goal.daysAway {
                 VStack(alignment: .trailing) {
                     Text(days.formatted()).font(.title.bold()).monospacedDigit()
                     Text(days == 1 ? "day" : "days").font(.caption).foregroundStyle(.secondary)
@@ -357,10 +393,111 @@ private struct GoalCountdownRow: View {
             }
         }
     }
+}
 
-    private func daysUntil(_ date: Date) -> Int? {
+extension Goal {
+    fileprivate var daysAway: Int? {
+        guard let targetDate else { return nil }
         let calendar = Calendar.current
-        return calendar.dateComponents([.day], from: calendar.startOfDay(for: .now), to: calendar.startOfDay(for: date))
-            .day
+        return calendar.dateComponents(
+            [.day], from: calendar.startOfDay(for: .now), to: calendar.startOfDay(for: targetDate)
+        ).day
+    }
+}
+
+/// One of today's sessions, given room: what it asks for, its shape, and how it went.
+private struct TodaySessionCard: View {
+    let workout: PlannedWorkout
+
+    private var summary: String {
+        let targets = Format.targets(of: workout)
+        guard let matched = workout.matchedWorkout, let seconds = workout.targetDurationSeconds else {
+            return targets
+        }
+        var parts = ["\(Format.duration(seconds)) planned", "\(Format.duration(matched.durationSeconds)) done"]
+        if !workout.targetIntensity.isEmpty { parts.append(workout.targetIntensity) }
+        return parts.joined(separator: " · ")
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: workout.symbolName)
+                .font(.title3)
+                .foregroundStyle(workout.tintColor)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(Format.title(of: workout)).font(.headline)
+                    Spacer(minLength: 8)
+                    StatusChip(workout: workout)
+                }
+                if !summary.isEmpty {
+                    Text(summary).font(.subheadline).foregroundStyle(.secondary)
+                }
+                if let structure = workout.structure {
+                    WorkoutProfileChart(segments: structure.profile(sport: workout.sport), isCompact: true)
+                        .frame(maxWidth: 260)
+                        .padding(.top, 2)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// The week at a glance: one column per day, a mark for how each day went.
+private struct WeekStrip: View {
+    let plan: TrainingPlan
+    let days: [Date]
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(days, id: \.self) { day in
+                let isToday = Calendar.current.isDateInToday(day)
+                VStack(spacing: 6) {
+                    Text(day.formatted(.dateTime.weekday(.narrow)))
+                        .font(.caption.weight(isToday ? .bold : .regular))
+                        .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                    mark(for: day)
+                        .frame(width: 18, height: 18)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background {
+                    if isToday { RoundedRectangle(cornerRadius: 8).fill(.tint.opacity(0.12)) }
+                }
+            }
+        }
+        .contentShape(.rect)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("This week")
+        .accessibilityValue(days.map(description).joined(separator: "; "))
+    }
+
+    private func sessions(on day: Date) -> [PlannedWorkout] {
+        plan.workouts(on: day).filter { !$0.isDayMarker }
+    }
+
+    @ViewBuilder
+    private func mark(for day: Date) -> some View {
+        let statuses = sessions(on: day).map(\.status)
+        if statuses.isEmpty {
+            Image(systemName: "minus").foregroundStyle(.tertiary)
+        } else if statuses.contains(where: { $0 == .missed || $0 == .skipped }) {
+            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+        } else if statuses.contains(.partial) {
+            Image(systemName: "circle.lefthalf.filled").foregroundStyle(.orange)
+        } else if statuses.allSatisfy({ $0 == .done || $0 == .overdone }) {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+        } else {
+            Image(systemName: "circle").foregroundStyle(.secondary)
+        }
+    }
+
+    private func description(of day: Date) -> String {
+        let sessions = sessions(on: day)
+        let name = day.formatted(.dateTime.weekday(.wide))
+        guard !sessions.isEmpty else { return "\(name), nothing planned" }
+        return "\(name), " + sessions.map { "\(Format.title(of: $0)) \($0.status.label)" }.joined(separator: ", ")
     }
 }
