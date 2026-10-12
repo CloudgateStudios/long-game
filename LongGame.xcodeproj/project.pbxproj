@@ -23,6 +23,7 @@
 		44CDEDBB4CA9568407BAC6C7 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185246C72324A0D0F93AC26F /* AppEnvironment.swift */; };
 		52B9918F9288CC779E568CDC /* WorkoutProfileChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836861BA8B571563F7B326D1 /* WorkoutProfileChart.swift */; };
 		6626A015D23DE06E00F543F3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F62AFDDD75F245B74A3393B /* SettingsView.swift */; };
+		6C9D1EA5C280CDBF922A8B70 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0F1C42C63A84D5BF7504A457 /* AppIcon.icon */; };
 		6EBAD1B9E76C3FA595B40349 /* RenameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18870476A674F7CEBD6F037C /* RenameSession.swift */; };
 		7167F7838671847B26FDA3C0 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B6673A8F71752F2E6722AC /* LogView.swift */; };
 		72DA303520248F34EC677643 /* ActivityBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92764D4F6D41A665BEC824BE /* ActivityBanner.swift */; };
@@ -53,6 +54,7 @@
 		04608E5E9FB71AFCF65D8D26 /* StructuredWorkoutSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StructuredWorkoutSection.swift; sourceTree = "<group>"; };
 		0B0D1FC1899A2A618FA91A96 /* PlanCalendarPDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanCalendarPDF.swift; sourceTree = "<group>"; };
 		0C52C40DD64B608C45C91954 /* LongGameKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LongGameKit; path = Packages/LongGameKit; sourceTree = SOURCE_ROOT; };
+		0F1C42C63A84D5BF7504A457 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		13F4516297160BB2276CF9CF /* PlanMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanMonthView.swift; sourceTree = "<group>"; };
 		14494458368FDB59FEF94181 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		185246C72324A0D0F93AC26F /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
@@ -220,6 +222,7 @@
 		F7C91DA87417B702E156333B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				0F1C42C63A84D5BF7504A457 /* AppIcon.icon */,
 				9DB48346358AD922DA94D16D /* Assets.xcassets */,
 				867C8749329B60A2E519E801 /* Info.plist */,
 			);
@@ -295,6 +298,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6C9D1EA5C280CDBF922A8B70 /* AppIcon.icon in Resources */,
 				BE4E18E19EB382B011E497FD /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
