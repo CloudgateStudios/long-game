@@ -24,6 +24,8 @@
 	<false/>
 	<key>LGCloudKitContainer</key>
 	<string>$(LG_ICLOUD_CONTAINER)</string>
+	<key>LGCloudKitEnvironment</key>
+	<string>$(LG_ICLOUD_ENVIRONMENT)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSHealthShareUsageDescription</key>

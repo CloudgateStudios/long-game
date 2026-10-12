@@ -230,6 +230,11 @@ struct PlannedWorkoutRow: View {
                     if !targets.isEmpty {
                         Text(targets).font(.subheadline).foregroundStyle(.secondary)
                     }
+                    if let structure = workout.structure {
+                        WorkoutProfileChart(segments: structure.profile(sport: workout.sport), isCompact: true)
+                            .frame(maxWidth: 220)
+                            .padding(.top, 2)
+                    }
                 }
                 Spacer(minLength: 0)
                 if let symbol = workout.status.symbolName {

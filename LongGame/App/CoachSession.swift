@@ -37,6 +37,7 @@ final class CoachSession {
     private let keyStore: any APIKeyStore
     private let reviewer = CoachReviewer()
     private let planner = CoachPlanner()
+    private let structurer = WorkoutStructurer()
     private let liveChat = CoachChat()
     /// In sample-data mode with no key, chat talks to a canned stand-in instead of the API.
     private let sampleChat: CoachChat?
@@ -126,6 +127,21 @@ final class CoachSession {
             state = .failed(.malformed)
         }
         return nil
+    }
+
+    /// Asks the coach to turn a session into steps. Throws rather than using `state`,
+    /// since the result belongs to the session being edited and not to the coach screens.
+    func buildSteps(for session: PlannedWorkout, in context: ModelContext) async throws(CoachError) -> StructuredWorkout
+    {
+        let background = BackgroundTime()
+        defer { background.end() }
+        do {
+            return try await structurer.structure(session, model: modelID, apiKey: keyStore.read(), in: context)
+        } catch let error as CoachError {
+            throw error
+        } catch {
+            throw .malformed
+        }
     }
 
     func retry(planID: UUID?, in context: ModelContext) async -> CoachReview? {
