@@ -1,0 +1,557 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0411130F04D9BBA3C91BC537 /* PlanWeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0777ACE1B7E0DE3BF70C9 /* PlanWeekView.swift */; };
+		0946525560E687FBE3838907 /* LongGameApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4128CE14B1359C65AB6CB2 /* LongGameApp.swift */; };
+		0EA953F3604E31D473B9B08D /* Analysis in Frameworks */ = {isa = PBXBuildFile; productRef = 8D0B5C6B92DD465B356F8E6B /* Analysis */; };
+		21E5FA94AA921D5BC61847ED /* PlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D966F93CE48DBFB9FE213EC0 /* PlanGeneratorView.swift */; };
+		22FFCF182C4381AF9D66062D /* SamplePlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26A437EE7799A40724F4553 /* SamplePlan.swift */; };
+		2388250C9BF8A06343DCF942 /* CoachChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31B5EB2BAFFF59F06E99E4F /* CoachChatView.swift */; };
+		2A421FC1B9939BE77AB2055D /* CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A0A4B3C7D8C6499B799141 /* CoachView.swift */; };
+		309F7393E921594474122827 /* PlanMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F4516297160BB2276CF9CF /* PlanMonthView.swift */; };
+		337E34BA9481F195B3F32810 /* HealthIngest in Frameworks */ = {isa = PBXBuildFile; productRef = EC24BF726C7962CA9E05AF09 /* HealthIngest */; };
+		3EE0DD6D6D3C7F038F3C331B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE846FB0D951A4BE41833EAF /* DashboardView.swift */; };
+		44CDEDBB4CA9568407BAC6C7 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185246C72324A0D0F93AC26F /* AppEnvironment.swift */; };
+		6626A015D23DE06E00F543F3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F62AFDDD75F245B74A3393B /* SettingsView.swift */; };
+		6EBAD1B9E76C3FA595B40349 /* RenameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18870476A674F7CEBD6F037C /* RenameSession.swift */; };
+		7167F7838671847B26FDA3C0 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B6673A8F71752F2E6722AC /* LogView.swift */; };
+		72DA303520248F34EC677643 /* ActivityBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92764D4F6D41A665BEC824BE /* ActivityBanner.swift */; };
+		78DB92297F3CA811DE1243D4 /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3AD45C7D7AAA116098B6EDC /* WorkoutDetailView.swift */; };
+		8A6EE45526B32D794F6D0659 /* Coach in Frameworks */ = {isa = PBXBuildFile; productRef = 5DA5264B65DA13C81797B248 /* Coach */; };
+		8AFCEF205AED77A931275624 /* SampleCoachTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82386CD9EB51E73947CB2069 /* SampleCoachTransport.swift */; };
+		8BE49A1488F4E0B4460C891A /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14494458368FDB59FEF94181 /* ProfileView.swift */; };
+		8EAECFD8A58F96A81F84DA7A /* WeeklyReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E354D422F4911D460A3CD2EF /* WeeklyReminder.swift */; };
+		9BDAF7BC64FAAC1933D956D0 /* TrendCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C009EA0D1A6ADC75F152F2 /* TrendCharts.swift */; };
+		A795065EF10DFD4C30404CBA /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 2AB175C18926A0532574DF47 /* Models */; };
+		AE64FD740B1D9B664A740451 /* ReviewDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6ACDDE32E0199C5C9DB66D /* ReviewDetailView.swift */; };
+		B0BEB38CE9452CAAA4FF2F0F /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88599DBB19417A3D52E05A2E /* PlanView.swift */; };
+		B38F946D464D0A05DEF56B9A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0076A754ED283827F48C27F6 /* RootView.swift */; };
+		B85A94D1F8EC541DF5D2026C /* PlannedWorkoutEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E5429581CC10F099CFAE28 /* PlannedWorkoutEditor.swift */; };
+		BE4E18E19EB382B011E497FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DB48346358AD922DA94D16D /* Assets.xcassets */; };
+		C4B469ED8ED6D5D07232DA44 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E26EB1E611C75AE538EA28 /* GoalsView.swift */; };
+		C8522A57A6CF9176D63215CF /* CoachSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0E3DBCC2A092234856193F /* CoachSession.swift */; };
+		D1BB7196328E18B516D1F3B0 /* PlanEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57231C60AA09ABFC6D6A9542 /* PlanEditor.swift */; };
+		E36333DF9AA3BB72419DB43A /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC2B16C5CCD5E3D58CBB4C2 /* Formatting.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0076A754ED283827F48C27F6 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		00C009EA0D1A6ADC75F152F2 /* TrendCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendCharts.swift; sourceTree = "<group>"; };
+		0C52C40DD64B608C45C91954 /* LongGameKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LongGameKit; path = Packages/LongGameKit; sourceTree = SOURCE_ROOT; };
+		13F4516297160BB2276CF9CF /* PlanMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanMonthView.swift; sourceTree = "<group>"; };
+		14494458368FDB59FEF94181 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		185246C72324A0D0F93AC26F /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		18870476A674F7CEBD6F037C /* RenameSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameSession.swift; sourceTree = "<group>"; };
+		57231C60AA09ABFC6D6A9542 /* PlanEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanEditor.swift; sourceTree = "<group>"; };
+		77A0A4B3C7D8C6499B799141 /* CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachView.swift; sourceTree = "<group>"; };
+		7E673D3D56A01FEFD9631153 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		7F6ACDDE32E0199C5C9DB66D /* ReviewDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDetailView.swift; sourceTree = "<group>"; };
+		82386CD9EB51E73947CB2069 /* SampleCoachTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCoachTransport.swift; sourceTree = "<group>"; };
+		867C8749329B60A2E519E801 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		88599DBB19417A3D52E05A2E /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		8F62AFDDD75F245B74A3393B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		90B6673A8F71752F2E6722AC /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		92764D4F6D41A665BEC824BE /* ActivityBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityBanner.swift; sourceTree = "<group>"; };
+		99A0777ACE1B7E0DE3BF70C9 /* PlanWeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanWeekView.swift; sourceTree = "<group>"; };
+		9DB48346358AD922DA94D16D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A26A437EE7799A40724F4553 /* SamplePlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePlan.swift; sourceTree = "<group>"; };
+		AAC2B16C5CCD5E3D58CBB4C2 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
+		B0E26EB1E611C75AE538EA28 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
+		D31B5EB2BAFFF59F06E99E4F /* CoachChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatView.swift; sourceTree = "<group>"; };
+		D3E5429581CC10F099CFAE28 /* PlannedWorkoutEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannedWorkoutEditor.swift; sourceTree = "<group>"; };
+		D966F93CE48DBFB9FE213EC0 /* PlanGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanGeneratorView.swift; sourceTree = "<group>"; };
+		DD4128CE14B1359C65AB6CB2 /* LongGameApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongGameApp.swift; sourceTree = "<group>"; };
+		DE846FB0D951A4BE41833EAF /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		E2FD9531E81419E618170705 /* LongGame.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LongGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E354D422F4911D460A3CD2EF /* WeeklyReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReminder.swift; sourceTree = "<group>"; };
+		EF0E3DBCC2A092234856193F /* CoachSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSession.swift; sourceTree = "<group>"; };
+		F3AD45C7D7AAA116098B6EDC /* WorkoutDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		149C23922E4C709FA3DDB2C4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0EA953F3604E31D473B9B08D /* Analysis in Frameworks */,
+				A795065EF10DFD4C30404CBA /* Models in Frameworks */,
+				337E34BA9481F195B3F32810 /* HealthIngest in Frameworks */,
+				8A6EE45526B32D794F6D0659 /* Coach in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		09DF4DEA1F944263004DB3C6 /* Trends */ = {
+			isa = PBXGroup;
+			children = (
+				00C009EA0D1A6ADC75F152F2 /* TrendCharts.swift */,
+			);
+			path = Trends;
+			sourceTree = "<group>";
+		};
+		11EB920628E3EA10C285D026 /* Coach */ = {
+			isa = PBXGroup;
+			children = (
+				D31B5EB2BAFFF59F06E99E4F /* CoachChatView.swift */,
+				77A0A4B3C7D8C6499B799141 /* CoachView.swift */,
+				18870476A674F7CEBD6F037C /* RenameSession.swift */,
+				7F6ACDDE32E0199C5C9DB66D /* ReviewDetailView.swift */,
+			);
+			path = Coach;
+			sourceTree = "<group>";
+		};
+		2FA23B2B9522CC96F21F0097 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				185246C72324A0D0F93AC26F /* AppEnvironment.swift */,
+				EF0E3DBCC2A092234856193F /* CoachSession.swift */,
+				DD4128CE14B1359C65AB6CB2 /* LongGameApp.swift */,
+				82386CD9EB51E73947CB2069 /* SampleCoachTransport.swift */,
+				A26A437EE7799A40724F4553 /* SamplePlan.swift */,
+				E354D422F4911D460A3CD2EF /* WeeklyReminder.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		5B878FD62AAAA081F972AA83 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				7E673D3D56A01FEFD9631153 /* Shared.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		7946F05BC57F360B7F58BC73 /* Plan */ = {
+			isa = PBXGroup;
+			children = (
+				B0E26EB1E611C75AE538EA28 /* GoalsView.swift */,
+				57231C60AA09ABFC6D6A9542 /* PlanEditor.swift */,
+				D966F93CE48DBFB9FE213EC0 /* PlanGeneratorView.swift */,
+				13F4516297160BB2276CF9CF /* PlanMonthView.swift */,
+				D3E5429581CC10F099CFAE28 /* PlannedWorkoutEditor.swift */,
+				88599DBB19417A3D52E05A2E /* PlanView.swift */,
+				99A0777ACE1B7E0DE3BF70C9 /* PlanWeekView.swift */,
+			);
+			path = Plan;
+			sourceTree = "<group>";
+		};
+		7AF1896281819DECE3715A2D /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				0C52C40DD64B608C45C91954 /* LongGameKit */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		9266A3087D7DEB2332B38D1D = {
+			isa = PBXGroup;
+			children = (
+				5B878FD62AAAA081F972AA83 /* Config */,
+				A2A7C0C4339A31C5749B9780 /* LongGame */,
+				7AF1896281819DECE3715A2D /* Packages */,
+				BCCE07212EAE09DBAF4513D7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A2A7C0C4339A31C5749B9780 /* LongGame */ = {
+			isa = PBXGroup;
+			children = (
+				2FA23B2B9522CC96F21F0097 /* App */,
+				F7C91DA87417B702E156333B /* Resources */,
+				BED9ED1B9CA058D9BF3B1DBB /* Views */,
+			);
+			path = LongGame;
+			sourceTree = "<group>";
+		};
+		BCCE07212EAE09DBAF4513D7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E2FD9531E81419E618170705 /* LongGame.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BED9ED1B9CA058D9BF3B1DBB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				92764D4F6D41A665BEC824BE /* ActivityBanner.swift */,
+				DE846FB0D951A4BE41833EAF /* DashboardView.swift */,
+				AAC2B16C5CCD5E3D58CBB4C2 /* Formatting.swift */,
+				90B6673A8F71752F2E6722AC /* LogView.swift */,
+				14494458368FDB59FEF94181 /* ProfileView.swift */,
+				0076A754ED283827F48C27F6 /* RootView.swift */,
+				8F62AFDDD75F245B74A3393B /* SettingsView.swift */,
+				F3AD45C7D7AAA116098B6EDC /* WorkoutDetailView.swift */,
+				11EB920628E3EA10C285D026 /* Coach */,
+				7946F05BC57F360B7F58BC73 /* Plan */,
+				09DF4DEA1F944263004DB3C6 /* Trends */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F7C91DA87417B702E156333B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9DB48346358AD922DA94D16D /* Assets.xcassets */,
+				867C8749329B60A2E519E801 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6E2D2278A0CB5BEAE71137C6 /* LongGame */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0AA70F47166D727F1CAD3CD /* Build configuration list for PBXNativeTarget "LongGame" */;
+			buildPhases = (
+				67372AFFD334A6E5DD61C282 /* Sources */,
+				C1128DB2FBFABA60A33E1F78 /* Resources */,
+				149C23922E4C709FA3DDB2C4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LongGame;
+			packageProductDependencies = (
+				8D0B5C6B92DD465B356F8E6B /* Analysis */,
+				2AB175C18926A0532574DF47 /* Models */,
+				EC24BF726C7962CA9E05AF09 /* HealthIngest */,
+				5DA5264B65DA13C81797B248 /* Coach */,
+			);
+			productName = LongGame;
+			productReference = E2FD9531E81419E618170705 /* LongGame.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1ECD0A04FA3BD66D9BADBD6C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6E2D2278A0CB5BEAE71137C6 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = E1C6FFB851A06025004429EA /* Build configuration list for PBXProject "LongGame" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9266A3087D7DEB2332B38D1D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A1D0B308A1A5F7C61F3112CD /* XCLocalSwiftPackageReference "Packages/LongGameKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BCCE07212EAE09DBAF4513D7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6E2D2278A0CB5BEAE71137C6 /* LongGame */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1128DB2FBFABA60A33E1F78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE4E18E19EB382B011E497FD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		67372AFFD334A6E5DD61C282 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				72DA303520248F34EC677643 /* ActivityBanner.swift in Sources */,
+				44CDEDBB4CA9568407BAC6C7 /* AppEnvironment.swift in Sources */,
+				2388250C9BF8A06343DCF942 /* CoachChatView.swift in Sources */,
+				C8522A57A6CF9176D63215CF /* CoachSession.swift in Sources */,
+				2A421FC1B9939BE77AB2055D /* CoachView.swift in Sources */,
+				3EE0DD6D6D3C7F038F3C331B /* DashboardView.swift in Sources */,
+				E36333DF9AA3BB72419DB43A /* Formatting.swift in Sources */,
+				C4B469ED8ED6D5D07232DA44 /* GoalsView.swift in Sources */,
+				7167F7838671847B26FDA3C0 /* LogView.swift in Sources */,
+				0946525560E687FBE3838907 /* LongGameApp.swift in Sources */,
+				D1BB7196328E18B516D1F3B0 /* PlanEditor.swift in Sources */,
+				21E5FA94AA921D5BC61847ED /* PlanGeneratorView.swift in Sources */,
+				309F7393E921594474122827 /* PlanMonthView.swift in Sources */,
+				B0BEB38CE9452CAAA4FF2F0F /* PlanView.swift in Sources */,
+				0411130F04D9BBA3C91BC537 /* PlanWeekView.swift in Sources */,
+				B85A94D1F8EC541DF5D2026C /* PlannedWorkoutEditor.swift in Sources */,
+				8BE49A1488F4E0B4460C891A /* ProfileView.swift in Sources */,
+				6EBAD1B9E76C3FA595B40349 /* RenameSession.swift in Sources */,
+				AE64FD740B1D9B664A740451 /* ReviewDetailView.swift in Sources */,
+				B38F946D464D0A05DEF56B9A /* RootView.swift in Sources */,
+				8AFCEF205AED77A931275624 /* SampleCoachTransport.swift in Sources */,
+				22FFCF182C4381AF9D66062D /* SamplePlan.swift in Sources */,
+				6626A015D23DE06E00F543F3 /* SettingsView.swift in Sources */,
+				9BDAF7BC64FAAC1933D956D0 /* TrendCharts.swift in Sources */,
+				8EAECFD8A58F96A81F84DA7A /* WeeklyReminder.swift in Sources */,
+				78DB92297F3CA811DE1243D4 /* WorkoutDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		319978B2A6B8F6B91785989E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "LongGame/Resources/LongGame-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "LongGame/Resources/LongGame-macOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = LongGame/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LG_BUNDLE_ID)";
+				PRODUCT_MODULE_NAME = LongGame;
+				PRODUCT_NAME = "Long Game";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7B798800CD3AD1C0F84C9034 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7E673D3D56A01FEFD9631153 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		921591462D760E3DB8054146 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7E673D3D56A01FEFD9631153 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		CC57997EE1B5B455985F8ED7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "LongGame/Resources/LongGame-iOS.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "LongGame/Resources/LongGame-macOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = LongGame/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LG_BUNDLE_ID)";
+				PRODUCT_MODULE_NAME = LongGame;
+				PRODUCT_NAME = "Long Game";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C0AA70F47166D727F1CAD3CD /* Build configuration list for PBXNativeTarget "LongGame" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				319978B2A6B8F6B91785989E /* Debug */,
+				CC57997EE1B5B455985F8ED7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E1C6FFB851A06025004429EA /* Build configuration list for PBXProject "LongGame" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7B798800CD3AD1C0F84C9034 /* Debug */,
+				921591462D760E3DB8054146 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A1D0B308A1A5F7C61F3112CD /* XCLocalSwiftPackageReference "Packages/LongGameKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/LongGameKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2AB175C18926A0532574DF47 /* Models */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Models;
+		};
+		5DA5264B65DA13C81797B248 /* Coach */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Coach;
+		};
+		8D0B5C6B92DD465B356F8E6B /* Analysis */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Analysis;
+		};
+		EC24BF726C7962CA9E05AF09 /* HealthIngest */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HealthIngest;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1ECD0A04FA3BD66D9BADBD6C /* Project object */;
+}

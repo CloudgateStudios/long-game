@@ -1,0 +1,107 @@
+<p align="center"><img src="Design/logo-mark.svg" width="120" alt="Long Game icon"></p>
+
+# Long Game
+
+A personal training app for iPhone, iPad and Mac. You set a goal, it holds your training
+plan, reads your completed workouts and recovery data from Apple Health, shows how what you
+did compares with what you planned, and uses Claude as a coach to review your training and
+propose changes.
+
+It is a single-user app with no backend. Your data stays in Apple Health, on your devices,
+and in your own private iCloud database. The only thing that leaves is the summary sent to
+the Claude API when you ask the coach for something, and the app shows you exactly what
+that is.
+
+> Long Game is a training assistant, not a medical service. For pain, illness or readings
+> that worry you, see a professional.
+
+## What it does
+
+- **Plan** – build a training plan by hand, or have the coach interview you and draft one.
+  Week and month calendar views; sessions can be edited, moved and deleted.
+- **Track** – workouts from Apple Health are matched to planned sessions and marked done,
+  partly done, overdone, missed or unplanned. The same session recorded by two devices
+  (a watch and a bike computer, say) is counted once.
+- **Trends** – training load from heart-rate zones or cycling power, a 7-day against 28-day
+  load ratio, and HRV, resting heart rate and sleep against your own rolling baseline.
+- **Coach** – a weekly or on-demand review with specific suggested changes, plus open
+  conversation. Every suggestion is a before/after card that you accept or reject; nothing
+  changes in your plan without you.
+
+Swim, bike, run and strength are modelled; any other activity is logged and counts toward load.
+
+## Requirements
+
+- Xcode 27 or later, targeting iOS 27 and macOS 27
+- A paid Apple Developer account (HealthKit and iCloud need one)
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen), only if you change `project.yml`
+- An [Anthropic API key](https://console.anthropic.com/) for the in-app coach. The
+  "Copy for Claude" option works without one.
+
+## Building
+
+1. Copy `Config/Local.example.xcconfig` to `Config/Local.xcconfig` and fill in your team ID,
+   a bundle identifier and an iCloud container name. That file is ignored by git.
+2. Open `LongGame.xcodeproj` and let automatic signing register the identifiers.
+3. Run the `LongGame` scheme.
+
+In the simulator the app runs on bundled synthetic data in a separate store that never
+syncs, with a sample plan and a stand-in coach, so everything can be tried without Health
+data or a key. On a device, launch with `-fixture` to do the same in a debug build.
+
+The iPhone is the device that reads Apple Health. iPad and Mac show what it has synced and
+can edit the plan and talk to the coach.
+
+## The coach and what it costs
+
+The app calls the Claude API directly with a key you paste into Settings, stored in your
+iCloud Keychain. API use is billed by Anthropic, separately from a Claude subscription. As a
+rough guide on the default model: a review costs about 15 to 35 cents, a generated plan 30 to
+60 cents, and a short conversation around 10 cents. Settings shows a running estimate.
+
+What is sent: age (not date of birth), sex, height, weight, zones, goals, the plan, four
+weeks of per-workout summaries, 28 days of daily recovery metrics, and load trends. Never
+names, locations, device or app names, or raw sample streams. "See What Will Be Sent" shows
+the exact payload before you send it, and every review keeps a copy of what it sent.
+
+## iCloud
+
+Sync uses SwiftData with a CloudKit private database. Builds run from Xcode use CloudKit's
+Development environment by default; `LG_ICLOUD_ENVIRONMENT` in `Config/Shared.xcconfig`
+switches to Production, which needs the schema deployed from the CloudKit Console first.
+All your devices must use the same environment to see the same data.
+
+## Project layout
+
+```
+LongGame/                 SwiftUI app: views, app state, resources
+Packages/LongGameKit/
+  Sources/Analysis/       Pure Swift rules: zones, load, baselines, matching, compliance
+  Sources/Models/         SwiftData models and the store
+  Sources/HealthIngest/   Everything that touches HealthKit, plus the synthetic fixture
+  Sources/Coach/          Payload building, the Claude API client, reviews, chat, plans
+  Tests/                  Swift Testing suites
+Config/                   Build settings; your identifiers go in Local.xcconfig
+Design/                   Icon and logo artwork (SVG)
+Scripts/                  Fixture and icon generators
+PROJECT_BRIEF.md          The original design brief
+```
+
+Tunable thresholds live in `Packages/LongGameKit/Sources/Analysis/AnalysisConstants.swift`.
+
+## Tests
+
+```bash
+cd Packages/LongGameKit && swift test
+```
+
+The suite runs against a mocked API. A few tests call the real API with synthetic data and
+cost money, so they only run when you supply a key:
+
+```bash
+cd Packages/LongGameKit && LONGGAME_LIVE_KEY=your-key swift test --filter LiveCoachTests
+```
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

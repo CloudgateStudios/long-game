@@ -1,0 +1,12 @@
+// Identity settings for every target. These are placeholders: put your own values in
+// Config/Local.xcconfig (not committed), copied from Local.example.xcconfig.
+DEVELOPMENT_TEAM =
+LG_BUNDLE_ID = com.example.LongGame
+LG_ICLOUD_CONTAINER = iCloud.com.example.LongGame
+
+// Which CloudKit database the app syncs with: Development or Production. Every device
+// must use the same one to see the same data. Production needs the schema deployed in
+// the CloudKit Console first, and again after any model change.
+LG_ICLOUD_ENVIRONMENT = Development
+
+#include? "Local.xcconfig"

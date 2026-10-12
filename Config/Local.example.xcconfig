@@ -1,0 +1,5 @@
+// Copy this file to Local.xcconfig and fill in your own values. Local.xcconfig is
+// ignored by git, so your team and bundle identifiers stay out of the repository.
+DEVELOPMENT_TEAM = YOURTEAMID
+LG_BUNDLE_ID = com.yourname.LongGame
+LG_ICLOUD_CONTAINER = iCloud.com.yourname.LongGame

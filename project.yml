@@ -1,0 +1,78 @@
+# The Xcode project is generated from this file: run `xcodegen` after changing it.
+name: LongGame
+options:
+  deploymentTarget:
+    iOS: "27.0"
+    macOS: "27.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+configFiles:
+  Debug: Config/Shared.xcconfig
+  Release: Config/Shared.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  LongGameKit:
+    path: Packages/LongGameKit
+targets:
+  LongGame:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: LongGame
+        excludes:
+          - "Resources/*.entitlements"
+    dependencies:
+      - package: LongGameKit
+        product: Analysis
+      - package: LongGameKit
+        product: Models
+      - package: LongGameKit
+        product: HealthIngest
+      - package: LongGameKit
+        product: Coach
+    info:
+      path: LongGame/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Long Game
+        LSApplicationCategoryType: public.app-category.healthcare-fitness
+        ITSAppUsesNonExemptEncryption: false
+        LGCloudKitContainer: $(LG_ICLOUD_CONTAINER)
+        NSHealthShareUsageDescription: Long Game reads your workouts and recovery data to compare them with your training plan. It never writes to Health.
+        UIBackgroundModes: [remote-notification]
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(LG_BUNDLE_ID)
+        # The name people see (home screen, Mac Dock, menu bar, Finder). The target and
+        # the Swift module keep the name LongGame.
+        PRODUCT_NAME: Long Game
+        PRODUCT_MODULE_NAME: LongGame
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphone*]": LongGame/Resources/LongGame-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": LongGame/Resources/LongGame-macOS.entitlements
+schemes:
+  LongGame:
+    build:
+      targets:
+        LongGame: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - package: LongGameKit/AnalysisTests
+        - package: LongGameKit/ModelsTests
+        - package: LongGameKit/HealthIngestTests

@@ -1,0 +1,11 @@
+.DS_Store
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+build/
+# Never commit secrets or real health exports
+*.fit
+export.xml
+Config/Local.xcconfig
