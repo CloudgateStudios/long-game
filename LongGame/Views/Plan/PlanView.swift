@@ -33,7 +33,7 @@ enum PlanSheet: Identifiable {
 struct PlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \TrainingPlan.startDate) private var allPlans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDay) private var allPlans: [TrainingPlan]
     @State private var reviewingDraft: TrainingPlan?
     @State private var interview: CoachConversation?
     @AppStorage("selectedPlanID") private var selectedPlanID = ""
@@ -397,7 +397,7 @@ extension PlanCalendarDocument {
         let byDay = Dictionary(grouping: plan.workouts ?? []) { calendar.startOfDay(for: $0.date) }
         sessions = byDay.mapValues { workouts in
             workouts
-                .sorted { ($0.createdAt, $0.uuid.uuidString) < ($1.createdAt, $1.uuid.uuidString) }
+                .sorted(by: PlannedWorkout.inDayOrder)
                 .map {
                     Session(
                         id: $0.uuid,

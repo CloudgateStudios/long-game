@@ -129,6 +129,18 @@ final class AppEnvironment {
             return
         }
         let containerID = Bundle.main.object(forInfoDictionaryKey: "LGCloudKitContainer") as? String ?? ""
+        #if DEBUG
+        // `-initializeCloudKitSchema` writes the whole schema to CloudKit Development,
+        // ready to deploy to Production. See the README.
+        if !containerID.isEmpty, ProcessInfo.processInfo.arguments.contains("-initializeCloudKitSchema") {
+            do {
+                try LongGameStore.initializeCloudKitSchema(containerID: containerID)
+                print("CloudKit schema initialized for \(containerID)")
+            } catch {
+                print("CloudKit schema initialization failed: \(error)")
+            }
+        }
+        #endif
         if !containerID.isEmpty,
             let opened = try? LongGameStore.makeContainer(mode: .cloudKit(containerID: containerID))
         {
@@ -161,11 +173,11 @@ final class AppEnvironment {
             Task { await observeSyncEvents() }
         }
 
+        // Days saved by earlier builds as local midnights become day stamps.
+        if let container { _ = try? DayStampRepair.run(in: container.mainContext) }
         // A new day can turn yesterday's unmatched sessions into missed ones.
         reconcilePlan()
         coach.refreshKey()
-        // Spending from before the ledger existed, and copies made on another device.
-        if let container { try? SpendLedger.backfill(in: container.mainContext) }
         await reminder.refresh()
         await checkICloudAccount()
 

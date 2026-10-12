@@ -88,14 +88,14 @@ public enum CoachPayloadBuilder {
             }
 
         // Plan: the chosen one, else the one covering today, else the most recent.
-        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)])).filter {
+        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDay)])).filter {
             !$0.isDraft
         }
         let plan =
             plans.first { $0.uuid == planID } ?? plans.first { $0.startDate <= now && now <= $0.endDate } ?? plans.last
         let sessions = (plan?.workouts ?? [])
             .filter { $0.date >= historyStart && $0.date < planEnd }
-            .sorted { ($0.date, $0.createdAt, $0.uuid.uuidString) < ($1.date, $1.createdAt, $1.uuid.uuidString) }
+            .sorted { $0.day == $1.day ? PlannedWorkout.inDayOrder($0, $1) : $0.day < $1.day }
         let shortIDs = shortIDs(for: sessions.map(\.uuid))
         var sessionIDs: [String: UUID] = [:]
         for (uuid, short) in shortIDs { sessionIDs[short] = uuid }
@@ -118,7 +118,8 @@ public enum CoachPayloadBuilder {
                         intensity: session.targetIntensity.isEmpty ? nil : session.targetIntensity,
                         instructions: session.instructions.isEmpty ? nil : session.instructions,
                         status: session.status.rawValue,
-                        percentOfTarget: session.complianceRatio.map { Int(($0 * 100).rounded()) }
+                        percentOfTarget: session.complianceRatio.map { Int(($0 * 100).rounded()) },
+                        brick: session.brickLabel
                     )
                 }
             )
@@ -145,7 +146,10 @@ public enum CoachPayloadBuilder {
                 effort: workout.effortScore.map(round1),
                 load: workout.load.map(round0),
                 loadEstimated: workout.confidence == .estimated ? true : nil,
-                sessionId: workout.plannedWorkout.flatMap { shortIDs[$0.uuid] }
+                sessionId: workout.plannedWorkout.flatMap { shortIDs[$0.uuid] },
+                rpe: workout.perceivedEffort,
+                feel: workout.feel?.rawValue,
+                notes: workout.athleteNotes.isEmpty ? nil : workout.athleteNotes
             )
         }
 
@@ -187,11 +191,12 @@ public enum CoachPayloadBuilder {
         )
 
         // Daily metrics, with a baseline window behind them
-        let metricsStart = day(-(CoachConfiguration.historyDays + AnalysisConstants.baselineDays))
+        let metricsStartDay = CalendarDay.stamp(
+            for: day(-(CoachConfiguration.historyDays + AnalysisConstants.baselineDays)), calendar: calendar)
         let metrics = try context.fetch(
             FetchDescriptor<DailyMetrics>(
-                predicate: #Predicate { $0.date >= metricsStart },
-                sortBy: [SortDescriptor(\.date)]
+                predicate: #Predicate { $0.day >= metricsStartDay },
+                sortBy: [SortDescriptor(\.day)]
             ))
         func baseline(_ value: KeyPath<DailyMetrics, Double?>, _ direction: RecoveryDirection) -> [Date: BaselinePoint]
         {
@@ -328,4 +333,11 @@ public enum CoachPayloadBuilder {
     private static func round0(_ value: Double) -> Double { value.rounded() }
     private static func round1(_ value: Double) -> Double { (value * 10).rounded() / 10 }
     private static func round2(_ value: Double) -> Double { (value * 100).rounded() / 100 }
+}
+
+extension PlannedWorkout {
+    /// A short stand-in for `brickID` in what the coach reads.
+    var brickLabel: String? {
+        isInBrick ? brickID.map { String($0.uuidString.prefix(4)).lowercased() } : nil
+    }
 }

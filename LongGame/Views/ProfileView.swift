@@ -9,6 +9,7 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     @Query(sort: \AthleteProfile.createdAt) private var profiles: [AthleteProfile]
+    @Query(sort: \ThresholdSnapshot.day, order: .reverse) private var history: [ThresholdSnapshot]
 
     @State private var maxHR: Double?
     @State private var restingHR: Double?
@@ -106,6 +107,30 @@ struct ProfileView: View {
                 Text(
                     "Sent with every review. For example: \"left knee is sore after long descents\" or \"no swimming on Fridays\"."
                 )
+            }
+
+            if history.count > 1 {
+                Section {
+                    ForEach(history) { snapshot in
+                        LabeledContent {
+                            Text(summary(of: snapshot))
+                        } label: {
+                            Text("From \(snapshot.date.formatted(date: .abbreviated, time: .omitted))")
+                        }
+                        .contextMenu {
+                            Button("Remove", systemImage: "trash", role: .destructive) { remove(snapshot) }
+                        }
+                    }
+                    .onDelete { offsets in
+                        offsets.map { history[$0] }.forEach(remove)
+                    }
+                } header: {
+                    Text("History")
+                } footer: {
+                    Text(
+                        "Each workout is scored against the zones and FTP you had on its day. Remove an entry to score its days against the one before it, or the one after if it is the oldest."
+                    )
+                }
             }
 
             if let profile {
@@ -218,6 +243,19 @@ struct ProfileView: View {
         profile.zoneUpperBoundsOverride = usesCustomZones && customZonesAreValid ? customBounds.compactMap { $0 } : nil
         environment.reconcilePlan()
         refreshZones()
+    }
+
+    private func summary(of snapshot: ThresholdSnapshot) -> String {
+        var parts: [String] = []
+        if let ftp = snapshot.ftpWatts { parts.append("FTP \(Format.load(ftp)) W") }
+        if let top = snapshot.zoneUpperBounds?.last { parts.append("zone 5 above \(Format.load(top)) bpm") }
+        return parts.isEmpty ? "Nothing set" : parts.joined(separator: " · ")
+    }
+
+    private func remove(_ snapshot: ThresholdSnapshot) {
+        context.delete(snapshot)
+        try? context.save()
+        environment.reconcilePlan()
     }
 
     private func refreshZones() {

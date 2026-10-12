@@ -103,6 +103,23 @@ public enum LoadConfidence: String, Codable, Sendable, CaseIterable {
     case estimated
 }
 
+/// How a workout felt, as the athlete reports it afterwards.
+public enum WorkoutFeel: String, Codable, Sendable, CaseIterable, Identifiable {
+    case strong, good, ok, tired, poor
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .strong: "Strong"
+        case .good: "Good"
+        case .ok: "OK"
+        case .tired: "Tired"
+        case .poor: "Poor"
+        }
+    }
+}
+
 public enum ReviewTrigger: String, Codable, Sendable, CaseIterable {
     case weekly, onDemand, planGeneration
 }

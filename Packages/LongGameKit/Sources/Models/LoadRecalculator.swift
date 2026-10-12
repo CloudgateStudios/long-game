@@ -12,6 +12,7 @@ public struct ResolvedZones: Sendable, Equatable {
     public var isOverridden = false
     public var ftpWatts: Double?
     public var thresholdRunPaceSecondsPerKm: Double?
+    public var thresholdSwimPaceSecondsPer100m: Double?
     public var runTargets: RunTargetMode = .heartRate
 
     public init(
@@ -54,8 +55,10 @@ public enum LoadRecalculator {
 
         var resting = profile?.restingHRBaseline
         if resting == nil {
-            let since = calendar.date(byAdding: .day, value: -AnalysisConstants.baselineDays, to: now) ?? now
-            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= since }))
+            let since = CalendarDay.stamp(
+                for: calendar.date(byAdding: .day, value: -AnalysisConstants.baselineDays, to: now) ?? now,
+                calendar: calendar)
+            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.day >= since }))
                 .compactMap(\.restingHR)
             if !recent.isEmpty { resting = recent.reduce(0, +) / Double(recent.count) }
         }
@@ -70,19 +73,24 @@ public enum LoadRecalculator {
             ftpWatts: profile?.ftpWatts
         )
         zones.thresholdRunPaceSecondsPerKm = profile?.thresholdRunPaceSecondsPerKm
+        zones.thresholdSwimPaceSecondsPer100m = profile?.thresholdSwimPaceSecondsPer100m
         zones.runTargets = profile?.runTargets ?? .heartRate
         return zones
     }
 
     /// Returns how many workouts changed. Run after matching, since an unmeasured
-    /// workout's estimate depends on the session it was matched to.
+    /// workout's estimate depends on the session it was matched to. Each workout is scored
+    /// against the zones and FTP in force on its day, so today's numbers are recorded first.
     @discardableResult
     public static func recalculate(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws
         -> Int
     {
         let zones = try resolveZones(in: context, now: now, calendar: calendar)
+        let history = ThresholdHistory.Timeline(
+            try ThresholdHistory.record(zones, in: context, now: now, calendar: calendar))
         var changed = 0
         for workout in try context.fetch(FetchDescriptor<CompletedWorkout>()) {
+            let inForce = history.values(on: CalendarDay.stamp(for: workout.start, calendar: calendar))
             let result = WorkoutLoad.compute(
                 WorkoutLoad.Input(
                     sport: workout.sport,
@@ -91,8 +99,8 @@ public enum LoadRecalculator {
                     averagePowerWatts: workout.averagePowerWatts,
                     sessionType: workout.plannedWorkout?.sessionType
                 ),
-                zoneBounds: zones.bounds,
-                ftpWatts: zones.ftpWatts
+                zoneBounds: inForce.zoneBounds,
+                ftpWatts: inForce.ftpWatts
             )
             let confidence: LoadConfidence = result.method == .estimated ? .estimated : .measured
             // Write only real changes so iCloud is not asked to sync identical values.

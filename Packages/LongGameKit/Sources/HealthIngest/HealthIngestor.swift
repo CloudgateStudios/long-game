@@ -59,7 +59,7 @@ public actor HealthIngestor {
         try delete(changes.deletedIDs, summary: &summary)
         try upsert(changes.upserted, source: source.workoutSource, summary: &summary)
         try resolveDuplicates(around: changes.upserted)
-        try upsert(daily, summary: &summary)
+        try upsert(daily, calendar: calendar, summary: &summary)
         try modelContext.save()
 
         // Only move the markers once the store has the data.
@@ -164,21 +164,23 @@ public actor HealthIngestor {
         }
     }
 
-    private func upsert(_ records: [HealthDailyRecord], summary: inout Summary) throws {
-        guard let first = records.map(\.date).min(), let last = records.map(\.date).max() else { return }
+    private func upsert(_ records: [HealthDailyRecord], calendar: Calendar, summary: inout Summary) throws {
+        let stamps = records.map { CalendarDay.stamp(for: $0.date, calendar: calendar) }
+        guard let first = stamps.min(), let last = stamps.max() else { return }
         let existing = try modelContext.fetch(
-            FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= first && $0.date <= last })
+            FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.day >= first && $0.day <= last })
         )
-        var byDate = Dictionary(existing.map { ($0.date, $0) }, uniquingKeysWith: { first, _ in first })
+        var byDay = Dictionary(existing.map { ($0.day, $0) }, uniquingKeysWith: { first, _ in first })
 
-        for record in records {
+        for (record, stamp) in zip(records, stamps) {
             let day: DailyMetrics
-            if let found = byDate[record.date] {
+            if let found = byDay[stamp] {
                 day = found
             } else {
                 day = DailyMetrics(date: record.date)
+                day.day = stamp
                 modelContext.insert(day)
-                byDate[record.date] = day
+                byDay[stamp] = day
             }
             day.restingHR = record.restingHR
             day.hrvSDNN = record.hrvSDNN

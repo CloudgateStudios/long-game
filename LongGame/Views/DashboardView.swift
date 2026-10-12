@@ -5,11 +5,11 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDate) private var goals: [Goal]
+    @Query(sort: \Goal.targetDay) private var goals: [Goal]
     @Query(sort: \CompletedWorkout.start, order: .reverse) private var workouts: [CompletedWorkout]
-    @Query(sort: \DailyMetrics.date) private var days: [DailyMetrics]
+    @Query(sort: \DailyMetrics.day) private var days: [DailyMetrics]
     @Query(sort: \PlannedWorkout.createdAt) private var planned: [PlannedWorkout]
-    @Query(sort: \TrainingPlan.startDate) private var plans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDay) private var plans: [TrainingPlan]
     @SceneStorage("selectedSection") private var selection: AppSection = .today
     @State private var isShowingGoals = false
 
@@ -22,6 +22,7 @@ struct DashboardView: View {
 
     private var plannedToday: [PlannedWorkout] {
         planned.filter { calendar.isDateInToday($0.date) && $0.plan?.isDraft != true }
+            .sorted(by: PlannedWorkout.inDayOrder)
     }
 
     /// Every active goal still ahead, soonest first.

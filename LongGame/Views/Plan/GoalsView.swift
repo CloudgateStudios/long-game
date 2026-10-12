@@ -7,7 +7,7 @@ struct GoalsView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Goal.targetDate) private var goals: [Goal]
+    @Query(sort: \Goal.targetDay) private var goals: [Goal]
     @State private var isAdding = false
 
     var body: some View {

@@ -128,9 +128,6 @@ public final class CoachCharge {
     public var outputTokens: Int = 0
     /// Estimated cost in US dollars at list prices.
     public var cost: Double = 0
-    /// Set on charges reconstructed from reviews and conversations that predate this
-    /// record, so copies made on two devices can be merged.
-    public var backfillKey: String?
 
     public init(
         date: Date, kind: CoachChargeKind, sessionID: UUID, model: String, inputTokens: Int, outputTokens: Int,

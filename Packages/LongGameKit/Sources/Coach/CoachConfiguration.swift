@@ -85,7 +85,10 @@ public enum CoachConfiguration {
         workouts with how they matched the plan, daily recovery metrics with the athlete's own baselines, and training-load \
         trends. Durations are minutes, distances kilometres, heart rate beats per minute, power watts. "load" is minutes \
         weighted by heart-rate zone (1 to 5 points per minute); loads marked estimated come from duration alone. \
-        "loadRatio" is the last 7 days' average daily load divided by the last 28 days'; roughly 0.8 to 1.3 is steady.
+        "loadRatio" is the last 7 days' average daily load divided by the last 28 days'; roughly 0.8 to 1.3 is steady. \
+        On a workout, "rpe" is the athlete's own rating of how hard it was (1 to 10), and "feel" and "notes" are what \
+        they said about it afterwards; give these real weight. Sessions that share a "brick" value are done back to \
+        back as one outing.
 
         Review how training is going and propose specific changes to upcoming sessions so the athlete arrives at the \
         priority A goal fit and healthy. Triathlon sports (swim, bike, run) and supporting strength are the focus; other \

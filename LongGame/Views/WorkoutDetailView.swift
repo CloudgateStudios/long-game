@@ -61,6 +61,23 @@ struct WorkoutDetailView: View {
                 .padding(.vertical, 6)
             }
 
+            Section {
+                Picker("Perceived effort", selection: feedback(\.perceivedEffort)) {
+                    Text("Not rated").tag(Int?.none)
+                    ForEach(1...10, id: \.self) { Text("\($0) of 10").tag(Int?.some($0)) }
+                }
+                Picker("Felt", selection: feedback(\.feel)) {
+                    Text("Not rated").tag(WorkoutFeel?.none)
+                    ForEach(WorkoutFeel.allCases) { Text($0.displayName).tag(WorkoutFeel?.some($0)) }
+                }
+                TextField("Notes", text: feedback(\.athleteNotes), axis: .vertical)
+                    .lineLimit(1...6)
+            } header: {
+                Text("How it went")
+            } footer: {
+                Text("Your own rating, where 10 is all out. The coach reads this alongside the numbers.")
+            }
+
             if let planned = workout.plannedWorkout {
                 Section("Planned session") {
                     NavigationLink {
@@ -188,6 +205,15 @@ struct WorkoutDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // Notes are saved once on the way out rather than on every keystroke.
+        .onDisappear { environment.saveChanges() }
+    }
+
+    private func feedback<Value>(_ field: ReferenceWritableKeyPath<CompletedWorkout, Value>) -> Binding<Value> {
+        Binding(
+            get: { workout[keyPath: field] },
+            set: { workout[keyPath: field] = $0 }
+        )
     }
 
     /// A manual choice sticks: later syncs leave it alone.
