@@ -35,6 +35,8 @@ targets:
         product: HealthIngest
       - package: LongGameKit
         product: Coach
+      - package: LongGameKit
+        product: WorkoutExport
     info:
       path: LongGame/Resources/Info.plist
       properties:
@@ -76,3 +78,4 @@ schemes:
         - package: LongGameKit/AnalysisTests
         - package: LongGameKit/ModelsTests
         - package: LongGameKit/HealthIngestTests
+        - package: LongGameKit/WorkoutExportTests

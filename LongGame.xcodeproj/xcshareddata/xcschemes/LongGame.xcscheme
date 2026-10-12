@@ -70,6 +70,17 @@
                ReferencedContainer = "container:Packages/LongGameKit">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "WorkoutExportTests"
+               BuildableName = "WorkoutExportTests"
+               BlueprintName = "WorkoutExportTests"
+               ReferencedContainer = "container:Packages/LongGameKit">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
