@@ -15,6 +15,8 @@ public final class AthleteProfile {
     @Attribute(.allowsCloudEncryption) public var ftpWatts: Double?
     @Attribute(.allowsCloudEncryption) public var thresholdRunPaceSecondsPerKm: Double?
     @Attribute(.allowsCloudEncryption) public var thresholdSwimPaceSecondsPer100m: Double?
+    /// Whether structured runs are given by heart-rate zone or by pace, unless a session says otherwise.
+    public var runTargetsRaw: String = RunTargetMode.heartRate.rawValue
     public var enabledSportsRaw: [String] = [Sport.swim, .bike, .run, .strength].map(\.rawValue)
     /// Hours available per weekday, Monday first. Zero means unavailable.
     public var availabilityHours: [Double] = [1, 1, 1, 1, 1, 2, 2]
@@ -27,6 +29,11 @@ public final class AthleteProfile {
     public var biologicalSex: BiologicalSex? {
         get { biologicalSexRaw.flatMap(BiologicalSex.init(rawValue:)) }
         set { biologicalSexRaw = newValue?.rawValue }
+    }
+
+    public var runTargets: RunTargetMode {
+        get { RunTargetMode(rawValue: runTargetsRaw) ?? .heartRate }
+        set { runTargetsRaw = newValue.rawValue }
     }
 
     public var enabledSports: [Sport] {
