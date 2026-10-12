@@ -299,7 +299,10 @@ extension CoachResponse {
         let suggestion: [String: Any] = [
             "type": "object",
             "additionalProperties": false,
-            "required": ["action", "sessionId", "date", "sport", "sessionType", "durationMinutes", "distanceKm", "intensity", "instructions", "rationale"],
+            "required": [
+                "action", "sessionId", "date", "sport", "sessionType", "durationMinutes", "distanceKm", "intensity",
+                "instructions", "rationale",
+            ],
             "properties": [
                 "action": ["type": "string", "enum": SuggestionAction.allCases.map(\.rawValue)],
                 "sessionId": nullable("string"),

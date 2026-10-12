@@ -22,8 +22,12 @@ import Testing
     }
 
     @discardableResult
-    func log(_ sport: Sport, minutes: Double = 60, bpm: Double? = nil, power: Double? = nil, maxHR: Double? = nil) -> CompletedWorkout {
-        let workout = CompletedWorkout(externalID: UUID(), source: .healthKit, sport: sport, start: now.addingTimeInterval(-86_400), durationSeconds: minutes * 60)
+    func log(_ sport: Sport, minutes: Double = 60, bpm: Double? = nil, power: Double? = nil, maxHR: Double? = nil)
+        -> CompletedWorkout
+    {
+        let workout = CompletedWorkout(
+            externalID: UUID(), source: .healthKit, sport: sport, start: now.addingTimeInterval(-86_400),
+            durationSeconds: minutes * 60)
         workout.heartRateHistogram = bpm.map { histogram(minutes: minutes, bpm: $0) }
         workout.averageHR = bpm
         workout.maxHR = maxHR ?? bpm
@@ -43,7 +47,7 @@ import Testing
 
     @Test func storesLoadZonesAndConfidence() throws {
         profile()
-        let run = log(.run, bpm: 120) // zone 2 of [114, 133, 152, 171]
+        let run = log(.run, bpm: 120)  // zone 2 of [114, 133, 152, 171]
         let ride = log(.bike, bpm: 120, power: 200)
         let yoga = log(.other, minutes: 50)
 
@@ -70,15 +74,16 @@ import Testing
         athlete.ftpWatts = 200
         athlete.zoneUpperBoundsOverride = [100, 115, 130, 150]
         #expect(try LoadRecalculator.recalculate(in: context, now: now) == 2)
-        #expect(ride.load == 240) // power at FTP
-        #expect(run.load == 180) // 120 bpm is now zone 3
+        #expect(ride.load == 240)  // power at FTP
+        #expect(run.load == 180)  // 120 bpm is now zone 3
         #expect(run.zoneSeconds == [0, 0, 3600, 0, 0])
     }
 
     @Test func anEstimateUsesTheMatchedSessionType() throws {
         profile()
         let workout = log(.run, minutes: 40)
-        let session = PlannedWorkout(date: workout.start, sport: .run, sessionType: .intervals, targetDurationSeconds: 2400)
+        let session = PlannedWorkout(
+            date: workout.start, sport: .run, sessionType: .intervals, targetDurationSeconds: 2400)
         context.insert(session)
         session.matchedWorkout = workout
         try LoadRecalculator.recalculate(in: context, now: now)

@@ -35,11 +35,13 @@ struct PlanEditor: View {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
         _name = State(initialValue: plan?.name ?? "")
         _startDate = State(initialValue: plan?.startDate ?? weekStart)
-        _endDate = State(initialValue: plan?.endDate ?? calendar.date(byAdding: .weekOfYear, value: 12, to: weekStart) ?? weekStart)
+        _endDate = State(
+            initialValue: plan?.endDate ?? calendar.date(byAdding: .weekOfYear, value: 12, to: weekStart) ?? weekStart)
         _goalID = State(initialValue: plan?.goal?.uuid)
-        _phases = State(initialValue: (plan?.sortedPhases ?? []).map {
-            PhaseDraft(kind: $0.kind, start: $0.startDate, end: $0.endDate)
-        })
+        _phases = State(
+            initialValue: (plan?.sortedPhases ?? []).map {
+                PhaseDraft(kind: $0.kind, start: $0.startDate, end: $0.endDate)
+            })
     }
 
     private var isValid: Bool {
@@ -72,7 +74,9 @@ struct PlanEditor: View {
                     .onDelete { phases.remove(atOffsets: $0) }
 
                     Button("Add Phase", systemImage: "plus") {
-                        let start = phases.last.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0.end) } ?? startDate
+                        let start =
+                            phases.last.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0.end) }
+                            ?? startDate
                         phases.append(PhaseDraft(kind: .base, start: start, end: max(start, endDate)))
                     }
                     Button("Suggest Phases", systemImage: "wand.and.stars", action: suggestPhases)
@@ -97,7 +101,9 @@ struct PlanEditor: View {
                     Button("Save", action: save).disabled(!isValid)
                 }
             }
-            .confirmationDialog("Delete this plan and all its sessions?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+            .confirmationDialog(
+                "Delete this plan and all its sessions?", isPresented: $confirmingDelete, titleVisibility: .visible
+            ) {
                 Button("Delete Plan", role: .destructive) {
                     if let plan { context.delete(plan) }
                     environment.reconcilePlan()
@@ -115,7 +121,8 @@ struct PlanEditor: View {
     private func applyDefaults() {
         guard plan == nil, !didApplyDefaults else { return }
         didApplyDefaults = true
-        let upcoming = goals
+        let upcoming =
+            goals
             .filter { $0.status == .active && ($0.targetDate ?? .distantPast) > startDate }
             .min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
         guard let goal = upcoming, let date = goal.targetDate else { return }
@@ -149,7 +156,9 @@ struct PlanEditor: View {
             context.delete(phase)
         }
         for draft in phases {
-            let phase = PlanPhase(kind: draft.kind, startDate: calendar.startOfDay(for: draft.start), endDate: calendar.startOfDay(for: draft.end))
+            let phase = PlanPhase(
+                kind: draft.kind, startDate: calendar.startOfDay(for: draft.start),
+                endDate: calendar.startOfDay(for: draft.end))
             context.insert(phase)
             phase.plan = target
         }

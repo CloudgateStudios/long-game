@@ -20,8 +20,13 @@ public enum SpendLedger {
         in context: ModelContext
     ) -> Double {
         guard usage.inputTokens + usage.outputTokens > 0 else { return 0 }
-        let cost = CoachConfiguration.cost(model: model, usage: usage) ?? CoachConfiguration.cost(model: requestedModel, usage: usage) ?? 0
-        context.insert(CoachCharge(date: date, kind: kind, sessionID: sessionID, model: model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, cost: cost))
+        let cost =
+            CoachConfiguration.cost(model: model, usage: usage) ?? CoachConfiguration.cost(
+                model: requestedModel, usage: usage) ?? 0
+        context.insert(
+            CoachCharge(
+                date: date, kind: kind, sessionID: sessionID, model: model, inputTokens: usage.inputTokens,
+                outputTokens: usage.outputTokens, cost: cost))
         return cost
     }
 
@@ -34,19 +39,25 @@ public enum SpendLedger {
 
         for review in try context.fetch(FetchDescriptor<CoachReview>()) where !covered.contains(review.uuid) {
             guard let input = review.inputTokens, let output = review.outputTokens, input + output > 0,
-                  let cost = CoachConfiguration.cost(model: review.model, inputTokens: input, outputTokens: output) else { continue }
-            let charge = CoachCharge(date: review.date, kind: review.trigger == .planGeneration ? .planGeneration : .review,
-                                     sessionID: review.uuid, model: review.model, inputTokens: input, outputTokens: output, cost: cost)
+                let cost = CoachConfiguration.cost(model: review.model, inputTokens: input, outputTokens: output)
+            else { continue }
+            let charge = CoachCharge(
+                date: review.date, kind: review.trigger == .planGeneration ? .planGeneration : .review,
+                sessionID: review.uuid, model: review.model, inputTokens: input, outputTokens: output, cost: cost)
             charge.backfillKey = "review-\(review.uuid.uuidString)"
             context.insert(charge)
             charges.append(charge)
             covered.insert(review.uuid)
         }
-        for conversation in try context.fetch(FetchDescriptor<CoachConversation>()) where !covered.contains(conversation.uuid) {
+        for conversation in try context.fetch(FetchDescriptor<CoachConversation>())
+        where !covered.contains(conversation.uuid) {
             guard conversation.estimatedCost > 0 else { continue }
             // Earlier turns were not dated one by one, so the whole amount lands on the last activity.
-            let charge = CoachCharge(date: conversation.updatedAt, kind: .conversation, sessionID: conversation.uuid, model: conversation.model,
-                                     inputTokens: conversation.inputTokens, outputTokens: conversation.outputTokens, cost: conversation.estimatedCost)
+            let charge = CoachCharge(
+                date: conversation.updatedAt, kind: .conversation, sessionID: conversation.uuid,
+                model: conversation.model,
+                inputTokens: conversation.inputTokens, outputTokens: conversation.outputTokens,
+                cost: conversation.estimatedCost)
             charge.backfillKey = "conversation-\(conversation.uuid.uuidString)"
             context.insert(charge)
             charges.append(charge)
@@ -57,7 +68,9 @@ public enum SpendLedger {
         // earlier copy of itself made on another device.
         let recorded = Set(charges.filter { $0.backfillKey == nil }.map(\.sessionID))
         var seen = Set<String>()
-        for charge in charges.sorted(by: { ($0.backfillKey ?? "", $0.uuid.uuidString) < ($1.backfillKey ?? "", $1.uuid.uuidString) }) {
+        for charge in charges.sorted(by: {
+            ($0.backfillKey ?? "", $0.uuid.uuidString) < ($1.backfillKey ?? "", $1.uuid.uuidString)
+        }) {
             guard let key = charge.backfillKey else { continue }
             if recorded.contains(charge.sessionID) || !seen.insert(key).inserted {
                 context.delete(charge)

@@ -18,19 +18,23 @@ import Testing
     }
 
     func day(_ offset: Int, hour: Double = 0) -> Date {
-        calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: today))!.addingTimeInterval(hour * 3600)
+        calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: today))!.addingTimeInterval(
+            hour * 3600)
     }
 
     @discardableResult
     func plan(_ sport: Sport, day offset: Int, minutes: Double? = 60, type: SessionType = .easy) -> PlannedWorkout {
-        let session = PlannedWorkout(date: day(offset), sport: sport, sessionType: type, targetDurationSeconds: minutes.map { $0 * 60 })
+        let session = PlannedWorkout(
+            date: day(offset), sport: sport, sessionType: type, targetDurationSeconds: minutes.map { $0 * 60 })
         context.insert(session)
         return session
     }
 
     @discardableResult
     func log(_ sport: Sport, day offset: Int, minutes: Double = 60, primary: Bool = true) -> CompletedWorkout {
-        let workout = CompletedWorkout(externalID: UUID(), source: .healthKit, sport: sport, start: day(offset, hour: 7), durationSeconds: minutes * 60)
+        let workout = CompletedWorkout(
+            externalID: UUID(), source: .healthKit, sport: sport, start: day(offset, hour: 7),
+            durationSeconds: minutes * 60)
         workout.isPrimary = primary
         context.insert(workout)
         return workout
@@ -143,7 +147,10 @@ import Testing
     @Test func weekComplianceLeavesOutRestDays() throws {
         let plan = TrainingPlan(name: "Test", startDate: day(-7), endDate: day(7))
         context.insert(plan)
-        for session in [self.plan(.run, day: -2), self.plan(.bike, day: -1), self.plan(.run, day: 1), self.plan(.run, day: -1, minutes: nil, type: .rest)] {
+        for session in [
+            self.plan(.run, day: -2), self.plan(.bike, day: -1), self.plan(.run, day: 1),
+            self.plan(.run, day: -1, minutes: nil, type: .rest),
+        ] {
             session.plan = plan
         }
         log(.run, day: -2, minutes: 60)

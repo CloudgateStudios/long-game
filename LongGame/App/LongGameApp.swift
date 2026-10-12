@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+
 #if os(iOS)
 import UIKit
 #endif
@@ -24,7 +25,9 @@ struct LongGameApp: App {
                     RootView()
                         .modelContainer(container)
                 } else if environment.isForcingCloudSync {
-                    LoadingPlaceholder(title: "Syncing with iCloud", detail: "Sending your changes and checking for new data. This usually takes a few seconds.")
+                    LoadingPlaceholder(
+                        title: "Syncing with iCloud",
+                        detail: "Sending your changes and checking for new data. This usually takes a few seconds.")
                 } else {
                     ContentUnavailableView(
                         "Unlock to continue",
@@ -40,7 +43,9 @@ struct LongGameApp: App {
                 }
             }
             #if os(iOS)
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
+            .onReceive(
+                NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)
+            ) { _ in
                 Task { await environment.activate() }
             }
             #endif

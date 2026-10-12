@@ -80,14 +80,19 @@ public enum CoachPayloadBuilder {
                     sport: goal.eventSport?.rawValue,
                     distanceKm: goal.eventDistanceMeters.map { round1($0 / 1000) },
                     date: goal.targetDate.map(text),
-                    daysAway: goal.targetDate.flatMap { calendar.dateComponents([.day], from: today, to: calendar.startOfDay(for: $0)).day },
+                    daysAway: goal.targetDate.flatMap {
+                        calendar.dateComponents([.day], from: today, to: calendar.startOfDay(for: $0)).day
+                    },
                     target: goal.targetMetric.isEmpty ? nil : goal.targetMetric
                 )
             }
 
         // Plan: the chosen one, else the one covering today, else the most recent.
-        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)])).filter { !$0.isDraft }
-        let plan = plans.first { $0.uuid == planID } ?? plans.first { $0.startDate <= now && now <= $0.endDate } ?? plans.last
+        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)])).filter {
+            !$0.isDraft
+        }
+        let plan =
+            plans.first { $0.uuid == planID } ?? plans.first { $0.startDate <= now && now <= $0.endDate } ?? plans.last
         let sessions = (plan?.workouts ?? [])
             .filter { $0.date >= historyStart && $0.date < planEnd }
             .sorted { ($0.date, $0.createdAt, $0.uuid.uuidString) < ($1.date, $1.createdAt, $1.uuid.uuidString) }
@@ -99,7 +104,9 @@ public enum CoachPayloadBuilder {
             CoachPayload.Plan(
                 start: text(plan.startDate),
                 end: text(plan.endDate),
-                phases: plan.sortedPhases.map { .init(kind: $0.kind.rawValue, start: text($0.startDate), end: text($0.endDate)) },
+                phases: plan.sortedPhases.map {
+                    .init(kind: $0.kind.rawValue, start: text($0.startDate), end: text($0.endDate))
+                },
                 sessions: sessions.map { session in
                     CoachPayload.Session(
                         id: shortIDs[session.uuid] ?? session.uuid.uuidString,
@@ -119,10 +126,11 @@ public enum CoachPayloadBuilder {
 
         // Workouts: only the recording that counts for each session.
         let loadHistoryStart = day(-(CoachConfiguration.historyDays + AnalysisConstants.chronicLoadDays))
-        let allWorkouts = try context.fetch(FetchDescriptor<CompletedWorkout>(
-            predicate: #Predicate { $0.isPrimary && $0.start >= loadHistoryStart },
-            sortBy: [SortDescriptor(\.start)]
-        ))
+        let allWorkouts = try context.fetch(
+            FetchDescriptor<CompletedWorkout>(
+                predicate: #Predicate { $0.isPrimary && $0.start >= loadHistoryStart },
+                sortBy: [SortDescriptor(\.start)]
+            ))
         let workouts = allWorkouts.filter { $0.start >= historyStart }.map { workout in
             CoachPayload.Workout(
                 date: text(workout.start),
@@ -142,7 +150,8 @@ public enum CoachPayloadBuilder {
         }
 
         // Load trend
-        let loadDays = LoadTrend.days(allWorkouts.compactMap(\.loadEntry), from: historyStart, to: today, calendar: calendar)
+        let loadDays = LoadTrend.days(
+            allWorkouts.compactMap(\.loadEntry), from: historyStart, to: today, calendar: calendar)
         let latest = loadDays.last
         var weeks: [Date: CoachPayload.Week] = [:]
         for loadDay in loadDays {
@@ -157,7 +166,8 @@ public enum CoachPayloadBuilder {
             week.load = round0(week.load)
             week.loadBySport = week.loadBySport.mapValues(round0)
             if let plan {
-                let compliance = plan.compliance(on: PlanCalendar.weekDays(containing: start, calendar: calendar), calendar: calendar)
+                let compliance = plan.compliance(
+                    on: PlanCalendar.weekDays(containing: start, calendar: calendar), calendar: calendar)
                 if compliance.planned > 0 {
                     week.sessionsPlanned = compliance.planned
                     week.sessionsDone = compliance.completed
@@ -178,11 +188,13 @@ public enum CoachPayloadBuilder {
 
         // Daily metrics, with a baseline window behind them
         let metricsStart = day(-(CoachConfiguration.historyDays + AnalysisConstants.baselineDays))
-        let metrics = try context.fetch(FetchDescriptor<DailyMetrics>(
-            predicate: #Predicate { $0.date >= metricsStart },
-            sortBy: [SortDescriptor(\.date)]
-        ))
-        func baseline(_ value: KeyPath<DailyMetrics, Double?>, _ direction: RecoveryDirection) -> [Date: BaselinePoint] {
+        let metrics = try context.fetch(
+            FetchDescriptor<DailyMetrics>(
+                predicate: #Predicate { $0.date >= metricsStart },
+                sortBy: [SortDescriptor(\.date)]
+            ))
+        func baseline(_ value: KeyPath<DailyMetrics, Double?>, _ direction: RecoveryDirection) -> [Date: BaselinePoint]
+        {
             let readings = metrics.compactMap { day in day[keyPath: value].map { (date: day.date, value: $0) } }
             let points = RecoveryBaseline.points(readings, direction: direction, calendar: calendar)
             return Dictionary(points.map { ($0.date, $0) }, uniquingKeysWith: { first, _ in first })
@@ -214,7 +226,8 @@ public enum CoachPayloadBuilder {
         }
         func latestBaseline(_ points: [Date: BaselinePoint], scale: Double = 1) -> CoachPayload.Baseline? {
             guard let point = points.values.filter({ $0.mean != nil }).max(by: { $0.date < $1.date }),
-                  let mean = point.mean, let deviation = point.deviation else { return nil }
+                let mean = point.mean, let deviation = point.deviation
+            else { return nil }
             return .init(mean: round1(mean / scale), standardDeviation: round1(deviation / scale))
         }
         let baselines = CoachPayload.Baselines(
@@ -232,7 +245,9 @@ public enum CoachPayloadBuilder {
                 date: text(review.date),
                 assessment: String(review.assessment.prefix(CoachConfiguration.previousAssessmentCharacters)),
                 suggestions: (review.suggestions ?? []).sorted { $0.createdAt < $1.createdAt }.map {
-                    .init(action: $0.action.rawValue, session: $0.targetSummary, rationale: $0.rationale, status: $0.status.rawValue)
+                    .init(
+                        action: $0.action.rawValue, session: $0.targetSummary, rationale: $0.rationale,
+                        status: $0.status.rawValue)
                 }
             )
         }
@@ -253,7 +268,12 @@ public enum CoachPayloadBuilder {
                 CoachPayload.PlanRequest(
                     start: text(request.start),
                     end: text(request.end),
-                    weeks: max(1, ((calendar.dateComponents([.day], from: calendar.startOfDay(for: request.start), to: calendar.startOfDay(for: request.end)).day ?? 0) + 1) / 7),
+                    weeks: max(
+                        1,
+                        ((calendar.dateComponents(
+                            [.day], from: calendar.startOfDay(for: request.start),
+                            to: calendar.startOfDay(for: request.end)
+                        ).day ?? 0) + 1) / 7),
                     goal: request.goalTitle,
                     goalDate: request.goalDate.map(text)
                 )
@@ -262,7 +282,8 @@ public enum CoachPayloadBuilder {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let json = String(decoding: try encoder.encode(payload), as: UTF8.self)
-        return BuiltPayload(payload: payload, json: json, periodStart: historyStart, periodEnd: today, sessionIDs: sessionIDs)
+        return BuiltPayload(
+            payload: payload, json: json, periodStart: historyStart, periodEnd: today, sessionIDs: sessionIDs)
     }
 
     /// The same data with the plan-writing prompt, to paste into the Claude app.
@@ -299,7 +320,9 @@ public enum CoachPayloadBuilder {
     private static func shortIDs(for uuids: [UUID]) -> [UUID: String] {
         let short = uuids.map { String($0.uuidString.prefix(8)).lowercased() }
         let isUnique = Set(short).count == short.count
-        return Dictionary(zip(uuids, isUnique ? short : uuids.map { $0.uuidString.lowercased() }), uniquingKeysWith: { first, _ in first })
+        return Dictionary(
+            zip(uuids, isUnique ? short : uuids.map { $0.uuidString.lowercased() }),
+            uniquingKeysWith: { first, _ in first })
     }
 
     private static func round0(_ value: Double) -> Double { value.rounded() }

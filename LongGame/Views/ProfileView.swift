@@ -36,12 +36,15 @@ struct ProfileView: View {
                 Toggle("Set zones by hand", isOn: $usesCustomZones)
                 if usesCustomZones {
                     ForEach(0..<4, id: \.self) { index in
-                        numberField("Top of zone \(index + 1)", value: $customBounds[index], unit: "bpm", placeholder: "")
+                        numberField(
+                            "Top of zone \(index + 1)", value: $customBounds[index], unit: "bpm", placeholder: "")
                     }
                     if !customZonesAreValid {
-                        Label("Enter four rising values to use these zones.", systemImage: "exclamationmark.triangle.fill")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        Label(
+                            "Enter four rising values to use these zones.", systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                     }
                 }
                 if let bounds = zones.bounds {
@@ -55,7 +58,10 @@ struct ProfileView: View {
                 Text("Zones in use")
             } footer: {
                 if !zones.isOverridden, zones.bounds != nil {
-                    Text(zones.restingHR == nil ? "Worked out as percentages of max heart rate." : "Worked out from heart-rate reserve (max minus resting).")
+                    Text(
+                        zones.restingHR == nil
+                            ? "Worked out as percentages of max heart rate."
+                            : "Worked out from heart-rate reserve (max minus resting).")
                 }
             }
 
@@ -73,17 +79,27 @@ struct ProfileView: View {
             } header: {
                 Text("Notes for the coach")
             } footer: {
-                Text("Sent with every review. For example: \"left knee is sore after long descents\" or \"no swimming on Fridays\".")
+                Text(
+                    "Sent with every review. For example: \"left knee is sore after long descents\" or \"no swimming on Fridays\"."
+                )
             }
 
             if let profile {
                 Section("From Health") {
                     if let age = profile.age() { LabeledContent("Age", value: age.formatted()) }
                     if let height = profile.heightCm {
-                        LabeledContent("Height", value: Measurement(value: height, unit: UnitLength.centimeters).formatted(.measurement(width: .abbreviated, usage: .personHeight)))
+                        LabeledContent(
+                            "Height",
+                            value: Measurement(value: height, unit: UnitLength.centimeters).formatted(
+                                .measurement(width: .abbreviated, usage: .personHeight)))
                     }
                     if let weight = profile.weightKg {
-                        LabeledContent("Weight", value: Measurement(value: weight, unit: UnitMass.kilograms).formatted(.measurement(width: .abbreviated, usage: .personWeight, numberFormatStyle: .number.precision(.fractionLength(0...1)))))
+                        LabeledContent(
+                            "Weight",
+                            value: Measurement(value: weight, unit: UnitMass.kilograms).formatted(
+                                .measurement(
+                                    width: .abbreviated, usage: .personWeight,
+                                    numberFormatStyle: .number.precision(.fractionLength(0...1)))))
                     }
                 }
             }
@@ -113,7 +129,7 @@ struct ProfileView: View {
                 TextField(placeholder, value: value, format: .number.precision(.fractionLength(0)))
                     .multilineTextAlignment(.trailing)
                     #if os(iOS)
-                    .keyboardType(.numberPad)
+                .keyboardType(.numberPad)
                     #endif
                 Text(unit).foregroundStyle(.secondary)
             }

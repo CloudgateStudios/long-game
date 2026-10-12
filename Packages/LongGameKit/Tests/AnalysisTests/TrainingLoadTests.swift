@@ -13,13 +13,17 @@ import Testing
     }
 
     @Test func aNonsenseRestingRateIsIgnored() {
-        #expect(HeartRateZones.upperBounds(maxHR: 190, restingHR: 200) == HeartRateZones.upperBounds(maxHR: 190, restingHR: nil))
+        #expect(
+            HeartRateZones.upperBounds(maxHR: 190, restingHR: 200)
+                == HeartRateZones.upperBounds(maxHR: 190, restingHR: nil))
     }
 
     @Test func aManualOverrideWins() {
-        #expect(HeartRateZones.resolve(override: [120, 140, 155, 170], maxHR: 190, restingHR: 50) == [120, 140, 155, 170])
+        #expect(
+            HeartRateZones.resolve(override: [120, 140, 155, 170], maxHR: 190, restingHR: 50) == [120, 140, 155, 170])
         // A malformed override falls back to the derived zones.
-        #expect(HeartRateZones.resolve(override: [140, 120, 155, 170], maxHR: 190, restingHR: nil) == [114, 133, 152, 171])
+        #expect(
+            HeartRateZones.resolve(override: [140, 120, 155, 170], maxHR: 190, restingHR: nil) == [114, 133, 152, 171])
         #expect(HeartRateZones.resolve(override: [120, 140], maxHR: 190, restingHR: nil) == [114, 133, 152, 171])
         #expect(HeartRateZones.resolve(override: nil, maxHR: nil, restingHR: 50) == nil)
     }
@@ -41,14 +45,16 @@ import Testing
     func histogram(_ minutesAtBPM: [(Double, Double)]) -> [Double] {
         var bins = Array(repeating: 0.0, count: AnalysisConstants.histogramBinCount)
         for (minutes, bpm) in minutesAtBPM {
-            bins[Int((bpm - AnalysisConstants.histogramLowestBPM) / AnalysisConstants.histogramBinWidth)] += minutes * 60
+            bins[Int((bpm - AnalysisConstants.histogramLowestBPM) / AnalysisConstants.histogramBinWidth)] +=
+                minutes * 60
         }
         return bins
     }
 
     @Test func heartRateLoadIsZoneWeightedMinutes() {
         // 30 min in zone 2 and 10 min in zone 4: 30 × 2 + 10 × 4.
-        let input = WorkoutLoad.Input(sport: .run, durationSeconds: 2400, heartRateHistogram: histogram([(30, 120), (10, 160)]))
+        let input = WorkoutLoad.Input(
+            sport: .run, durationSeconds: 2400, heartRateHistogram: histogram([(30, 120), (10, 160)]))
         let result = WorkoutLoad.compute(input, zoneBounds: bounds, ftpWatts: nil)
         #expect(result.method == .heartRate)
         #expect(result.load == 100)
@@ -56,7 +62,8 @@ import Testing
     }
 
     @Test func ridesPreferPowerWhenFTPIsKnown() {
-        let input = WorkoutLoad.Input(sport: .bike, durationSeconds: 3600, heartRateHistogram: histogram([(60, 120)]), averagePowerWatts: 200)
+        let input = WorkoutLoad.Input(
+            sport: .bike, durationSeconds: 3600, heartRateHistogram: histogram([(60, 120)]), averagePowerWatts: 200)
         let atFTP = WorkoutLoad.compute(input, zoneBounds: bounds, ftpWatts: 200)
         #expect(atFTP.method == .power)
         #expect(atFTP.load == 240)
@@ -68,7 +75,8 @@ import Testing
     }
 
     @Test func powerDoesNotApplyToRuns() {
-        let input = WorkoutLoad.Input(sport: .run, durationSeconds: 3600, heartRateHistogram: histogram([(60, 120)]), averagePowerWatts: 300)
+        let input = WorkoutLoad.Input(
+            sport: .run, durationSeconds: 3600, heartRateHistogram: histogram([(60, 120)]), averagePowerWatts: 300)
         #expect(WorkoutLoad.compute(input, zoneBounds: bounds, ftpWatts: 250).method == .heartRate)
     }
 
@@ -151,14 +159,18 @@ import Testing
     /// Twenty days alternating 58 and 62 (mean 60, SD about 2.05), then one final reading.
     func readings(final: Double) -> [(date: Date, value: Double)] {
         var result = (1...20).map { offset in
-            (date: calendar.date(byAdding: .day, value: -offset, to: today)!, value: offset.isMultiple(of: 2) ? 58.0 : 62.0)
+            (
+                date: calendar.date(byAdding: .day, value: -offset, to: today)!,
+                value: offset.isMultiple(of: 2) ? 58.0 : 62.0
+            )
         }
         result.append((today, final))
         return result
     }
 
     @Test func aLowHRVDayIsFlagged() throws {
-        let last = try #require(RecoveryBaseline.points(readings(final: 55), direction: .lowIsWorse, calendar: calendar).last)
+        let last = try #require(
+            RecoveryBaseline.points(readings(final: 55), direction: .lowIsWorse, calendar: calendar).last)
         #expect(last.mean == 60)
         #expect(abs((last.deviation ?? 0) - 2.052) < 0.001)
         #expect(last.isFlagged)
@@ -166,17 +178,28 @@ import Testing
 
     @Test func onlyTheWrongSideIsFlagged() throws {
         // High HRV is good news; high resting heart rate is not.
-        #expect(try #require(RecoveryBaseline.points(readings(final: 66), direction: .lowIsWorse, calendar: calendar).last).isFlagged == false)
-        #expect(try #require(RecoveryBaseline.points(readings(final: 66), direction: .highIsWorse, calendar: calendar).last).isFlagged)
-        #expect(try #require(RecoveryBaseline.points(readings(final: 55), direction: .highIsWorse, calendar: calendar).last).isFlagged == false)
+        #expect(
+            try #require(RecoveryBaseline.points(readings(final: 66), direction: .lowIsWorse, calendar: calendar).last)
+                .isFlagged == false)
+        #expect(
+            try #require(RecoveryBaseline.points(readings(final: 66), direction: .highIsWorse, calendar: calendar).last)
+                .isFlagged)
+        #expect(
+            try #require(RecoveryBaseline.points(readings(final: 55), direction: .highIsWorse, calendar: calendar).last)
+                .isFlagged == false)
     }
 
     @Test func withinOneDeviationIsNormal() throws {
-        #expect(try #require(RecoveryBaseline.points(readings(final: 58.5), direction: .lowIsWorse, calendar: calendar).last).isFlagged == false)
+        #expect(
+            try #require(
+                RecoveryBaseline.points(readings(final: 58.5), direction: .lowIsWorse, calendar: calendar).last
+            ).isFlagged == false)
     }
 
     @Test func thereIsNoBaselineWithTooFewReadings() {
-        let few = (0...5).map { (date: calendar.date(byAdding: .day, value: -$0, to: today)!, value: $0 == 0 ? 10.0 : 60.0) }
+        let few = (0...5).map {
+            (date: calendar.date(byAdding: .day, value: -$0, to: today)!, value: $0 == 0 ? 10.0 : 60.0)
+        }
         let points = RecoveryBaseline.points(few, direction: .lowIsWorse, calendar: calendar)
         #expect(points.allSatisfy { $0.mean == nil && !$0.isFlagged })
     }

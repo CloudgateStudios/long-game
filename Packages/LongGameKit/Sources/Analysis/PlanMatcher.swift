@@ -35,7 +35,9 @@ public struct CompletedSession: Sendable, Equatable {
     /// Measured training load, when it has been computed.
     public var load: Double?
 
-    public init(id: UUID, start: Date, sport: Sport, durationSeconds: Double, distanceMeters: Double? = nil, load: Double? = nil) {
+    public init(
+        id: UUID, start: Date, sport: Sport, durationSeconds: Double, distanceMeters: Double? = nil, load: Double? = nil
+    ) {
         self.id = id
         self.start = start
         self.sport = sport
@@ -51,15 +53,18 @@ public enum PlanMatcher {
     ///
     /// Pass only what may be matched automatically: no rest days, no duplicates, and
     /// nothing the user has matched or un-matched by hand.
-    public static func match(planned: [PlannedSession], completed: [CompletedSession], calendar: Calendar) -> [UUID: UUID] {
+    public static func match(planned: [PlannedSession], completed: [CompletedSession], calendar: Calendar) -> [UUID:
+        UUID]
+    {
         let ordered = planned.sorted { ($0.date, $0.id.uuidString) < ($1.date, $1.id.uuidString) }
         var available = completed
         var result: [UUID: UUID] = [:]
 
         func dayDistance(_ session: PlannedSession, _ workout: CompletedSession) -> Int {
-            let days = calendar.dateComponents(
-                [.day], from: calendar.startOfDay(for: session.date), to: calendar.startOfDay(for: workout.start)
-            ).day ?? .max
+            let days =
+                calendar.dateComponents(
+                    [.day], from: calendar.startOfDay(for: session.date), to: calendar.startOfDay(for: workout.start)
+                ).day ?? .max
             return abs(days)
         }
 
@@ -107,7 +112,9 @@ public enum Compliance {
     }
 
     /// The status of a planned session given what, if anything, it was matched to.
-    public static func status(planned: PlannedSession, matched: CompletedSession?, today: Date, calendar: Calendar) -> PlannedStatus {
+    public static func status(planned: PlannedSession, matched: CompletedSession?, today: Date, calendar: Calendar)
+        -> PlannedStatus
+    {
         guard let matched else {
             return calendar.startOfDay(for: planned.date) < calendar.startOfDay(for: today) ? .missed : .planned
         }
@@ -122,7 +129,8 @@ public enum Compliance {
     /// Load a session is expected to produce: duration × the default intensity for its type.
     public static func estimatedLoad(sessionType: SessionType, durationSeconds: Double?) -> Double {
         guard let durationSeconds, durationSeconds > 0 else { return 0 }
-        return durationSeconds / 60 * (AnalysisConstants.defaultIntensity[sessionType] ?? AnalysisConstants.fallbackIntensity)
+        return durationSeconds / 60
+            * (AnalysisConstants.defaultIntensity[sessionType] ?? AnalysisConstants.fallbackIntensity)
     }
 }
 
@@ -140,11 +148,14 @@ public struct SessionOutcome: Sendable, Equatable {
 
     public init(planned: PlannedSession, matched: CompletedSession?, status: PlannedStatus) {
         self.status = status
-        plannedLoad = Compliance.estimatedLoad(sessionType: planned.sessionType, durationSeconds: planned.targetDurationSeconds)
+        plannedLoad = Compliance.estimatedLoad(
+            sessionType: planned.sessionType, durationSeconds: planned.targetDurationSeconds)
         // Until a measured load exists, estimate it the same way as the plan so the two compare fairly.
-        achievedLoad = matched.map {
-            $0.load ?? Compliance.estimatedLoad(sessionType: planned.sessionType, durationSeconds: $0.durationSeconds)
-        } ?? 0
+        achievedLoad =
+            matched.map {
+                $0.load
+                    ?? Compliance.estimatedLoad(sessionType: planned.sessionType, durationSeconds: $0.durationSeconds)
+            } ?? 0
     }
 }
 

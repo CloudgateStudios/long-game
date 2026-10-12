@@ -1,9 +1,10 @@
 import Analysis
-@testable import Coach
 import Foundation
 import Models
 import SwiftData
 import Testing
+
+@testable import Coach
 
 /// Replays scripted responses and records the requests it was sent.
 final class MockTransport: HTTPTransport, @unchecked Sendable {
@@ -29,27 +30,36 @@ final class MockTransport: HTTPTransport, @unchecked Sendable {
         case .failure(let code):
             throw URLError(code)
         case .response(let status, let lines):
-            return (status, AsyncThrowingStream { continuation in
-                for line in lines { continuation.yield(line) }
-                continuation.finish()
-            })
+            return (
+                status,
+                AsyncThrowingStream { continuation in
+                    for line in lines { continuation.yield(line) }
+                    continuation.finish()
+                }
+            )
         }
     }
 
     /// Server-sent events for a reply whose text arrives in the given chunks.
-    static func events(chunks: [String], stopReason: String = "end_turn", model: String = "claude-opus-5-5") -> [String] {
+    static func events(chunks: [String], stopReason: String = "end_turn", model: String = "claude-opus-5-5") -> [String]
+    {
         func data(_ object: [String: Any]) -> String {
             "data: " + String(decoding: try! JSONSerialization.data(withJSONObject: object), as: UTF8.self)
         }
         var lines = [
             "event: message_start",
-            data(["type": "message_start", "message": ["model": model, "usage": ["input_tokens": 1200, "output_tokens": 1]]]),
+            data([
+                "type": "message_start",
+                "message": ["model": model, "usage": ["input_tokens": 1200, "output_tokens": 1]],
+            ]),
             data(["type": "content_block_start", "index": 0, "content_block": ["type": "thinking", "thinking": ""]]),
             data(["type": "content_block_start", "index": 1, "content_block": ["type": "text", "text": ""]]),
             "event: ping",
             data(["type": "ping"]),
         ]
-        lines += chunks.map { data(["type": "content_block_delta", "index": 1, "delta": ["type": "text_delta", "text": $0]]) }
+        lines += chunks.map {
+            data(["type": "content_block_delta", "index": 1, "delta": ["type": "text_delta", "text": $0]])
+        }
         lines += [
             data(["type": "message_delta", "delta": ["stop_reason": stopReason], "usage": ["output_tokens": 340]]),
             data(["type": "message_stop"]),
@@ -61,11 +71,13 @@ final class MockTransport: HTTPTransport, @unchecked Sendable {
 struct MissingBody: Error {}
 
 func jsonBody(_ request: URLRequest?) throws -> [String: Any] {
-    guard let data = request?.httpBody, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw MissingBody() }
+    guard let data = request?.httpBody, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { throw MissingBody() }
     return object
 }
 
-let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags":["HRV dipped twice"],"suggestions":[]}"#
+let sampleReply =
+    #"{"assessment":"Solid week.\nRun volume is on track.","flags":["HRV dipped twice"],"suggestions":[]}"#
 
 @Suite struct ClaudeClientTests {
     func client(_ transport: MockTransport) -> ClaudeClient {
@@ -73,7 +85,8 @@ let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags"
     }
 
     @Test func buildsTheRequestTheAPIExpects() throws {
-        let request = try ClaudeClient.request(apiKey: "  test-key\n", model: "claude-opus-5-5", system: "sys", user: "{}", schema: CoachResponse.schema)
+        let request = try ClaudeClient.request(
+            apiKey: "  test-key\n", model: "claude-opus-5-5", system: "sys", user: "{}", schema: CoachResponse.schema)
         #expect(request.url?.absoluteString == "https://api.anthropic.com/v1/messages")
         #expect(request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "x-api-key") == "test-key")
@@ -98,7 +111,8 @@ let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags"
     }
 
     @Test func modelsWithoutAFallbackDoNotAskForOne() throws {
-        let request = try ClaudeClient.request(apiKey: "k", model: "claude-haiku-5-5", system: "", user: "", schema: [:])
+        let request = try ClaudeClient.request(
+            apiKey: "k", model: "claude-haiku-5-5", system: "", user: "", schema: [:])
         #expect(request.value(forHTTPHeaderField: "anthropic-beta") == nil)
         let body = try jsonBody(request)
         #expect(body["fallbacks"] == nil)
@@ -113,9 +127,13 @@ let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags"
     }
 
     @Test func assemblesAStreamedReply() async throws {
-        let transport = MockTransport([.response(status: 200, lines: MockTransport.events(chunks: ["{\"assess", "ment\":\"Hi\"", "}"]))])
+        let transport = MockTransport([
+            .response(status: 200, lines: MockTransport.events(chunks: ["{\"assess", "ment\":\"Hi\"", "}"]))
+        ])
         let seen = Collector()
-        let message = try await client(transport).send(apiKey: "k", model: "claude-opus-5-5", system: "", user: "") { await seen.add($0) }
+        let message = try await client(transport).send(apiKey: "k", model: "claude-opus-5-5", system: "", user: "") {
+            await seen.add($0)
+        }
         #expect(message.text == "{\"assessment\":\"Hi\"}")
         #expect(message.model == "claude-opus-5-5")
         #expect(message.stopReason == "end_turn")
@@ -155,7 +173,9 @@ let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags"
 
     @Test func doesNotRetryARejectedKeyOrBadRequest() async {
         for (status, type) in [(401, "authentication_error"), (400, "invalid_request_error")] {
-            let transport = MockTransport([.response(status: status, lines: ["{\"error\":{\"type\":\"\(type)\",\"message\":\"x\"}}"])])
+            let transport = MockTransport([
+                .response(status: status, lines: ["{\"error\":{\"type\":\"\(type)\",\"message\":\"x\"}}"])
+            ])
             _ = try? await client(transport).send(apiKey: "k", model: "claude-opus-5-5", system: "", user: "")
             #expect(transport.requests.count == 1)
         }
@@ -171,15 +191,22 @@ let sampleReply = #"{"assessment":"Solid week.\nRun volume is on track.","flags"
 
     @Test func reportsTimeoutsRefusalsAndCutOffReplies() async {
         await #expect(throws: CoachError.timedOut) {
-            try await client(MockTransport(Array(repeating: .failure(.timedOut), count: 3))).send(apiKey: "k", model: "m", system: "", user: "")
+            try await client(MockTransport(Array(repeating: .failure(.timedOut), count: 3))).send(
+                apiKey: "k", model: "m", system: "", user: "")
         }
         await #expect(throws: CoachError.refused) {
-            try await client(MockTransport([.response(status: 200, lines: MockTransport.events(chunks: [], stopReason: "refusal"))]))
-                .send(apiKey: "k", model: "m", system: "", user: "")
+            try await client(
+                MockTransport([.response(status: 200, lines: MockTransport.events(chunks: [], stopReason: "refusal"))])
+            )
+            .send(apiKey: "k", model: "m", system: "", user: "")
         }
         await #expect(throws: CoachError.truncated) {
-            try await client(MockTransport([.response(status: 200, lines: MockTransport.events(chunks: ["{\"assess"], stopReason: "max_tokens"))]))
-                .send(apiKey: "k", model: "m", system: "", user: "")
+            try await client(
+                MockTransport([
+                    .response(status: 200, lines: MockTransport.events(chunks: ["{\"assess"], stopReason: "max_tokens"))
+                ])
+            )
+            .send(apiKey: "k", model: "m", system: "", user: "")
         }
     }
 
@@ -222,7 +249,8 @@ actor Collector {
         #expect(Set(fields.keys) == Set(required))
 
         // A reply with every optional field null decodes.
-        let reply = #"{"assessment":"a","flags":[],"suggestions":[{"action":"remove","sessionId":"ab12cd34","date":null,"sport":null,"sessionType":null,"durationMinutes":null,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"r"}]}"#
+        let reply =
+            #"{"assessment":"a","flags":[],"suggestions":[{"action":"remove","sessionId":"ab12cd34","date":null,"sport":null,"sessionType":null,"durationMinutes":null,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"r"}]}"#
         let decoded = try JSONDecoder().decode(CoachResponse.self, from: Data(reply.utf8))
         #expect(decoded.suggestions == [CoachSuggestion(action: .remove, sessionId: "ab12cd34", rationale: "r")])
     }
@@ -248,9 +276,13 @@ actor Collector {
         profile.coachNotes = "Left knee gets sore after long descents."
         context.insert(profile)
 
-        let goal = Goal(title: "Half Marathon", eventSport: .run, eventDistanceMeters: 21_097.5, targetDate: calendar.date(byAdding: .day, value: 90, to: now))
+        let goal = Goal(
+            title: "Half Marathon", eventSport: .run, eventDistanceMeters: 21_097.5,
+            targetDate: calendar.date(byAdding: .day, value: 90, to: now))
         context.insert(goal)
-        plan = TrainingPlan(name: "Private plan name", startDate: calendar.date(byAdding: .day, value: -30, to: now)!, endDate: calendar.date(byAdding: .day, value: 60, to: now)!, goal: goal)
+        plan = TrainingPlan(
+            name: "Private plan name", startDate: calendar.date(byAdding: .day, value: -30, to: now)!,
+            endDate: calendar.date(byAdding: .day, value: 60, to: now)!, goal: goal)
         context.insert(plan)
     }
 
@@ -260,7 +292,8 @@ actor Collector {
 
     @discardableResult
     func session(_ sport: Sport, day offset: Int, minutes: Double = 60, type: SessionType = .easy) -> PlannedWorkout {
-        let session = PlannedWorkout(date: day(offset), sport: sport, sessionType: type, targetDurationSeconds: minutes * 60)
+        let session = PlannedWorkout(
+            date: day(offset), sport: sport, sessionType: type, targetDurationSeconds: minutes * 60)
         context.insert(session)
         session.plan = plan
         return session
@@ -268,7 +301,9 @@ actor Collector {
 
     @discardableResult
     func workout(_ sport: Sport, day offset: Int, minutes: Double = 60, primary: Bool = true) -> CompletedWorkout {
-        let workout = CompletedWorkout(externalID: UUID(), source: .healthKit, sport: sport, start: day(offset).addingTimeInterval(7 * 3600), durationSeconds: minutes * 60)
+        let workout = CompletedWorkout(
+            externalID: UUID(), source: .healthKit, sport: sport, start: day(offset).addingTimeInterval(7 * 3600),
+            durationSeconds: minutes * 60)
         workout.sourceName = "Secret Watch Name"
         workout.activityName = sport == .other ? "Hiking" : "Outdoor Run"
         workout.isPrimary = primary
@@ -285,11 +320,11 @@ actor Collector {
     @Test func payloadCarriesSummariesButNothingIdentifying() throws {
         let done = session(.run, day: -2)
         session(.bike, day: 3, minutes: 90, type: .long)
-        session(.run, day: 40) // beyond the look-ahead
+        session(.run, day: 40)  // beyond the look-ahead
         workout(.run, day: -2, minutes: 55)
         workout(.other, day: -1, minutes: 120)
-        workout(.bike, day: -3, primary: false) // duplicate recording
-        workout(.run, day: -45) // older than the history window
+        workout(.bike, day: -3, primary: false)  // duplicate recording
+        workout(.run, day: -45)  // older than the history window
         let metrics = DailyMetrics(date: day(-1))
         metrics.restingHR = 51
         metrics.sleepSeconds = 7.5 * 3600
@@ -321,7 +356,9 @@ actor Collector {
 
         // The exact JSON is what is stored and shown, so check the text itself.
         #expect(built.json.contains("\"age\":38"))
-        for forbidden in ["dateOfBirth", "Secret Watch Name", "sourceName", "Private plan name", "externalID", done.uuid.uuidString] {
+        for forbidden in [
+            "dateOfBirth", "Secret Watch Name", "sourceName", "Private plan name", "externalID", done.uuid.uuidString,
+        ] {
             #expect(!built.json.contains(forbidden), "payload leaked \(forbidden)")
         }
         // Compact and stable: the same data always produces the same bytes.
@@ -340,7 +377,11 @@ actor Collector {
     }
 
     func reviewer(replying reply: String) -> (CoachReviewer, MockTransport) {
-        let transport = MockTransport([.response(status: 200, lines: MockTransport.events(chunks: [String(reply.prefix(30)), String(reply.dropFirst(30))]))])
+        let transport = MockTransport([
+            .response(
+                status: 200,
+                lines: MockTransport.events(chunks: [String(reply.prefix(30)), String(reply.dropFirst(30))]))
+        ])
         return (CoachReviewer(client: ClaudeClient(transport: transport, retryDelays: [])), transport)
     }
 
@@ -349,13 +390,15 @@ actor Collector {
         try PlanReconciler.reconcile(in: context, now: now, calendar: calendar)
         let id = String(target.uuid.uuidString.prefix(8)).lowercased()
         let reply = """
-        {"title":"'Short sleep, easier Wednesday.'","assessment":"Good consistency.","flags":["Sleep was short twice"],"suggestions":[\
-        {"action":"modify","sessionId":"\(id)","date":null,"sport":null,"sessionType":"easy","durationMinutes":40,"distanceKm":null,"intensity":"Z2","instructions":null,"rationale":"Back off after two short nights."},\
-        {"action":"add","sessionId":null,"date":"\(day(4).formatted(.iso8601.year().month().day()))","sport":"swim","sessionType":"easy","durationMinutes":30,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"Easy aerobic work."}]}
-        """
+            {"title":"'Short sleep, easier Wednesday.'","assessment":"Good consistency.","flags":["Sleep was short twice"],"suggestions":[\
+            {"action":"modify","sessionId":"\(id)","date":null,"sport":null,"sessionType":"easy","durationMinutes":40,"distanceKm":null,"intensity":"Z2","instructions":null,"rationale":"Back off after two short nights."},\
+            {"action":"add","sessionId":null,"date":"\(day(4).formatted(.iso8601.year().month().day()))","sport":"swim","sessionType":"easy","durationMinutes":30,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"Easy aerobic work."}]}
+            """
         let (reviewer, transport) = reviewer(replying: reply)
         let progress = Progress()
-        let review = try await reviewer.run(trigger: .weekly, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar) { progress.values.append($0) }
+        let review = try await reviewer.run(
+            trigger: .weekly, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar
+        ) { progress.values.append($0) }
 
         #expect(review.assessment == "Good consistency.")
         // The coach's suggested name, tidied of its quotes and full stop.
@@ -388,7 +431,7 @@ actor Collector {
         #expect(target.sessionType == .easy)
         #expect(target.targetDurationSeconds == 2400)
         #expect(target.targetIntensity == "Z2")
-        #expect(target.sport == .run) // null fields are left alone
+        #expect(target.sport == .run)  // null fields are left alone
         #expect(suggestions[0].status == .accepted)
 
         try SuggestionApplier.accept(suggestions[1], in: context, calendar: calendar)
@@ -397,7 +440,8 @@ actor Collector {
         #expect(added.targetDurationSeconds == 1800)
 
         // The next review is told what was said and what was taken up.
-        let next = try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now.addingTimeInterval(86_400), calendar: calendar)
+        let next = try CoachPayloadBuilder.build(
+            in: context, trigger: .onDemand, now: now.addingTimeInterval(86_400), calendar: calendar)
         #expect(next.payload.previousReview?.assessment == "Good consistency.")
         #expect(next.payload.previousReview?.suggestions.map(\.status) == ["accepted", "accepted"])
     }
@@ -407,14 +451,19 @@ actor Collector {
         let removed = session(.bike, day: 3)
         let kept = session(.swim, day: 4)
         func record(_ suggestion: CoachSuggestion, target: PlannedWorkout?) throws -> PlanSuggestion {
-            let record = PlanSuggestion(action: suggestion.action, proposedChangeJSON: String(decoding: try JSONEncoder().encode(suggestion), as: UTF8.self), rationale: suggestion.rationale)
+            let record = PlanSuggestion(
+                action: suggestion.action,
+                proposedChangeJSON: String(decoding: try JSONEncoder().encode(suggestion), as: UTF8.self),
+                rationale: suggestion.rationale)
             context.insert(record)
             record.targetWorkout = target
             return record
         }
         let newDate = day(5).formatted(.iso8601.year().month().day())
 
-        try SuggestionApplier.accept(try record(CoachSuggestion(action: .move, date: newDate, rationale: "r"), target: moved), in: context, calendar: calendar)
+        try SuggestionApplier.accept(
+            try record(CoachSuggestion(action: .move, date: newDate, rationale: "r"), target: moved), in: context,
+            calendar: calendar)
         #expect(calendar.isDate(moved.date, inSameDayAs: day(5)))
 
         let removal = try record(CoachSuggestion(action: .remove, rationale: "r"), target: removed)
@@ -429,29 +478,36 @@ actor Collector {
 
         // A suggestion whose session has since gone cannot be applied.
         let orphan = try record(CoachSuggestion(action: .modify, durationMinutes: 30, rationale: "r"), target: nil)
-        #expect(throws: SuggestionError.sessionGone) { try SuggestionApplier.accept(orphan, in: context, calendar: calendar) }
+        #expect(throws: SuggestionError.sessionGone) {
+            try SuggestionApplier.accept(orphan, in: context, calendar: calendar)
+        }
         #expect(orphan.status == .pending)
         let vague = try record(CoachSuggestion(action: .add, rationale: "r"), target: nil)
-        #expect(throws: SuggestionError.incomplete) { try SuggestionApplier.accept(vague, in: context, calendar: calendar) }
+        #expect(throws: SuggestionError.incomplete) {
+            try SuggestionApplier.accept(vague, in: context, calendar: calendar)
+        }
     }
 
     @Test func aBrokenReplyStoresNothing() async throws {
         session(.run, day: 1)
         let (reviewer, _) = reviewer(replying: #"{"assessment":"cut off mid-sentence and never closed"#)
         await #expect(throws: CoachError.malformed) {
-            _ = try await reviewer.run(trigger: .onDemand, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar)
+            _ = try await reviewer.run(
+                trigger: .onDemand, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar)
         }
         #expect(try context.fetchCount(FetchDescriptor<CoachReview>()) == 0)
 
         await #expect(throws: CoachError.missingAPIKey) {
-            _ = try await reviewer.run(trigger: .onDemand, model: "claude-opus-5-5", apiKey: nil, in: context, now: now, calendar: calendar)
+            _ = try await reviewer.run(
+                trigger: .onDemand, model: "claude-opus-5-5", apiKey: nil, in: context, now: now, calendar: calendar)
         }
     }
 
     @Test func reviewsAreChargedAndOldOnesBackfilledOnce() async throws {
         session(.run, day: 1)
         let (reviewer, _) = reviewer(replying: #"{"assessment":"ok","flags":[],"suggestions":[]}"#)
-        let review = try await reviewer.run(trigger: .onDemand, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar)
+        let review = try await reviewer.run(
+            trigger: .onDemand, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar)
         var charges = try context.fetch(FetchDescriptor<CoachCharge>())
         #expect(charges.count == 1)
         #expect(charges.first?.sessionID == review.uuid)
@@ -460,7 +516,9 @@ actor Collector {
         #expect(abs((charges.first?.cost ?? 0) - (1200 * 4 + 340 * 20) / 1_000_000) < 1e-9)
 
         // A review and a conversation from before the ledger existed.
-        let old = CoachReview(date: day(-20), periodStart: day(-48), periodEnd: day(-20), trigger: .planGeneration, model: "claude-opus-5-5")
+        let old = CoachReview(
+            date: day(-20), periodStart: day(-48), periodEnd: day(-20), trigger: .planGeneration,
+            model: "claude-opus-5-5")
         old.inputTokens = 10_000
         old.outputTokens = 5_000
         context.insert(old)
@@ -478,10 +536,15 @@ actor Collector {
         #expect(charges.first { $0.sessionID == chat.uuid }?.cost == 0.11)
 
         // Another device backfilled the same review, and a real charge turned up for the chat.
-        let copy = CoachCharge(date: old.date, kind: .planGeneration, sessionID: old.uuid, model: old.model, inputTokens: 10_000, outputTokens: 5_000, cost: 0.14)
+        let copy = CoachCharge(
+            date: old.date, kind: .planGeneration, sessionID: old.uuid, model: old.model, inputTokens: 10_000,
+            outputTokens: 5_000, cost: 0.14)
         copy.backfillKey = "review-\(old.uuid.uuidString)"
         context.insert(copy)
-        context.insert(CoachCharge(date: now, kind: .conversation, sessionID: chat.uuid, model: "claude-opus-5-5", inputTokens: 1, outputTokens: 1, cost: 0.11))
+        context.insert(
+            CoachCharge(
+                date: now, kind: .conversation, sessionID: chat.uuid, model: "claude-opus-5-5", inputTokens: 1,
+                outputTokens: 1, cost: 0.11))
         try SpendLedger.backfill(in: context)
         charges = try context.fetch(FetchDescriptor<CoachCharge>())
         #expect(charges.count == 3)

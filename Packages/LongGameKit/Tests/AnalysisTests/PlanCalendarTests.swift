@@ -6,7 +6,7 @@ import Testing
     var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Chicago")!
-        calendar.firstWeekday = 2 // Monday
+        calendar.firstWeekday = 2  // Monday
         return calendar
     }
 
@@ -58,7 +58,9 @@ import Testing
         #expect(PlanCalendar.weekdaySymbols(calendar: calendar).count == 7)
         var sundayFirst = calendar
         sundayFirst.firstWeekday = 1
-        #expect(PlanCalendar.weekdaySymbols(calendar: calendar).last == PlanCalendar.weekdaySymbols(calendar: sundayFirst).first)
+        #expect(
+            PlanCalendar.weekdaySymbols(calendar: calendar).last
+                == PlanCalendar.weekdaySymbols(calendar: sundayFirst).first)
     }
 
     @Test func suggestedPhasesCoverThePlanWithoutGaps() {

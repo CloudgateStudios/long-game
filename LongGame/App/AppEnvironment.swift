@@ -6,6 +6,7 @@ import HealthIngest
 import Models
 import Observation
 import SwiftData
+
 #if os(iOS)
 import UIKit
 #endif
@@ -128,12 +129,15 @@ final class AppEnvironment {
             return
         }
         let containerID = Bundle.main.object(forInfoDictionaryKey: "LGCloudKitContainer") as? String ?? ""
-        if !containerID.isEmpty, let opened = try? LongGameStore.makeContainer(mode: .cloudKit(containerID: containerID)) {
+        if !containerID.isEmpty,
+            let opened = try? LongGameStore.makeContainer(mode: .cloudKit(containerID: containerID))
+        {
             container = opened
             storeKind = .cloudKit(containerID: containerID)
         } else if let opened = try? LongGameStore.makeContainer(mode: .local(name: "LongGame")) {
             container = opened
-            storeKind = .localOnly(reason: containerID.isEmpty ? "No iCloud container configured" : "iCloud store could not be opened")
+            storeKind = .localOnly(
+                reason: containerID.isEmpty ? "No iCloud container configured" : "iCloud store could not be opened")
         }
     }
 
@@ -202,7 +206,9 @@ final class AppEnvironment {
 
     func syncHealth(force: Bool = false) async {
         guard let healthSource, healthState != .syncing, healthState != .needsAuthorization else { return }
-        if !force, case .synced(let date) = healthState, Date().timeIntervalSince(date) < Self.minimumSyncInterval { return }
+        if !force, case .synced(let date) = healthState, Date().timeIntervalSince(date) < Self.minimumSyncInterval {
+            return
+        }
         // Neither Health nor the store can be read while the device is locked; the next
         // activation picks the changes up.
         openStore()

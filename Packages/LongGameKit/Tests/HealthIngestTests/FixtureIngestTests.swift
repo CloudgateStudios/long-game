@@ -59,14 +59,19 @@ import Testing
         let container = try LongGameStore.makeContainer(mode: .inMemory)
         let steps = StepLog()
         try await HealthIngestor(modelContainer: container)
-            .sync(from: try FixtureHealthDataSource(now: now), state: InMemorySyncStateStore(), now: now) { steps.add($0) }
+            .sync(from: try FixtureHealthDataSource(now: now), state: InMemorySyncStateStore(), now: now) {
+                steps.add($0)
+            }
         let seen = steps.values
         #expect(seen.first == .readingProfile)
         #expect(seen.last == .saving)
         #expect(seen.contains(.readingDailyMetrics))
         // The workout count becomes known part way through.
         #expect(seen.contains(.readingWorkouts(done: 0, total: 0)))
-        #expect(seen.contains { if case .readingWorkouts(let done, let total) = $0 { done == total && total > 50 } else { false } })
+        #expect(
+            seen.contains {
+                if case .readingWorkouts(let done, let total) = $0 { done == total && total > 50 } else { false }
+            })
     }
 
     @Test func resyncingFromScratchUpdatesInPlace() async throws {
@@ -126,9 +131,10 @@ import Testing
         let context = ModelContext(container)
         let workouts = try context.fetch(FetchDescriptor<CompletedWorkout>())
         let watch = try #require(workouts.first { !$0.isPrimary })
-        let wahoo = try #require(workouts.first {
-            $0.isPrimary && DuplicateResolver.isSameSession($0.sessionCandidate, watch.sessionCandidate)
-        })
+        let wahoo = try #require(
+            workouts.first {
+                $0.isPrimary && DuplicateResolver.isSameSession($0.sessionCandidate, watch.sessionCandidate)
+            })
         watch.isPrimary = true
         watch.isPrimaryManuallySet = true
         wahoo.isPrimary = false
@@ -146,10 +152,12 @@ import Testing
         let container = try LongGameStore.makeContainer(mode: .inMemory)
         let ingestor = HealthIngestor(modelContainer: container)
         let session = UUID()
-        let single = HealthWorkoutRecord(id: UUID(), sourceName: "Watch", sport: .run, activityName: "Running", start: now, durationSeconds: 1800)
+        let single = HealthWorkoutRecord(
+            id: UUID(), sourceName: "Watch", sport: .run, activityName: "Running", start: now, durationSeconds: 1800)
         let legs = [Sport.bike, .run].enumerated().map { index, sport in
-            HealthWorkoutRecord(id: UUID(), sourceName: "Watch", sport: sport, activityName: "Leg", sessionID: session,
-                                start: now.addingTimeInterval(-86_400 + Double(index) * 4000), durationSeconds: 3600)
+            HealthWorkoutRecord(
+                id: UUID(), sourceName: "Watch", sport: sport, activityName: "Leg", sessionID: session,
+                start: now.addingTimeInterval(-86_400 + Double(index) * 4000), durationSeconds: 3600)
         }
         let state = InMemorySyncStateStore()
         let source = ScriptedSource(steps: [
@@ -213,7 +221,9 @@ private final class ScriptedSource: HealthDataSource, @unchecked Sendable {
     func dailyMetrics(in interval: DateInterval) async throws -> [HealthDailyRecord] { [] }
     func observeWorkouts(onChange: @escaping @Sendable () async -> Void) async throws {}
 
-    func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void) async throws -> WorkoutChanges {
+    func workoutChanges(since anchor: Data?, from start: Date, onProgress: @Sendable (Int, Int) -> Void) async throws
+        -> WorkoutChanges
+    {
         guard !steps.isEmpty else { throw Exhausted() }
         return steps.removeFirst()
     }

@@ -25,7 +25,8 @@ struct PlanMonthView: View {
                 )
 
                 LazyVGrid(columns: columns, spacing: 4) {
-                    ForEach(Array(PlanCalendar.weekdaySymbols(calendar: calendar).enumerated()), id: \.offset) { _, symbol in
+                    ForEach(Array(PlanCalendar.weekdaySymbols(calendar: calendar).enumerated()), id: \.offset) {
+                        _, symbol in
                         Text(symbol).font(.caption).foregroundStyle(.secondary)
                     }
                     ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
@@ -113,7 +114,10 @@ private struct MonthCell: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(isSelected ? AnyShapeStyle(.tint.opacity(0.18)) : AnyShapeStyle(.cardBackground), in: .rect(cornerRadius: 10))
+            .background(
+                isSelected ? AnyShapeStyle(.tint.opacity(0.18)) : AnyShapeStyle(.cardBackground),
+                in: .rect(cornerRadius: 10)
+            )
             .overlay {
                 if isTargeted {
                     RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
@@ -123,7 +127,11 @@ private struct MonthCell: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(day.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-        .accessibilityValue(workouts.isEmpty ? "Nothing planned" : workouts.map { "\(Format.title(of: $0)), \($0.status.label)" }.joined(separator: "; "))
+        .accessibilityValue(
+            workouts.isEmpty
+                ? "Nothing planned"
+                : workouts.map { "\(Format.title(of: $0)), \($0.status.label)" }.joined(separator: "; ")
+        )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .dropDestination(for: String.self) { ids, _ in
             withAnimation { ids.contains { plan.moveWorkout(withID: $0, to: day) } }

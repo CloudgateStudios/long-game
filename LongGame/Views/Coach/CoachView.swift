@@ -3,6 +3,7 @@ import Coach
 import Models
 import SwiftData
 import SwiftUI
+
 #if os(iOS)
 import UIKit
 #else
@@ -56,9 +57,13 @@ struct CoachView: View {
                 }
             } footer: {
                 if !coach.hasKey {
-                    Text("Add an Anthropic API key in Settings to run reviews here. Copy for Claude needs no key: it copies the same data and prompt for you to paste into the Claude app.")
+                    Text(
+                        "Add an Anthropic API key in Settings to run reviews here. Copy for Claude needs no key: it copies the same data and prompt for you to paste into the Claude app."
+                    )
                 } else if didCopy {
-                    Text("Paste it into a new chat in the Claude app. Suggestions from there are applied to the plan by hand.")
+                    Text(
+                        "Paste it into a new chat in the Claude app. Suggestions from there are applied to the plan by hand."
+                    )
                 }
             }
 
@@ -104,7 +109,9 @@ struct CoachView: View {
                     ContentUnavailableView(
                         "No reviews yet",
                         systemImage: "bubble.left.and.text.bubble.right",
-                        description: Text("A review looks at your last four weeks of training and recovery and suggests changes to the sessions ahead. Or talk to the coach to ask questions and say what needs to change.")
+                        description: Text(
+                            "A review looks at your last four weeks of training and recovery and suggests changes to the sessions ahead. Or talk to the coach to ask questions and say what needs to change."
+                        )
                     )
                 }
             }
@@ -117,9 +124,11 @@ struct CoachView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(conversation.title.isEmpty ? "Conversation" : conversation.title).lineLimit(2)
-                                Text("\(conversation.kind == .interview ? "Plan interview" : "Discussion") · \(conversation.updatedAt.formatted(.dateTime.weekday().day().month()))")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                Text(
+                                    "\(conversation.kind == .interview ? "Plan interview" : "Discussion") · \(conversation.updatedAt.formatted(.dateTime.weekday().day().month()))"
+                                )
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                             }
                         }
                         .contextMenu {
@@ -190,7 +199,9 @@ struct CoachView: View {
     private func startWeeklyReviewIfAsked() async {
         guard environment.reminder.openedFromReminder else { return }
         environment.reminder.openedFromReminder = false
-        if let latest = reviews.first(where: { $0.trigger != .planGeneration }), Calendar.current.isDateInToday(latest.date) {
+        if let latest = reviews.first(where: { $0.trigger != .planGeneration }),
+            Calendar.current.isDateInToday(latest.date)
+        {
             opened = latest
         } else if coach.hasKey {
             await run(.weekly)
@@ -204,7 +215,9 @@ struct CoachView: View {
     /// Puts the prompt and payload on the clipboard. The copy expires so health data
     /// does not sit there indefinitely.
     private func copyForClaude() {
-        guard let built = try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, planID: planID) else { return }
+        guard let built = try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, planID: planID) else {
+            return
+        }
         let text = CoachPayloadBuilder.exportText(for: built)
         #if os(iOS)
         UIPasteboard.general.setItems(
@@ -249,10 +262,14 @@ private struct ReviewRow: View {
                 }
             }
             // A named review still says when it was; an unnamed one is already listed by date.
-            Text(review.title.isEmpty ? review.assessment : "\(review.date.formatted(.dateTime.weekday().day().month())) · \(review.assessment)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            Text(
+                review.title.isEmpty
+                    ? review.assessment
+                    : "\(review.date.formatted(.dateTime.weekday().day().month())) · \(review.assessment)"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
         }
     }
 }
@@ -263,16 +280,20 @@ struct PayloadView: View {
 
     private var pretty: String {
         guard let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)),
-              let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]) else { return json }
+            let data = try? JSONSerialization.data(
+                withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        else { return json }
         return String(decoding: data, as: UTF8.self)
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("This is everything the coach receives, along with its instructions. It contains no name, date of birth, location, device or app names.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "This is everything the coach receives, along with its instructions. It contains no name, date of birth, location, device or app names."
+                )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
                 Text(pretty)
                     .font(.caption.monospaced())
                     .textSelection(.enabled)

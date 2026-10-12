@@ -3,6 +3,7 @@ import Coach
 import Models
 import SwiftData
 import SwiftUI
+
 #if os(iOS)
 import UIKit
 #else
@@ -23,7 +24,8 @@ struct PlanGeneratorView: View {
 
     @State private var goalID: UUID?
     @State private var startDate = Calendar.current.startOfDay(for: .now)
-    @State private var endDate = Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Calendar.current.startOfDay(for: .now)) ?? .now
+    @State private var endDate =
+        Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Calendar.current.startOfDay(for: .now)) ?? .now
     @State private var hours: [Double] = Array(repeating: 1, count: 7)
     @State private var sports: Set<Sport> = [.swim, .bike, .run, .strength]
     @State private var notes = ""
@@ -79,8 +81,11 @@ struct PlanGeneratorView: View {
         Section {
             HStack(spacing: 10) {
                 ProgressView()
-                Text(coach.plannedSessionCount > 0 ? "Planned \(coach.plannedSessionCount) sessions so far…" : "Reading your training history…")
-                    .foregroundStyle(.secondary)
+                Text(
+                    coach.plannedSessionCount > 0
+                        ? "Planned \(coach.plannedSessionCount) sessions so far…" : "Reading your training history…"
+                )
+                .foregroundStyle(.secondary)
             }
             if !summary.isEmpty {
                 Text(summary)
@@ -115,7 +120,9 @@ struct PlanGeneratorView: View {
         } header: {
             Text("What to plan for")
         } footer: {
-            Text("To redo part of your current plan, start from the date you want changed. Accepting the draft replaces your existing sessions from that date on.")
+            Text(
+                "To redo part of your current plan, start from the date you want changed. Accepting the draft replaces your existing sessions from that date on."
+            )
         }
         .onChange(of: goalID) {
             if let date = goal?.targetDate, date >= startDate { endDate = date }
@@ -124,7 +131,8 @@ struct PlanGeneratorView: View {
         Section {
             ForEach(0..<7, id: \.self) { index in
                 Stepper(value: $hours[index], in: 0...8, step: 0.5) {
-                    LabeledContent(Self.weekdays[index], value: hours[index] == 0 ? "Day off" : "\(hours[index].formatted()) h")
+                    LabeledContent(
+                        Self.weekdays[index], value: hours[index] == 0 ? "Day off" : "\(hours[index].formatted()) h")
                 }
             }
         } header: {
@@ -135,10 +143,12 @@ struct PlanGeneratorView: View {
 
         Section("Sports") {
             ForEach(Sport.allCases.filter { $0 != .other }) { sport in
-                Toggle(isOn: Binding(
-                    get: { sports.contains(sport) },
-                    set: { isOn in if isOn { sports.insert(sport) } else { sports.remove(sport) } }
-                )) {
+                Toggle(
+                    isOn: Binding(
+                        get: { sports.contains(sport) },
+                        set: { isOn in if isOn { sports.insert(sport) } else { sports.remove(sport) } }
+                    )
+                ) {
                     Label(sport.displayName, systemImage: sport.symbolName)
                 }
             }
@@ -157,7 +167,9 @@ struct PlanGeneratorView: View {
                     .foregroundStyle(.secondary)
             } else {
                 LabeledContent("Training per week", value: Format.duration(fitness.seconds / 4))
-                LabeledContent("Sessions per week", value: (Double(fitness.sessions) / 4).formatted(.number.precision(.fractionLength(0...1))))
+                LabeledContent(
+                    "Sessions per week",
+                    value: (Double(fitness.sessions) / 4).formatted(.number.precision(.fractionLength(0...1))))
                 LabeledContent("Load per week", value: Format.load(fitness.load / 4))
                 if let longest = fitness.longestRun {
                     LabeledContent("Longest run", value: Format.duration(longest))
@@ -169,7 +181,9 @@ struct PlanGeneratorView: View {
         } header: {
             Text("Current fitness · last 4 weeks")
         } footer: {
-            Text("Worked out from your workout history. The coach also sees each workout, your recovery data and load trend.")
+            Text(
+                "Worked out from your workout history. The coach also sees each workout, your recovery data and load trend."
+            )
         }
 
         Section {
@@ -181,9 +195,13 @@ struct PlanGeneratorView: View {
             .disabled(!isValid)
         } footer: {
             if coach.hasKey {
-                Text("Generating a plan typically costs 30 to 60 cents on the default model. The result is a draft: nothing in your plan changes until you accept it.")
+                Text(
+                    "Generating a plan typically costs 30 to 60 cents on the default model. The result is a draft: nothing in your plan changes until you accept it."
+                )
             } else {
-                Text("Add an Anthropic API key in Settings to generate a plan here. Copy for Claude needs no key, but the plan it writes has to be entered by hand.")
+                Text(
+                    "Add an Anthropic API key in Settings to generate a plan here. Copy for Claude needs no key, but the plan it writes has to be entered by hand."
+                )
             }
         }
     }
@@ -212,7 +230,8 @@ struct PlanGeneratorView: View {
             if !enabled.isEmpty { sports = enabled }
             notes = profile.coachNotes
         }
-        let upcoming = activeGoals
+        let upcoming =
+            activeGoals
             .filter { ($0.targetDate ?? .distantPast) > startDate }
             .min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
         if let upcoming, let date = upcoming.targetDate {
@@ -245,10 +264,12 @@ struct PlanGeneratorView: View {
 
     private func copyForClaude() {
         saveProfile()
-        guard let built = try? CoachPayloadBuilder.build(in: context, trigger: .planGeneration, planRequest: request) else { return }
+        guard let built = try? CoachPayloadBuilder.build(in: context, trigger: .planGeneration, planRequest: request)
+        else { return }
         let text = CoachPayloadBuilder.planExportText(for: built)
         #if os(iOS)
-        UIPasteboard.general.setItems([[UIPasteboard.typeAutomatic: text]], options: [.expirationDate: Date().addingTimeInterval(600)])
+        UIPasteboard.general.setItems(
+            [[UIPasteboard.typeAutomatic: text]], options: [.expirationDate: Date().addingTimeInterval(600)])
         #else
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
@@ -289,7 +310,8 @@ struct DraftPlanView: View {
 
     private var totals: String {
         let sessions = draft.workouts ?? []
-        let weeks = max(1, ((Calendar.current.dateComponents([.day], from: draft.startDate, to: draft.endDate).day ?? 0) + 1) / 7)
+        let weeks = max(
+            1, ((Calendar.current.dateComponents([.day], from: draft.startDate, to: draft.endDate).day ?? 0) + 1) / 7)
         return "\(sessions.count) sessions over \(weeks) weeks"
     }
 
@@ -361,7 +383,9 @@ struct DraftPlanView: View {
         ) {
             Button("Accept and Replace") { accept() }
         } message: {
-            Text("Sessions already planned on or after that date are replaced. Earlier sessions carry over, and your completed workouts are kept.")
+            Text(
+                "Sessions already planned on or after that date are replaced. Earlier sessions carry over, and your completed workouts are kept."
+            )
         }
         .confirmationDialog("Discard this draft?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
             Button("Discard Draft", role: .destructive) {
