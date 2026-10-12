@@ -104,7 +104,7 @@ struct PlannedWorkoutDetailView: View {
         }
         .sheet(isPresented: $isEditing) {
             if let plan = workout.plan {
-                PlannedWorkoutEditor(plan: plan, workout: workout, date: workout.date)
+                PlannedWorkoutEditor(plan: plan, workout: workout, date: workout.day)
             }
         }
     }
@@ -118,7 +118,7 @@ struct PlannedWorkoutDetailView: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(Format.title(of: workout)).font(.title3.bold())
-                Text(workout.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Text(workout.day.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)

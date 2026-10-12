@@ -218,7 +218,7 @@ struct SuggestionCard: View {
     /// The session as it is now, or as it was if it has since changed or gone.
     private var target: String {
         if suggestion.status == .pending, let session = suggestion.targetWorkout {
-            return "\(session.date.formatted(.dateTime.weekday().day().month())) · \(Format.title(of: session))"
+            return "\(session.day.formatted(.dateTime.weekday().day().month())) · \(Format.title(of: session))"
         }
         // The stored summary starts with an ISO date, which reads better as a weekday.
         let summary = suggestion.targetSummary
@@ -253,7 +253,7 @@ struct SuggestionCard: View {
             rows.append(Row(field: field, before: suggestion.action == .add ? nil : before, after: after))
         }
         add(
-            "Date", before: current.map { $0.date.formatted(.dateTime.weekday().day().month()) },
+            "Date", before: current.map { $0.day.formatted(.dateTime.weekday().day().month()) },
             after: dateText(proposal.date))
         add("Sport", before: current?.sport.displayName, after: proposal.sport?.displayName)
         add("Type", before: current?.sessionType.displayName, after: proposal.sessionType?.displayName)

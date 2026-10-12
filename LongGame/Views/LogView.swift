@@ -22,7 +22,7 @@ struct LogView: View {
         if !workout.isPrimary { return .duplicate }
         if workout.plannedWorkout != nil { return .planned }
         let day = Calendar.current.startOfDay(for: workout.start)
-        let isCovered = plans.contains { !$0.isDraft && $0.startDate <= day && day <= $0.endDate }
+        let isCovered = plans.contains { !$0.isDraft && $0.startDay <= day && day <= $0.endDay }
         return isCovered ? .unplanned : nil
     }
 

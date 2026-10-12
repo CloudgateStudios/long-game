@@ -48,7 +48,7 @@ import Testing
         #expect(old.load == before)
         #expect(recent.load == before)
         #expect(try snapshots().map(\.ftpWatts) == [200, 250])
-        #expect(try snapshots().map(\.date) == [calendar.startOfDay(for: day(-30)), calendar.startOfDay(for: now)])
+        #expect(try snapshots().map(\.day) == [calendar.startOfDay(for: day(-30)), calendar.startOfDay(for: now)])
     }
 
     @Test func aFirstFTPReachesBackToRidesBeforeIt() throws {
@@ -76,7 +76,7 @@ import Testing
         athlete.ftpWatts = 200
         try LoadRecalculator.recalculate(in: context, now: now)
         let other = ThresholdSnapshot(date: now)
-        other.day = try #require(try snapshots().first?.day)
+        other.date = try #require(try snapshots().first?.date)
         other.createdAt = now.addingTimeInterval(60)
         other.ftpWatts = 200
         other.zoneUpperBounds = try snapshots().first?.zoneUpperBounds

@@ -15,7 +15,7 @@ public enum ThresholdHistory {
         private let entries: [(day: Date, values: Values)]
 
         public init(_ snapshots: [ThresholdSnapshot]) {
-            entries = snapshots.map { ($0.day, Values(zoneBounds: $0.zoneUpperBounds, ftpWatts: $0.ftpWatts)) }
+            entries = snapshots.map { ($0.date, Values(zoneBounds: $0.zoneUpperBounds, ftpWatts: $0.ftpWatts)) }
         }
 
         /// The numbers in force on a `CalendarDay` stamp: the latest recorded on or before
@@ -33,7 +33,7 @@ public enum ThresholdHistory {
     /// Every snapshot, oldest first.
     public static func snapshots(in context: ModelContext) throws -> [ThresholdSnapshot] {
         try context.fetch(FetchDescriptor<ThresholdSnapshot>()).sorted {
-            ($0.day, $0.createdAt, $0.uuid.uuidString) < ($1.day, $1.createdAt, $1.uuid.uuidString)
+            ($0.date, $0.createdAt, $0.uuid.uuidString) < ($1.date, $1.createdAt, $1.uuid.uuidString)
         }
     }
 
@@ -47,7 +47,7 @@ public enum ThresholdHistory {
         // One snapshot a day. Two devices can each write today's before they have synced;
         // the later one wins on both.
         for (index, snapshot) in all.enumerated().reversed() where index + 1 < all.count {
-            if snapshot.day == all[index + 1].day {
+            if snapshot.date == all[index + 1].date {
                 context.delete(snapshot)
                 all.remove(at: index)
             }
@@ -67,12 +67,12 @@ public enum ThresholdHistory {
 
         let today = CalendarDay.stamp(for: now, calendar: calendar)
         let snapshot: ThresholdSnapshot
-        if let latest, latest.day >= today {
+        if let latest, latest.date >= today {
             // Several edits in one day are one change.
             snapshot = latest
         } else {
             snapshot = ThresholdSnapshot(date: now)
-            snapshot.day = today
+            snapshot.date = today
             snapshot.createdAt = now
             context.insert(snapshot)
             all.append(snapshot)

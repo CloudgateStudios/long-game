@@ -178,8 +178,11 @@ The Production schema only accepts additions: a deployed field can never be remo
 renamed, retyped or have its encryption changed. The models are versioned (`SchemaV1`).
 
 Calendar days (a session's day, a night's metrics, plan and phase ranges, a goal's date) are
-stored as `CalendarDay` stamps, midnight UTC of that year, month and day, and read through
-a `date` accessor. A day therefore stays the same day when the device changes time zone.
+stored as `CalendarDay` stamps, midnight UTC of that year, month and day. A day therefore
+stays the same day when the device changes time zone. The stored fields keep their original
+names (`date`, `startDate`, `endDate`, `targetDate`), because a store that syncs with
+CloudKit cannot rename a property; code reads them through `day`, `startDay`, `endDay` and
+`targetDay`.
 
 - **AthleteProfile** — age source (DOB), sex, height, weight, max HR, resting HR baseline,
   HR zones (auto-derived, manually overridable), threshold values per sport (FTP, threshold

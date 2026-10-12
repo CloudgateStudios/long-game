@@ -70,7 +70,7 @@ public enum CoachPayloadBuilder {
         // Goals
         let goals = try context.fetch(FetchDescriptor<Goal>(sortBy: [SortDescriptor(\.createdAt)]))
             .filter { $0.status != .abandoned }
-            .sorted { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
+            .sorted { ($0.priority, $0.targetDay ?? .distantFuture) < ($1.priority, $1.targetDay ?? .distantFuture) }
             .map { goal in
                 CoachPayload.Goal(
                     title: goal.title,
@@ -79,8 +79,8 @@ public enum CoachPayloadBuilder {
                     status: goal.status.rawValue,
                     sport: goal.eventSport?.rawValue,
                     distanceKm: goal.eventDistanceMeters.map { round1($0 / 1000) },
-                    date: goal.targetDate.map(text),
-                    daysAway: goal.targetDate.flatMap {
+                    date: goal.targetDay.map(text),
+                    daysAway: goal.targetDay.flatMap {
                         calendar.dateComponents([.day], from: today, to: calendar.startOfDay(for: $0)).day
                     },
                     target: goal.targetMetric.isEmpty ? nil : goal.targetMetric
@@ -88,29 +88,29 @@ public enum CoachPayloadBuilder {
             }
 
         // Plan: the chosen one, else the one covering today, else the most recent.
-        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDay)])).filter {
+        let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)])).filter {
             !$0.isDraft
         }
         let plan =
-            plans.first { $0.uuid == planID } ?? plans.first { $0.startDate <= now && now <= $0.endDate } ?? plans.last
+            plans.first { $0.uuid == planID } ?? plans.first { $0.startDay <= now && now <= $0.endDay } ?? plans.last
         let sessions = (plan?.workouts ?? [])
-            .filter { $0.date >= historyStart && $0.date < planEnd }
-            .sorted { $0.day == $1.day ? PlannedWorkout.inDayOrder($0, $1) : $0.day < $1.day }
+            .filter { $0.day >= historyStart && $0.day < planEnd }
+            .sorted { $0.date == $1.date ? PlannedWorkout.inDayOrder($0, $1) : $0.date < $1.date }
         let shortIDs = shortIDs(for: sessions.map(\.uuid))
         var sessionIDs: [String: UUID] = [:]
         for (uuid, short) in shortIDs { sessionIDs[short] = uuid }
 
         let payloadPlan = plan.map { plan in
             CoachPayload.Plan(
-                start: text(plan.startDate),
-                end: text(plan.endDate),
+                start: text(plan.startDay),
+                end: text(plan.endDay),
                 phases: plan.sortedPhases.map {
-                    .init(kind: $0.kind.rawValue, start: text($0.startDate), end: text($0.endDate))
+                    .init(kind: $0.kind.rawValue, start: text($0.startDay), end: text($0.endDay))
                 },
                 sessions: sessions.map { session in
                     CoachPayload.Session(
                         id: shortIDs[session.uuid] ?? session.uuid.uuidString,
-                        date: text(session.date),
+                        date: text(session.day),
                         sport: session.sport.rawValue,
                         type: session.sessionType.rawValue,
                         minutes: session.targetDurationSeconds.map { round0($0 / 60) },
@@ -195,12 +195,12 @@ public enum CoachPayloadBuilder {
             for: day(-(CoachConfiguration.historyDays + AnalysisConstants.baselineDays)), calendar: calendar)
         let metrics = try context.fetch(
             FetchDescriptor<DailyMetrics>(
-                predicate: #Predicate { $0.day >= metricsStartDay },
-                sortBy: [SortDescriptor(\.day)]
+                predicate: #Predicate { $0.date >= metricsStartDay },
+                sortBy: [SortDescriptor(\.date)]
             ))
         func baseline(_ value: KeyPath<DailyMetrics, Double?>, _ direction: RecoveryDirection) -> [Date: BaselinePoint]
         {
-            let readings = metrics.compactMap { day in day[keyPath: value].map { (date: day.date, value: $0) } }
+            let readings = metrics.compactMap { day in day[keyPath: value].map { (date: day.day, value: $0) } }
             let points = RecoveryBaseline.points(readings, direction: direction, calendar: calendar)
             return Dictionary(points.map { ($0.date, $0) }, uniquingKeysWith: { first, _ in first })
         }
@@ -209,13 +209,13 @@ public enum CoachPayloadBuilder {
         let sleep = baseline(\.sleepSeconds, .lowIsWorse)
         let loadByDay = Dictionary(loadDays.map { ($0.date, $0.total) }, uniquingKeysWith: { first, _ in first })
 
-        let daily = metrics.filter { $0.date >= day(-(CoachConfiguration.historyDays - 1)) }.map { metric in
+        let daily = metrics.filter { $0.day >= day(-(CoachConfiguration.historyDays - 1)) }.map { metric in
             var flags: [String] = []
-            if hrv[metric.date]?.isFlagged == true { flags.append("hrvLow") }
-            if restingHR[metric.date]?.isFlagged == true { flags.append("restingHRHigh") }
-            if sleep[metric.date]?.isFlagged == true { flags.append("sleepShort") }
+            if hrv[metric.day]?.isFlagged == true { flags.append("hrvLow") }
+            if restingHR[metric.day]?.isFlagged == true { flags.append("restingHRHigh") }
+            if sleep[metric.day]?.isFlagged == true { flags.append("sleepShort") }
             return CoachPayload.Day(
-                date: text(metric.date),
+                date: text(metric.day),
                 restingHR: metric.restingHR.map(round0),
                 hrv: metric.hrvSDNN.map(round0),
                 sleepHours: metric.sleepSeconds.map { round1($0 / 3600) },
@@ -225,7 +225,7 @@ public enum CoachPayloadBuilder {
                 steps: metric.steps.map(round0),
                 vo2Max: metric.vo2Max.map(round1),
                 weightKg: metric.bodyMassKg.map(round1),
-                load: loadByDay[calendar.startOfDay(for: metric.date)].flatMap { $0 > 0 ? round0($0) : nil },
+                load: loadByDay[calendar.startOfDay(for: metric.day)].flatMap { $0 > 0 ? round0($0) : nil },
                 flags: flags.isEmpty ? nil : flags
             )
         }

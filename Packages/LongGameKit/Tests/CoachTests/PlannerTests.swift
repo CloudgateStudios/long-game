@@ -36,7 +36,7 @@ import Testing
     }
 
     var request: PlanRequest {
-        PlanRequest(start: day(0), end: day(27), goalTitle: goal.title, goalDate: goal.targetDate)
+        PlanRequest(start: day(0), end: day(27), goalTitle: goal.title, goalDate: goal.targetDay)
     }
 
     func reply(sessions: [(Int, String, String, Double?)]) -> String {
@@ -80,7 +80,7 @@ import Testing
         #expect(plan.workouts(on: day(27), calendar: calendar).first?.targetDurationSeconds == nil)
         // A phase running past the end is clipped to the plan.
         #expect(plan.sortedPhases.map(\.kind) == [.build, .taper])
-        #expect(plan.sortedPhases.last?.endDate == day(27))
+        #expect(plan.sortedPhases.last?.endDay == day(27))
         #expect(
             progress.values.last
                 == CoachPlanner.Progress(
@@ -177,12 +177,12 @@ import Testing
         try PlanReconciler.acceptDraft(draft, in: context, calendar: calendar)
         #expect(!draft.isDraft)
         // The running plan is folded in: its history carries over, its future is replaced.
-        #expect(draft.startDate == day(-20))
-        #expect(draft.endDate == day(27))
-        #expect((draft.workouts ?? []).map(\.date).sorted() == [day(-5), day(0)])
+        #expect(draft.startDay == day(-20))
+        #expect(draft.endDay == day(27))
+        #expect((draft.workouts ?? []).map(\.day).sorted() == [day(-5), day(0)])
         #expect(draft.workouts(on: day(0), calendar: calendar).map(\.sport) == [.bike])
         #expect(draft.sortedPhases.map(\.kind) == [.base, .build, .taper])
-        #expect(draft.sortedPhases.first?.endDate == day(-1))
+        #expect(draft.sortedPhases.first?.endDay == day(-1))
         #expect(draft.phase(on: day(-3), calendar: calendar)?.kind == .base)
         // A plan that starts later is replaced outright; one already finished is untouched.
         let names = Set(try context.fetch(FetchDescriptor<TrainingPlan>()).map(\.name))

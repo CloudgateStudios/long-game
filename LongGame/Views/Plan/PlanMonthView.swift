@@ -83,7 +83,7 @@ struct PlanMonthView: View {
         return seen.enumerated().map { index, phase in
             index == 0
                 ? phase.kind.displayName
-                : "\(phase.kind.displayName) from \(phase.startDate.formatted(.dateTime.day().month(.abbreviated)))"
+                : "\(phase.kind.displayName) from \(phase.startDay.formatted(.dateTime.day().month(.abbreviated)))"
         }
         .joined(separator: " · ")
     }

@@ -7,7 +7,7 @@ struct GoalsView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Goal.targetDay) private var goals: [Goal]
+    @Query(sort: \Goal.targetDate) private var goals: [Goal]
     @State private var isAdding = false
 
     var body: some View {
@@ -61,7 +61,7 @@ private struct GoalRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(goal.title)
-                if let date = goal.targetDate {
+                if let date = goal.targetDay {
                     Text(date.formatted(date: .abbreviated, time: .omitted))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -110,9 +110,9 @@ private struct GoalEditor: View {
             (DistanceEntry.value(meters: $0, sport: sport) * 100).rounded() / 100
         }
         _distance = State(initialValue: initialDistance)
-        _hasDate = State(initialValue: goal == nil || goal?.targetDate != nil)
+        _hasDate = State(initialValue: goal == nil || goal?.targetDay != nil)
         _date = State(
-            initialValue: goal?.targetDate ?? Calendar.current.date(byAdding: .month, value: 3, to: .now) ?? .now)
+            initialValue: goal?.targetDay ?? Calendar.current.date(byAdding: .month, value: 3, to: .now) ?? .now)
         _targetMetric = State(initialValue: goal?.targetMetric ?? "")
         _priority = State(initialValue: goal?.priority ?? .b)
         _status = State(initialValue: goal?.status ?? .active)
@@ -198,7 +198,7 @@ private struct GoalEditor: View {
                 $0 > 0 ? DistanceEntry.meters(value: $0, sport: sport) : nil
             }
         }
-        target.targetDate = hasDate ? Calendar.current.startOfDay(for: date) : nil
+        target.targetDay = hasDate ? Calendar.current.startOfDay(for: date) : nil
         target.targetMetric = targetMetric.trimmingCharacters(in: .whitespaces)
         target.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         environment.saveChanges()

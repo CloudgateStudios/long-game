@@ -9,7 +9,7 @@ extension PlannedWorkout {
     public var brickMates: [PlannedWorkout] {
         guard let brickID else { return [] }
         return (plan?.workouts ?? [])
-            .filter { $0 !== self && $0.brickID == brickID && $0.day == day }
+            .filter { $0 !== self && $0.brickID == brickID && $0.date == date }
             .sorted(by: Self.inDayOrder)
     }
 
@@ -33,10 +33,10 @@ extension PlannedWorkout {
         let id = leader.brickID ?? UUID()
         leader.brickID = id
         brickID = id
-        day = leader.day
+        date = leader.date
 
         var order = (leader.plan?.workouts ?? [])
-            .filter { $0.day == day && $0 !== self }
+            .filter { $0.date == date && $0 !== self }
             .sorted(by: Self.inDayOrder)
         order.insert(self, at: (order.firstIndex { $0 === leader } ?? order.count - 1) + 1)
         for (position, session) in order.enumerated() where session.orderInDay != position {

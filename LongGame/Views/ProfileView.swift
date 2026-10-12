@@ -9,7 +9,7 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     @Query(sort: \AthleteProfile.createdAt) private var profiles: [AthleteProfile]
-    @Query(sort: \ThresholdSnapshot.day, order: .reverse) private var history: [ThresholdSnapshot]
+    @Query(sort: \ThresholdSnapshot.date, order: .reverse) private var history: [ThresholdSnapshot]
 
     @State private var maxHR: Double?
     @State private var restingHR: Double?
@@ -115,7 +115,7 @@ struct ProfileView: View {
                         LabeledContent {
                             Text(summary(of: snapshot))
                         } label: {
-                            Text("From \(snapshot.date.formatted(date: .abbreviated, time: .omitted))")
+                            Text("From \(snapshot.day.formatted(date: .abbreviated, time: .omitted))")
                         }
                         .contextMenu {
                             Button("Remove", systemImage: "trash", role: .destructive) { remove(snapshot) }

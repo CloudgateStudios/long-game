@@ -117,6 +117,10 @@ final class AppEnvironment {
 
     // MARK: Store
 
+    #if DEBUG
+    private var didInitializeSchema = false
+    #endif
+
     /// Opens the store if it is not open yet. Fails quietly while the device is locked.
     private func openStore() {
         guard container == nil else { return }
@@ -132,7 +136,10 @@ final class AppEnvironment {
         #if DEBUG
         // `-initializeCloudKitSchema` writes the whole schema to CloudKit Development,
         // ready to deploy to Production. See the README.
-        if !containerID.isEmpty, ProcessInfo.processInfo.arguments.contains("-initializeCloudKitSchema") {
+        if !containerID.isEmpty, !didInitializeSchema,
+            ProcessInfo.processInfo.arguments.contains("-initializeCloudKitSchema")
+        {
+            didInitializeSchema = true
             do {
                 try LongGameStore.initializeCloudKitSchema(containerID: containerID)
                 print("CloudKit schema initialized for \(containerID)")

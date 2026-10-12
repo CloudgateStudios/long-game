@@ -8,7 +8,7 @@ struct PlanEditor: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDay) private var goals: [Goal]
+    @Query(sort: \Goal.targetDate) private var goals: [Goal]
 
     let plan: TrainingPlan?
     let onSave: (TrainingPlan) -> Void
@@ -34,13 +34,13 @@ struct PlanEditor: View {
         let calendar = Calendar.current
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
         _name = State(initialValue: plan?.name ?? "")
-        _startDate = State(initialValue: plan?.startDate ?? weekStart)
+        _startDate = State(initialValue: plan?.startDay ?? weekStart)
         _endDate = State(
-            initialValue: plan?.endDate ?? calendar.date(byAdding: .weekOfYear, value: 12, to: weekStart) ?? weekStart)
+            initialValue: plan?.endDay ?? calendar.date(byAdding: .weekOfYear, value: 12, to: weekStart) ?? weekStart)
         _goalID = State(initialValue: plan?.goal?.uuid)
         _phases = State(
             initialValue: (plan?.sortedPhases ?? []).map {
-                PhaseDraft(kind: $0.kind, start: $0.startDate, end: $0.endDate)
+                PhaseDraft(kind: $0.kind, start: $0.startDay, end: $0.endDay)
             })
     }
 
@@ -123,9 +123,9 @@ struct PlanEditor: View {
         didApplyDefaults = true
         let upcoming =
             goals
-            .filter { $0.status == .active && ($0.targetDate ?? .distantPast) > startDate }
-            .min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
-        guard let goal = upcoming, let date = goal.targetDate else { return }
+            .filter { $0.status == .active && ($0.targetDay ?? .distantPast) > startDate }
+            .min { ($0.priority, $0.targetDay ?? .distantFuture) < ($1.priority, $1.targetDay ?? .distantFuture) }
+        guard let goal = upcoming, let date = goal.targetDay else { return }
         goalID = goal.uuid
         name = "\(goal.title) Plan"
         endDate = date
@@ -148,8 +148,8 @@ struct PlanEditor: View {
             context.insert(target)
         }
         target.name = name.trimmingCharacters(in: .whitespaces)
-        target.startDate = calendar.startOfDay(for: startDate)
-        target.endDate = calendar.startOfDay(for: endDate)
+        target.startDay = calendar.startOfDay(for: startDate)
+        target.endDay = calendar.startOfDay(for: endDate)
         target.goal = goals.first { $0.uuid == goalID }
 
         for phase in target.phases ?? [] {

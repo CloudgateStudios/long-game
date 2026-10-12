@@ -72,7 +72,7 @@ import Testing
         #expect(plan.workouts(on: day(13).addingTimeInterval(3600)).map(\.uuid) == [run.uuid])
 
         // Moving a session is just a date change.
-        run.date = day(14)
+        run.day = day(14)
         #expect(plan.workouts(on: day(13)).isEmpty)
         #expect(plan.workouts(on: day(14)).count == 1)
     }

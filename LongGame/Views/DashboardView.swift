@@ -5,11 +5,11 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDay) private var goals: [Goal]
+    @Query(sort: \Goal.targetDate) private var goals: [Goal]
     @Query(sort: \CompletedWorkout.start, order: .reverse) private var workouts: [CompletedWorkout]
-    @Query(sort: \DailyMetrics.day) private var days: [DailyMetrics]
+    @Query(sort: \DailyMetrics.date) private var days: [DailyMetrics]
     @Query(sort: \PlannedWorkout.createdAt) private var planned: [PlannedWorkout]
-    @Query(sort: \TrainingPlan.startDay) private var plans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDate) private var plans: [TrainingPlan]
     @SceneStorage("selectedSection") private var selection: AppSection = .today
     @State private var isShowingGoals = false
 
@@ -21,29 +21,29 @@ struct DashboardView: View {
     private var today: Date { calendar.startOfDay(for: .now) }
 
     private var plannedToday: [PlannedWorkout] {
-        planned.filter { calendar.isDateInToday($0.date) && $0.plan?.isDraft != true }
+        planned.filter { calendar.isDateInToday($0.day) && $0.plan?.isDraft != true }
             .sorted(by: PlannedWorkout.inDayOrder)
     }
 
     /// Every active goal still ahead, soonest first.
     private var upcomingGoals: [Goal] {
         goals
-            .filter { $0.status == .active && ($0.targetDate ?? .distantPast) >= today }
-            .sorted { ($0.targetDate ?? .distantFuture, $0.priority) < ($1.targetDate ?? .distantFuture, $1.priority) }
+            .filter { $0.status == .active && ($0.targetDay ?? .distantPast) >= today }
+            .sorted { ($0.targetDay ?? .distantFuture, $0.priority) < ($1.targetDay ?? .distantFuture, $1.priority) }
     }
 
     /// The goal the header names: the highest priority still ahead, soonest first among equals.
     private var headlineGoal: Goal? {
         upcomingGoals.min {
-            ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture)
+            ($0.priority, $0.targetDay ?? .distantFuture) < ($1.priority, $1.targetDay ?? .distantFuture)
         }
     }
 
     /// The plan in use today, if there is one.
     private var currentPlan: TrainingPlan? {
         plans.first {
-            !$0.isDraft && calendar.startOfDay(for: $0.startDate) <= today
-                && today <= calendar.startOfDay(for: $0.endDate)
+            !$0.isDraft && calendar.startOfDay(for: $0.startDay) <= today
+                && today <= calendar.startOfDay(for: $0.endDay)
         }
     }
 
@@ -59,7 +59,7 @@ struct DashboardView: View {
     }
 
     private func baseline(_ value: KeyPath<DailyMetrics, Double?>, _ direction: RecoveryDirection) -> [BaselinePoint] {
-        let readings = days.compactMap { day in day[keyPath: value].map { (date: day.date, value: $0) } }
+        let readings = days.compactMap { day in day[keyPath: value].map { (date: day.day, value: $0) } }
         let cutoff = calendar.date(byAdding: .day, value: -(Self.recoveryDays - 1), to: today) ?? today
         return RecoveryBaseline.points(readings, direction: direction, calendar: calendar).filter { $0.date >= cutoff }
     }
@@ -376,7 +376,7 @@ private struct GoalCountdownRow: View {
                 Text(goal.title).font(.headline)
                 HStack(spacing: 6) {
                     Text("\(goal.priority.rawValue) goal")
-                    if let date = goal.targetDate {
+                    if let date = goal.targetDay {
                         Text("·")
                         Text(date.formatted(date: .long, time: .omitted))
                     }
@@ -398,7 +398,7 @@ private struct GoalCountdownRow: View {
 
 extension Goal {
     fileprivate var daysAway: Int? {
-        guard let targetDate else { return nil }
+        guard let targetDate = targetDay else { return nil }
         let calendar = Calendar.current
         return calendar.dateComponents(
             [.day], from: calendar.startOfDay(for: .now), to: calendar.startOfDay(for: targetDate)
