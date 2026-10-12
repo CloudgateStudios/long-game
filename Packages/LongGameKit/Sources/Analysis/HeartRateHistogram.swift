@@ -49,7 +49,8 @@ public enum HeartRateHistogram {
     public static func zoneSeconds(bins: [Double], zoneUpperBounds: [Double]) -> [Double] {
         var zones = Array(repeating: 0.0, count: zoneUpperBounds.count + 1)
         for (index, seconds) in bins.enumerated() where seconds > 0 {
-            let midpoint = AnalysisConstants.histogramLowestBPM + (Double(index) + 0.5) * AnalysisConstants.histogramBinWidth
+            let midpoint =
+                AnalysisConstants.histogramLowestBPM + (Double(index) + 0.5) * AnalysisConstants.histogramBinWidth
             let zone = zoneUpperBounds.firstIndex { midpoint <= $0 } ?? zoneUpperBounds.count
             zones[zone] += seconds
         }
@@ -57,7 +58,8 @@ public enum HeartRateHistogram {
     }
 
     static func binIndex(for bpm: Double) -> Int {
-        let raw = Int(((bpm - AnalysisConstants.histogramLowestBPM) / AnalysisConstants.histogramBinWidth).rounded(.down))
+        let raw = Int(
+            ((bpm - AnalysisConstants.histogramLowestBPM) / AnalysisConstants.histogramBinWidth).rounded(.down))
         return Swift.min(Swift.max(raw, 0), AnalysisConstants.histogramBinCount - 1)
     }
 }

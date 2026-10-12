@@ -48,7 +48,8 @@ public enum LongGameStore {
     /// metadata) can carry complete file protection.
     static func storeURL(name: String) throws -> URL {
         let fileManager = FileManager.default
-        let directory = try fileManager
+        let directory =
+            try fileManager
             .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appending(path: "Stores/\(name)", directoryHint: .isDirectory)
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)

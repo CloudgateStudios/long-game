@@ -32,18 +32,22 @@ public struct ResolvedZones: Sendable, Equatable {
 /// Works out zone times and training load for every completed workout and stores them,
 /// so each device (and the coach) reads the same numbers.
 public enum LoadRecalculator {
-    public static func resolveZones(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws -> ResolvedZones {
+    public static func resolveZones(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws
+        -> ResolvedZones
+    {
         var profileDescriptor = FetchDescriptor<AthleteProfile>(sortBy: [SortDescriptor(\.createdAt)])
         profileDescriptor.fetchLimit = 1
         let profile = try context.fetch(profileDescriptor).first
 
         let observed = try context.fetch(FetchDescriptor<CompletedWorkout>()).compactMap(\.maxHR).max()
-        let max = HeartRateZones.maxHeartRate(manual: profile?.maxHR, observed: observed, age: profile?.age(on: now, calendar: calendar))
+        let max = HeartRateZones.maxHeartRate(
+            manual: profile?.maxHR, observed: observed, age: profile?.age(on: now, calendar: calendar))
 
         var resting = profile?.restingHRBaseline
         if resting == nil {
             let since = calendar.date(byAdding: .day, value: -AnalysisConstants.baselineDays, to: now) ?? now
-            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= since })).compactMap(\.restingHR)
+            let recent = try context.fetch(FetchDescriptor<DailyMetrics>(predicate: #Predicate { $0.date >= since }))
+                .compactMap(\.restingHR)
             if !recent.isEmpty { resting = recent.reduce(0, +) / Double(recent.count) }
         }
 
@@ -61,7 +65,9 @@ public enum LoadRecalculator {
     /// Returns how many workouts changed. Run after matching, since an unmeasured
     /// workout's estimate depends on the session it was matched to.
     @discardableResult
-    public static func recalculate(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws -> Int {
+    public static func recalculate(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) throws
+        -> Int
+    {
         let zones = try resolveZones(in: context, now: now, calendar: calendar)
         var changed = 0
         for workout in try context.fetch(FetchDescriptor<CompletedWorkout>()) {

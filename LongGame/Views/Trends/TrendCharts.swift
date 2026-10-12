@@ -47,10 +47,16 @@ struct LoadTrendChart: View {
         let selected = nearest(days, to: selection, by: \.date)
         Chart {
             ForEach(days) { day in
-                LineMark(x: .value("Day", day.date, unit: .day), y: .value("Load", day.chronic), series: .value("Series", Self.chronic))
-                    .foregroundStyle(by: .value("Series", Self.chronic))
-                LineMark(x: .value("Day", day.date, unit: .day), y: .value("Load", day.acute), series: .value("Series", Self.acute))
-                    .foregroundStyle(by: .value("Series", Self.acute))
+                LineMark(
+                    x: .value("Day", day.date, unit: .day), y: .value("Load", day.chronic),
+                    series: .value("Series", Self.chronic)
+                )
+                .foregroundStyle(by: .value("Series", Self.chronic))
+                LineMark(
+                    x: .value("Day", day.date, unit: .day), y: .value("Load", day.acute),
+                    series: .value("Series", Self.acute)
+                )
+                .foregroundStyle(by: .value("Series", Self.acute))
             }
             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
 
@@ -58,11 +64,13 @@ struct LoadTrendChart: View {
                 RuleMark(x: .value("Day", selected.date, unit: .day))
                     .foregroundStyle(.secondary.opacity(0.35))
                     .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        ChartTooltip(title: selected.date.formatted(.dateTime.weekday().day().month()), rows: [
-                            (.series1, Self.acute, Format.load(selected.acute)),
-                            (.series2, Self.chronic, Format.load(selected.chronic)),
-                            (nil, "Ratio", selected.ratio.map(Format.ratio) ?? "–"),
-                        ])
+                        ChartTooltip(
+                            title: selected.date.formatted(.dateTime.weekday().day().month()),
+                            rows: [
+                                (.series1, Self.acute, Format.load(selected.acute)),
+                                (.series2, Self.chronic, Format.load(selected.chronic)),
+                                (nil, "Ratio", selected.ratio.map(Format.ratio) ?? "–"),
+                            ])
                     }
             }
         }
@@ -112,9 +120,12 @@ struct WeeklyLoadChart: View {
             ForEach(weeks) { week in
                 ForEach(Sport.allCases) { sport in
                     if let load = week.bySport[sport], load > 0 {
-                        BarMark(x: .value("Week", week.start, unit: .weekOfYear), y: .value("Load", load), width: .ratio(0.62))
-                            .foregroundStyle(by: .value("Sport", sport.displayName))
-                            .cornerRadius(3)
+                        BarMark(
+                            x: .value("Week", week.start, unit: .weekOfYear), y: .value("Load", load),
+                            width: .ratio(0.62)
+                        )
+                        .foregroundStyle(by: .value("Sport", sport.displayName))
+                        .cornerRadius(3)
                     }
                 }
             }
@@ -185,10 +196,12 @@ struct RecoveryChart: View {
                     RuleMark(x: .value("Day", selected.date, unit: .day))
                         .foregroundStyle(.secondary.opacity(0.35))
                         .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                            ChartTooltip(title: selected.date.formatted(.dateTime.weekday().day().month()), rows: [
-                                (.series1, title, format(selected.value)),
-                                (nil, "Normal", normalRange(of: selected) ?? "–"),
-                            ])
+                            ChartTooltip(
+                                title: selected.date.formatted(.dateTime.weekday().day().month()),
+                                rows: [
+                                    (.series1, title, format(selected.value)),
+                                    (nil, "Normal", normalRange(of: selected) ?? "–"),
+                                ])
                         }
                 }
             }

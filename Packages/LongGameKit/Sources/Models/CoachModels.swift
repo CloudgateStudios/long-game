@@ -132,7 +132,10 @@ public final class CoachCharge {
     /// record, so copies made on two devices can be merged.
     public var backfillKey: String?
 
-    public init(date: Date, kind: CoachChargeKind, sessionID: UUID, model: String, inputTokens: Int, outputTokens: Int, cost: Double) {
+    public init(
+        date: Date, kind: CoachChargeKind, sessionID: UUID, model: String, inputTokens: Int, outputTokens: Int,
+        cost: Double
+    ) {
         self.date = date
         self.kindRaw = kind.rawValue
         self.sessionID = sessionID

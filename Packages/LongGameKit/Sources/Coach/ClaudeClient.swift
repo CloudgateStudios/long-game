@@ -57,7 +57,8 @@ public struct AssistantTurn: Sendable, Equatable {
 
     public var toolUses: [(id: String, name: String, input: JSONValue)] {
         content.compactMap { block in
-            guard block["type"]?.string == "tool_use", let id = block["id"]?.string, let name = block["name"]?.string else { return nil }
+            guard block["type"]?.string == "tool_use", let id = block["id"]?.string, let name = block["name"]?.string
+            else { return nil }
             return (id, name, block["input"] ?? .object([:]))
         }
     }
@@ -112,7 +113,9 @@ public struct ClaudeClient: Sendable {
     private let transport: any HTTPTransport
     private let retryDelays: [Duration]
 
-    public init(transport: any HTTPTransport = URLSessionTransport(), retryDelays: [Duration] = [.seconds(1), .seconds(3)]) {
+    public init(
+        transport: any HTTPTransport = URLSessionTransport(), retryDelays: [Duration] = [.seconds(1), .seconds(3)]
+    ) {
         self.transport = transport
         self.retryDelays = Array(retryDelays.prefix(CoachConfiguration.maxRetries))
     }
@@ -128,7 +131,10 @@ public struct ClaudeClient: Sendable {
             case .review: CoachResponse.schema
             case .plan: PlanResponse.schema
             case .title:
-                ["type": "object", "additionalProperties": false, "required": ["title"], "properties": ["title": ["type": "string"]]]
+                [
+                    "type": "object", "additionalProperties": false, "required": ["title"],
+                    "properties": ["title": ["type": "string"]],
+                ]
             }
         }
     }
@@ -144,7 +150,8 @@ public struct ClaudeClient: Sendable {
         effort: String = CoachConfiguration.effort,
         onText: @Sendable (String) async -> Void = { _ in }
     ) async throws -> ClaudeMessage {
-        let request = try Self.request(apiKey: apiKey, model: model, system: system, user: user, schema: format.schema, effort: effort)
+        let request = try Self.request(
+            apiKey: apiKey, model: model, system: system, user: user, schema: format.schema, effort: effort)
         var attempt = 0
         while true {
             let received = Received()
@@ -171,7 +178,8 @@ public struct ClaudeClient: Sendable {
         tools: [JSONValue],
         onText: @Sendable (String) async -> Void = { _ in }
     ) async throws -> AssistantTurn {
-        let request = try Self.conversationRequest(apiKey: apiKey, model: model, system: system, messages: messages, tools: tools)
+        let request = try Self.conversationRequest(
+            apiKey: apiKey, model: model, system: system, messages: messages, tools: tools)
         var attempt = 0
         while true {
             let received = Received()
@@ -186,7 +194,9 @@ public struct ClaudeClient: Sendable {
         }
     }
 
-    static func conversationRequest(apiKey: String, model: String, system: String, messages: [JSONValue], tools: [JSONValue]) throws -> URLRequest {
+    static func conversationRequest(
+        apiKey: String, model: String, system: String, messages: [JSONValue], tools: [JSONValue]
+    ) throws -> URLRequest {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw CoachError.missingAPIKey }
         var body: [String: JSONValue] = [
@@ -216,7 +226,9 @@ public struct ClaudeClient: Sendable {
 
     /// Rebuilds the turn's content blocks from the stream. Blocks are kept as generic
     /// JSON so thinking blocks and their signatures go back to the API untouched.
-    private func streamTurn(_ request: URLRequest, received: Received, onText: @Sendable (String) async -> Void) async throws -> AssistantTurn {
+    private func streamTurn(_ request: URLRequest, received: Received, onText: @Sendable (String) async -> Void)
+        async throws -> AssistantTurn
+    {
         let status: Int
         let lines: AsyncThrowingStream<String, Error>
         do {
@@ -266,14 +278,18 @@ public struct ClaudeClient: Sendable {
                 case "content_block_stop":
                     if let index, let partial = partialInputs.removeValue(forKey: index) {
                         // An empty input streams as nothing at all.
-                        guard let input = partial.isEmpty ? JSONValue.object([:]) : JSONValue.parse(partial) else { throw CoachError.malformed }
+                        guard let input = partial.isEmpty ? JSONValue.object([:]) : JSONValue.parse(partial) else {
+                            throw CoachError.malformed
+                        }
                         blocks[index]?["input"] = input
                     }
                 case "message_delta":
                     turn.stopReason = event["delta"]?["stop_reason"]?.string ?? turn.stopReason
                     Self.apply(event["usage"], to: &turn.usage)
                 case "error":
-                    throw Self.error(type: event["error"]?["type"]?.string, message: event["error"]?["message"]?.string ?? "", status: 0)
+                    throw Self.error(
+                        type: event["error"]?["type"]?.string, message: event["error"]?["message"]?.string ?? "",
+                        status: 0)
                 default:
                     break
                 }
@@ -303,7 +319,10 @@ public struct ClaudeClient: Sendable {
         total.inputTokens = (count("input_tokens") ?? 0) + total.cacheReadTokens + total.cacheWriteTokens
     }
 
-    static func request(apiKey: String, model: String, system: String, user: String, schema: [String: Any], effort: String = CoachConfiguration.effort) throws -> URLRequest {
+    static func request(
+        apiKey: String, model: String, system: String, user: String, schema: [String: Any],
+        effort: String = CoachConfiguration.effort
+    ) throws -> URLRequest {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw CoachError.missingAPIKey }
 
@@ -342,7 +361,9 @@ public struct ClaudeClient: Sendable {
         }
     }
 
-    private func stream(_ request: URLRequest, received: Received, onText: @Sendable (String) async -> Void) async throws -> ClaudeMessage {
+    private func stream(_ request: URLRequest, received: Received, onText: @Sendable (String) async -> Void)
+        async throws -> ClaudeMessage
+    {
         let status: Int
         let lines: AsyncThrowingStream<String, Error>
         do {
@@ -432,6 +453,8 @@ public struct ClaudeClient: Sendable {
     }
 
     private struct StreamEvent: Decodable {
+        // Property names are the API's wire names.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
         struct Usage: Decodable {
             var input_tokens: Int?
             var output_tokens: Int?
@@ -451,6 +474,7 @@ public struct ClaudeClient: Sendable {
         struct Delta: Decodable {
             var type: String?
             var text: String?
+            // swift-format-ignore: AlwaysUseLowerCamelCase
             var stop_reason: String?
         }
 

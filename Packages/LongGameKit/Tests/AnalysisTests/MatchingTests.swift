@@ -14,11 +14,15 @@ import Testing
     }
 
     func planned(_ sport: Sport, day: Int, minutes: Double? = nil, meters: Double? = nil) -> PlannedSession {
-        PlannedSession(id: UUID(), date: time(day), sport: sport, targetDurationSeconds: minutes.map { $0 * 60 }, targetDistanceMeters: meters)
+        PlannedSession(
+            id: UUID(), date: time(day), sport: sport, targetDurationSeconds: minutes.map { $0 * 60 },
+            targetDistanceMeters: meters)
     }
 
-    func done(_ sport: Sport, day: Int, hour: Int = 7, minutes: Double = 45, meters: Double? = nil) -> CompletedSession {
-        CompletedSession(id: UUID(), start: time(day, hour), sport: sport, durationSeconds: minutes * 60, distanceMeters: meters)
+    func done(_ sport: Sport, day: Int, hour: Int = 7, minutes: Double = 45, meters: Double? = nil) -> CompletedSession
+    {
+        CompletedSession(
+            id: UUID(), start: time(day, hour), sport: sport, durationSeconds: minutes * 60, distanceMeters: meters)
     }
 
     @Test func matchesSameSportOnTheSameDay() {
@@ -49,7 +53,10 @@ import Testing
         let first = planned(.run, day: 12)
         let second = planned(.run, day: 13)
         let workout = done(.run, day: 13)
-        #expect(PlanMatcher.match(planned: [first, second], completed: [workout], calendar: calendar) == [second.id: workout.id])
+        #expect(
+            PlanMatcher.match(planned: [first, second], completed: [workout], calendar: calendar) == [
+                second.id: workout.id
+            ])
     }
 
     @Test func isOneToOne() {
@@ -73,7 +80,8 @@ import Testing
         let run = planned(.run, day: 12)
         let later = done(.run, day: 12, hour: 18)
         let earlier = done(.run, day: 12, hour: 6)
-        #expect(PlanMatcher.match(planned: [run], completed: [later, earlier], calendar: calendar) == [run.id: earlier.id])
+        #expect(
+            PlanMatcher.match(planned: [run], completed: [later, earlier], calendar: calendar) == [run.id: earlier.id])
     }
 }
 
@@ -81,13 +89,17 @@ import Testing
     let calendar = Calendar(identifier: .gregorian)
     let today = Date(timeIntervalSince1970: 1_790_000_000)
 
-    func planned(daysFromToday: Int = -1, minutes: Double? = 60, meters: Double? = nil, type: SessionType = .easy) -> PlannedSession {
-        PlannedSession(id: UUID(), date: today.addingTimeInterval(Double(daysFromToday) * 86_400), sport: .run, sessionType: type,
-                       targetDurationSeconds: minutes.map { $0 * 60 }, targetDistanceMeters: meters)
+    func planned(daysFromToday: Int = -1, minutes: Double? = 60, meters: Double? = nil, type: SessionType = .easy)
+        -> PlannedSession
+    {
+        PlannedSession(
+            id: UUID(), date: today.addingTimeInterval(Double(daysFromToday) * 86_400), sport: .run, sessionType: type,
+            targetDurationSeconds: minutes.map { $0 * 60 }, targetDistanceMeters: meters)
     }
 
     func done(minutes: Double, meters: Double? = nil, load: Double? = nil) -> CompletedSession {
-        CompletedSession(id: UUID(), start: today, sport: .run, durationSeconds: minutes * 60, distanceMeters: meters, load: load)
+        CompletedSession(
+            id: UUID(), start: today, sport: .run, durationSeconds: minutes * 60, distanceMeters: meters, load: load)
     }
 
     func status(_ minutes: Double) -> PlannedStatus {
@@ -106,8 +118,14 @@ import Testing
 
     @Test func distanceIsUsedOnlyWithoutADurationTarget() {
         let byDistance = planned(minutes: nil, meters: 10_000)
-        #expect(Compliance.status(planned: byDistance, matched: done(minutes: 5, meters: 9_000), today: today, calendar: calendar) == .done)
-        #expect(Compliance.status(planned: byDistance, matched: done(minutes: 500, meters: 6_000), today: today, calendar: calendar) == .partial)
+        #expect(
+            Compliance.status(
+                planned: byDistance, matched: done(minutes: 5, meters: 9_000), today: today, calendar: calendar)
+                == .done)
+        #expect(
+            Compliance.status(
+                planned: byDistance, matched: done(minutes: 500, meters: 6_000), today: today, calendar: calendar)
+                == .partial)
         let both = planned(minutes: 60, meters: 10_000)
         #expect(Compliance.ratio(planned: both, completed: done(minutes: 30, meters: 10_000)) == 0.5)
     }
@@ -117,21 +135,31 @@ import Testing
         #expect(Compliance.status(planned: open, matched: done(minutes: 5), today: today, calendar: calendar) == .done)
         // A distance target with no recorded distance cannot be judged either.
         let byDistance = planned(minutes: nil, meters: 5_000)
-        #expect(Compliance.status(planned: byDistance, matched: done(minutes: 30), today: today, calendar: calendar) == .done)
+        #expect(
+            Compliance.status(planned: byDistance, matched: done(minutes: 30), today: today, calendar: calendar)
+                == .done)
     }
 
     @Test func unmatchedSessionsAreMissedOnlyOnceTheDayHasPassed() {
-        #expect(Compliance.status(planned: planned(daysFromToday: -1), matched: nil, today: today, calendar: calendar) == .missed)
-        #expect(Compliance.status(planned: planned(daysFromToday: 0), matched: nil, today: today, calendar: calendar) == .planned)
-        #expect(Compliance.status(planned: planned(daysFromToday: 3), matched: nil, today: today, calendar: calendar) == .planned)
+        #expect(
+            Compliance.status(planned: planned(daysFromToday: -1), matched: nil, today: today, calendar: calendar)
+                == .missed)
+        #expect(
+            Compliance.status(planned: planned(daysFromToday: 0), matched: nil, today: today, calendar: calendar)
+                == .planned)
+        #expect(
+            Compliance.status(planned: planned(daysFromToday: 3), matched: nil, today: today, calendar: calendar)
+                == .planned)
     }
 
     @Test func weekSummaryCountsSessionsAndLoad() {
-        let easy = planned(minutes: 60) // 120 planned
-        let tempo = planned(minutes: 40, type: .tempo) // 140 planned
+        let easy = planned(minutes: 60)  // 120 planned
+        let tempo = planned(minutes: 40, type: .tempo)  // 140 planned
         let outcomes = [
-            SessionOutcome(planned: easy, matched: done(minutes: 60), status: .done), // 120 achieved (estimated)
-            SessionOutcome(planned: tempo, matched: done(minutes: 20, load: 90), status: .partial), // measured load wins
+            // 120 achieved (estimated)
+            SessionOutcome(planned: easy, matched: done(minutes: 60), status: .done),
+            // measured load wins
+            SessionOutcome(planned: tempo, matched: done(minutes: 20, load: 90), status: .partial),
             SessionOutcome(planned: easy, matched: nil, status: .missed),
             SessionOutcome(planned: easy, matched: nil, status: .planned),
         ]

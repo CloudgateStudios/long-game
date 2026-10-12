@@ -27,14 +27,19 @@ struct SettingsView: View {
                 case .cloudKit(let containerID):
                     LabeledContent("iCloud", value: "On")
                     if environment.iCloudAccountAvailable == false {
-                        Label("This device is not signed in to iCloud, so nothing is syncing.", systemImage: "exclamationmark.triangle.fill")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        Label(
+                            "This device is not signed in to iCloud, so nothing is syncing.",
+                            systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                     }
                     LabeledContent("Container", value: containerID)
                     LabeledContent("Status") {
                         HStack(spacing: 8) {
-                            if environment.isImportingFromICloud || environment.isExportingToICloud { ProgressView().controlSize(.small) }
+                            if environment.isImportingFromICloud || environment.isExportingToICloud {
+                                ProgressView().controlSize(.small)
+                            }
                             Text(cloudStatusText).multilineTextAlignment(.trailing)
                         }
                     }
@@ -101,7 +106,9 @@ struct SettingsView: View {
                 Text("Health data")
             } footer: {
                 if environment.healthSource != nil, environment.storeKind != .fixture {
-                    Text("Long Game only reads from Health. Health does not say which permissions were granted, so a type you declined simply shows no data. Change permissions in the Health app under Sharing.")
+                    Text(
+                        "Long Game only reads from Health. Health does not say which permissions were granted, so a type you declined simply shows no data. Change permissions in the Health app under Sharing."
+                    )
                 }
             }
 
@@ -177,7 +184,7 @@ private struct CoachSettingsSection: View {
                     .textContentType(.password)
                     .autocorrectionDisabled()
                     #if os(iOS)
-                    .textInputAutocapitalization(.never)
+                .textInputAutocapitalization(.never)
                     #endif
                 Button("Save Key") {
                     saveFailed = !coach.saveKey(draft)
@@ -196,7 +203,9 @@ private struct CoachSettingsSection: View {
             if saveFailed {
                 Text("The key could not be saved to the Keychain.")
             } else {
-                Text("The key is stored in your iCloud Keychain, so your other devices get it too. API use is billed by Anthropic separately from a Claude subscription.")
+                Text(
+                    "The key is stored in your iCloud Keychain, so your other devices get it too. API use is billed by Anthropic separately from a Claude subscription."
+                )
             }
         }
     }
@@ -210,7 +219,9 @@ private struct ReminderSection: View {
 
     private var time: Binding<Date> {
         Binding {
-            Calendar.current.date(bySettingHour: reminder.minuteOfDay / 60, minute: reminder.minuteOfDay % 60, second: 0, of: .now) ?? .now
+            Calendar.current.date(
+                bySettingHour: reminder.minuteOfDay / 60, minute: reminder.minuteOfDay % 60, second: 0, of: .now)
+                ?? .now
         } set: { date in
             let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
             apply(minute: (parts.hour ?? 18) * 60 + (parts.minute ?? 0))
@@ -232,7 +243,9 @@ private struct ReminderSection: View {
             if reminder.isDenied {
                 Text("Notifications are turned off for Long Game. Allow them in system settings to use the reminder.")
             } else {
-                Text("Opening the app from the reminder starts that week's review. Without an API key it just opens the Coach tab.")
+                Text(
+                    "Opening the app from the reminder starts that week's review. Without an API key it just opens the Coach tab."
+                )
             }
         }
     }
@@ -262,7 +275,9 @@ private struct SpendingSection: View {
         } header: {
             Text("Coach spending")
         } footer: {
-            Text("\(summary.sessions) coaching session\(summary.sessions == 1 ? "" : "s") so far. A session is one review, one generated plan or one whole conversation. Weeks run Sunday to Saturday. These are estimates from token counts at list prices; the Anthropic Console has the billed amounts.")
+            Text(
+                "\(summary.sessions) coaching session\(summary.sessions == 1 ? "" : "s") so far. A session is one review, one generated plan or one whole conversation. Weeks run Sunday to Saturday. These are estimates from token counts at list prices; the Anthropic Console has the billed amounts."
+            )
         }
     }
 

@@ -47,7 +47,9 @@ public struct CoachChat: Sendable {
         calendar: Calendar = .current,
         onText: @escaping @MainActor @Sendable (String) -> Void = { _ in }
     ) async throws {
-        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw CoachError.missingAPIKey }
+        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CoachError.missingAPIKey
+        }
         var messages = JSONValue.parse(conversation.messagesJSON)?.array ?? []
 
         if let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
@@ -59,7 +61,10 @@ public struct CoachChat: Sendable {
             if !hasSnapshot {
                 // The coach's picture of the athlete, sent once with the first message.
                 let built = try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar)
-                blocks.append(.text("\(Self.contextPrefix) (as of \(built.payload.today), \(built.payload.weekday)):\n\(built.json)"))
+                blocks.append(
+                    .text(
+                        "\(Self.contextPrefix) (as of \(built.payload.today), \(built.payload.weekday)):\n\(built.json)"
+                    ))
             }
             if let updates = try pendingUpdates(for: conversation, in: context) {
                 blocks.append(.text(updates))
@@ -73,20 +78,28 @@ public struct CoachChat: Sendable {
 
         let system = Self.systemPrompt(for: conversation.kind)
         for _ in 0..<CoachConfiguration.maxToolRounds {
-            let turn = try await client.converse(apiKey: apiKey, model: model, system: system, messages: messages, tools: Self.tools) { text in
+            let turn = try await client.converse(
+                apiKey: apiKey, model: model, system: system, messages: messages, tools: Self.tools
+            ) { text in
                 await onText(text)
             }
             messages.append(.object(["role": .string("assistant"), "content": .array(turn.content)]))
             conversation.model = turn.model.isEmpty ? model : turn.model
             conversation.inputTokens += turn.usage.inputTokens
             conversation.outputTokens += turn.usage.outputTokens
-            conversation.estimatedCost += SpendLedger.record(turn.usage, kind: .conversation, sessionID: conversation.uuid, model: conversation.model, requestedModel: model, date: now, in: context)
+            conversation.estimatedCost += SpendLedger.record(
+                turn.usage, kind: .conversation, sessionID: conversation.uuid, model: conversation.model,
+                requestedModel: model, date: now, in: context)
             try save(messages, to: conversation, in: context, now: now)
 
             guard turn.stopReason == "tool_use" else { return }
             let results = turn.toolUses.map { call in
-                let outcome = CoachTools.run(call.name, input: call.input, toolUseID: call.id, conversation: conversation, in: context, now: now, calendar: calendar)
-                var block: [String: JSONValue] = ["type": .string("tool_result"), "tool_use_id": .string(call.id), "content": .string(outcome.text)]
+                let outcome = CoachTools.run(
+                    call.name, input: call.input, toolUseID: call.id, conversation: conversation, in: context, now: now,
+                    calendar: calendar)
+                var block: [String: JSONValue] = [
+                    "type": .string("tool_result"), "tool_use_id": .string(call.id), "content": .string(outcome.text),
+                ]
                 if outcome.isError { block["is_error"] = .bool(true) }
                 return JSONValue.object(block)
             }
@@ -97,7 +110,9 @@ public struct CoachChat: Sendable {
     }
 
     @MainActor
-    private func save(_ messages: [JSONValue], to conversation: CoachConversation, in context: ModelContext, now: Date) throws {
+    private func save(_ messages: [JSONValue], to conversation: CoachConversation, in context: ModelContext, now: Date)
+        throws
+    {
         conversation.messagesJSON = JSONValue.array(messages).text
         conversation.updatedAt = now
         try context.save()
@@ -133,7 +148,9 @@ public struct CoachChat: Sendable {
     /// Does nothing if a name was already suggested or typed. Only the athlete's first
     /// message and the coach's first reply are sent, not the training data.
     @MainActor
-    public func suggestTitle(for conversation: CoachConversation, apiKey: String?, context: ModelContext, now: Date = Date()) async {
+    public func suggestTitle(
+        for conversation: CoachConversation, apiKey: String?, context: ModelContext, now: Date = Date()
+    ) async {
         guard !conversation.isTitleSettled, let apiKey else { return }
         let items = Self.transcript(of: conversation.messagesJSON)
         let asked = items.lazy.compactMap { if case .athlete(_, let text) = $0 { text } else { nil } }.first
@@ -141,18 +158,23 @@ public struct CoachChat: Sendable {
         guard let asked, let answered else { return }
 
         let system = """
-        Name a conversation between an athlete and their training coach. Reply with a title of three to six words that \
-        says what it is about, like a subject line ("Sore knee, easier week", "Moving the long run", "Half marathon plan \
-        setup"). No date, no quotation marks, no full stop.
-        """
+            Name a conversation between an athlete and their training coach. Reply with a title of three to six words that \
+            says what it is about, like a subject line ("Sore knee, easier week", "Moving the long run", "Half marathon plan \
+            setup"). No date, no quotation marks, no full stop.
+            """
         let user = "Athlete: \(asked.prefix(600))\n\nCoach: \(answered.prefix(600))"
-        guard let message = try? await client.send(apiKey: apiKey, model: CoachConfiguration.titleModel, system: system, user: user,
-                                                   format: .title, effort: CoachConfiguration.titleEffort) else { return }
+        guard
+            let message = try? await client.send(
+                apiKey: apiKey, model: CoachConfiguration.titleModel, system: system, user: user,
+                format: .title, effort: CoachConfiguration.titleEffort)
+        else { return }
         // The call is paid for whether or not the answer is usable.
-        conversation.estimatedCost += SpendLedger.record(message.usage, kind: .conversation, sessionID: conversation.uuid, model: message.model,
-                                                         requestedModel: CoachConfiguration.titleModel, date: now, in: context)
+        conversation.estimatedCost += SpendLedger.record(
+            message.usage, kind: .conversation, sessionID: conversation.uuid, model: message.model,
+            requestedModel: CoachConfiguration.titleModel, date: now, in: context)
         struct Reply: Decodable { var title: String }
-        let title = SessionTitle.clean((try? JSONDecoder().decode(Reply.self, from: Data(message.text.utf8)))?.title ?? "")
+        let title = SessionTitle.clean(
+            (try? JSONDecoder().decode(Reply.self, from: Data(message.text.utf8)))?.title ?? "")
         // The user may have typed a name while this was in flight; theirs wins.
         if !title.isEmpty, !conversation.isTitleSettled {
             conversation.title = title
@@ -179,7 +201,9 @@ public struct CoachChat: Sendable {
                 let id = "m\(m)b\(b)"
                 switch block["type"]?.string {
                 case "text":
-                    guard let text = block["text"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { continue }
+                    guard let text = block["text"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+                        !text.isEmpty
+                    else { continue }
                     if isCoach {
                         items.append(.coach(id: id, text: text))
                     } else if !text.hasPrefix(contextPrefix), !text.hasPrefix(updatesPrefix) {
@@ -190,7 +214,8 @@ public struct CoachChat: Sendable {
                     switch block["name"]?.string {
                     case CoachTools.proposeChanges: items.append(.suggestions(id: id, toolUseID: toolID))
                     case CoachTools.proposePlan: items.append(.draftPlan(id: id))
-                    case CoachTools.saveAthleteDetails: items.append(.saved(id: id, text: "Saved your availability and notes"))
+                    case CoachTools.saveAthleteDetails:
+                        items.append(.saved(id: id, text: "Saved your availability and notes"))
                     case CoachTools.saveGoal: items.append(.saved(id: id, text: "Saved your goal"))
                     default: break
                     }
@@ -205,57 +230,60 @@ public struct CoachChat: Sendable {
     // MARK: Prompt and tools
 
     static func systemPrompt(for kind: ConversationKind) -> String {
-        let mode = switch kind {
-        case .interview: """
-            The athlete has no training plan and wants one. Interview them, then write it.
-            - Open by saying in a sentence or two what you can already see in their data, then ask your first question.
-            - Ask one or two questions at a time and wait for the answer. Never ask for anything the snapshot already tells you.
-            - Find out what you need and no more: which goal and what they want from it (a target time, or just to finish); \
-            which days and how long they can train; which sports they want in the week; injuries, niggles or constraints; \
-            anything they love or hate doing. Four to seven exchanges is usually enough.
-            - As you learn them, record lasting facts with save_athlete_details (availability, sports, notes) and save_goal.
-            - When you have enough, say briefly how you will shape the plan, then call propose_plan with the whole plan. \
-            Afterwards tell them a draft is ready to review and that nothing changes until they accept it.
-            """
-        case .discussion: """
-            The athlete wants to talk about their training. Answer what they ask, using their data. If they tell you \
-            something that should change the plan (a missed week, a sore knee, a trip, feeling flat, wanting more or less), \
-            work out what should change and propose it.
-            - Use propose_changes for adjustments to particular sessions. Use propose_plan only when the plan needs \
-            rewriting from a date onward, and say that is what you are doing.
-            - If time has passed or changes have been accepted since the snapshot, call get_plan_sessions before proposing, \
-            so you are working from the plan as it is now.
-            - Record lasting facts they mention with save_athlete_details or save_goal.
-            """
-        }
+        let mode =
+            switch kind {
+            case .interview:
+                """
+                The athlete has no training plan and wants one. Interview them, then write it.
+                - Open by saying in a sentence or two what you can already see in their data, then ask your first question.
+                - Ask one or two questions at a time and wait for the answer. Never ask for anything the snapshot already tells you.
+                - Find out what you need and no more: which goal and what they want from it (a target time, or just to finish); \
+                which days and how long they can train; which sports they want in the week; injuries, niggles or constraints; \
+                anything they love or hate doing. Four to seven exchanges is usually enough.
+                - As you learn them, record lasting facts with save_athlete_details (availability, sports, notes) and save_goal.
+                - When you have enough, say briefly how you will shape the plan, then call propose_plan with the whole plan. \
+                Afterwards tell them a draft is ready to review and that nothing changes until they accept it.
+                """
+            case .discussion:
+                """
+                The athlete wants to talk about their training. Answer what they ask, using their data. If they tell you \
+                something that should change the plan (a missed week, a sore knee, a trip, feeling flat, wanting more or less), \
+                work out what should change and propose it.
+                - Use propose_changes for adjustments to particular sessions. Use propose_plan only when the plan needs \
+                rewriting from a date onward, and say that is what you are doing.
+                - If time has passed or changes have been accepted since the snapshot, call get_plan_sessions before proposing, \
+                so you are working from the plan as it is now.
+                - Record lasting facts they mention with save_athlete_details or save_goal.
+                """
+            }
         return """
-        You are a training coach talking with one amateur endurance athlete. You are a training assistant, not a medical \
-        service. If they describe pain, injury, illness or worrying symptoms, or the data shows abnormal readings, say so \
-        plainly and recommend seeing a doctor or physiotherapist rather than training through it. Never diagnose.
+            You are a training coach talking with one amateur endurance athlete. You are a training assistant, not a medical \
+            service. If they describe pain, injury, illness or worrying symptoms, or the data shows abnormal readings, say so \
+            plainly and recommend seeing a doctor or physiotherapist rather than training through it. Never diagnose.
 
-        The first message carries a JSON snapshot of the athlete: profile, goals, plan (recent and upcoming sessions, each \
-        with an id), completed workouts and how they matched the plan, daily recovery metrics with the athlete's own \
-        baselines, and training-load trends. Durations are minutes, distances kilometres, heart rate beats per minute, \
-        power watts. "load" is minutes weighted by heart-rate zone (1 to 5 points per minute). "loadRatio" is the last \
-        7 days' average daily load over the last 28 days'; roughly 0.8 to 1.3 is steady.
+            The first message carries a JSON snapshot of the athlete: profile, goals, plan (recent and upcoming sessions, each \
+            with an id), completed workouts and how they matched the plan, daily recovery metrics with the athlete's own \
+            baselines, and training-load trends. Durations are minutes, distances kilometres, heart rate beats per minute, \
+            power watts. "load" is minutes weighted by heart-rate zone (1 to 5 points per minute). "loadRatio" is the last \
+            7 days' average daily load over the last 28 days'; roughly 0.8 to 1.3 is steady.
 
-        \(mode)
+            \(mode)
 
-        How to talk: like a coach in a chat, not a report. Plain text only, no markdown, no headings or bullet symbols. \
-        Keep replies short, usually a few sentences. Be direct and specific to their numbers.
+            How to talk: like a coach in a chat, not a report. Plain text only, no markdown, no headings or bullet symbols. \
+            Keep replies short, usually a few sentences. Be direct and specific to their numbers.
 
-        How changes work: you cannot change the plan yourself. propose_changes and propose_plan show the athlete \
-        proposals, which they accept or reject one by one. So say "I've suggested", never "I've changed". A message \
-        beginning "\(updatesPrefix)" tells you what they decided; take it as fact.
+            How changes work: you cannot change the plan yourself. propose_changes and propose_plan show the athlete \
+            proposals, which they accept or reject one by one. So say "I've suggested", never "I've changed". A message \
+            beginning "\(updatesPrefix)" tells you what they decided; take it as fact.
 
-        Rules for proposals: only sessions dated today or later. For modify, move and remove give the session's id; for \
-        add give null. Set only the fields that change and leave the rest null. Respect the athlete's availability \
-        (schedule nothing on a day with zero hours) and their notes. Do not put hard sessions (tempo, intervals, race, \
-        long) on consecutive days, and keep week-to-week changes gradual. When writing a whole plan: start from recent \
-        training, build about ten percent a week with a lighter week every third or fourth, cover the dates with phases \
-        without gaps, taper before the goal event, put a session of type race on the goal date, and leave rest days empty. \
-        Dates are YYYY-MM-DD.
-        """
+            Rules for proposals: only sessions dated today or later. For modify, move and remove give the session's id; for \
+            add give null. Set only the fields that change and leave the rest null. Respect the athlete's availability \
+            (schedule nothing on a day with zero hours) and their notes. Do not put hard sessions (tempo, intervals, race, \
+            long) on consecutive days, and keep week-to-week changes gradual. When writing a whole plan: start from recent \
+            training, build about ten percent a week with a lighter week every third or fourth, cover the dates with phases \
+            without gaps, taper before the goal event, put a session of type race on the goal date, and leave rest days empty. \
+            Dates are YYYY-MM-DD.
+            """
     }
 
     /// The same tools in every conversation, so the cached prefix is shared.
@@ -263,57 +291,84 @@ public struct CoachChat: Sendable {
         func nullable(_ type: String) -> [String: Any] { ["anyOf": [["type": type], ["type": "null"]]] }
         // The API allows only 16 nullable parameters across all strict schemas, so strict
         // is kept for the two tools that write proposals; the others are validated here.
-        func tool(_ name: String, _ description: String, strict: Bool = false, properties: [String: Any], required: [String]) -> JSONValue {
-            JSONValue(any: [
-                "name": name,
-                "description": description,
-                "strict": strict,
-                "input_schema": ["type": "object", "additionalProperties": false, "required": required, "properties": properties] as [String: Any],
-            ] as [String: Any])
+        func tool(
+            _ name: String, _ description: String, strict: Bool = false, properties: [String: Any], required: [String]
+        ) -> JSONValue {
+            JSONValue(
+                any: [
+                    "name": name,
+                    "description": description,
+                    "strict": strict,
+                    "input_schema": [
+                        "type": "object", "additionalProperties": false, "required": required, "properties": properties,
+                    ] as [String: Any],
+                ] as [String: Any])
         }
         let review = CoachResponse.schema["properties"] as? [String: Any] ?? [:]
         let plan = PlanResponse.schema["properties"] as? [String: Any] ?? [:]
         return [
-            tool(CoachTools.getPlanSessions,
-                 "Read the athlete's planned sessions as they are right now, between two dates inclusive. Use it before proposing changes if the plan may have changed since the snapshot.",
-                 properties: ["from": ["type": "string", "description": "YYYY-MM-DD"], "to": ["type": "string", "description": "YYYY-MM-DD"]],
-                 required: ["from", "to"]),
-            tool(CoachTools.proposeChanges,
-                 "Show the athlete specific changes to upcoming sessions. Each appears as a before/after card they accept or reject. Nothing changes until they accept.",
-                 strict: true,
-                 properties: ["suggestions": review["suggestions"] ?? [:]],
-                 required: ["suggestions"]),
-            tool(CoachTools.proposePlan,
-                 "Give the athlete a complete plan for a date range as a draft to review. If they accept it, it replaces whatever they had planned from its start date on.",
-                 strict: true,
-                 properties: [
+            tool(
+                CoachTools.getPlanSessions,
+                "Read the athlete's planned sessions as they are right now, between two dates inclusive. Use it before proposing changes if the plan may have changed since the snapshot.",
+                properties: [
+                    "from": ["type": "string", "description": "YYYY-MM-DD"],
+                    "to": ["type": "string", "description": "YYYY-MM-DD"],
+                ],
+                required: ["from", "to"]),
+            tool(
+                CoachTools.proposeChanges,
+                "Show the athlete specific changes to upcoming sessions. Each appears as a before/after card they accept or reject. Nothing changes until they accept.",
+                strict: true,
+                properties: ["suggestions": review["suggestions"] ?? [:]],
+                required: ["suggestions"]),
+            tool(
+                CoachTools.proposePlan,
+                "Give the athlete a complete plan for a date range as a draft to review. If they accept it, it replaces whatever they had planned from its start date on.",
+                strict: true,
+                properties: [
                     "start": ["type": "string", "description": "First day of the plan, YYYY-MM-DD"],
                     "end": ["type": "string", "description": "Last day of the plan, YYYY-MM-DD"],
                     "goalTitle": nullable("string"),
                     "summary": plan["summary"] ?? [:],
                     "phases": plan["phases"] ?? [:],
                     "sessions": plan["sessions"] ?? [:],
-                 ],
-                 required: ["start", "end", "goalTitle", "summary", "phases", "sessions"]),
-            tool(CoachTools.saveAthleteDetails,
-                 "Record lasting facts the athlete has told you so future reviews see them. Pass null for anything not discussed. Notes replace the existing notes, so include what should be kept.",
-                 properties: [
-                    "availabilityHoursMonToSun": ["anyOf": [["type": "array", "items": ["type": "number"]], ["type": "null"]], "description": "Seven numbers, Monday first; 0 for a day off"],
-                    "sports": ["anyOf": [["type": "array", "items": ["type": "string", "enum": ["swim", "bike", "run", "strength"]]], ["type": "null"]]],
+                ],
+                required: ["start", "end", "goalTitle", "summary", "phases", "sessions"]),
+            tool(
+                CoachTools.saveAthleteDetails,
+                "Record lasting facts the athlete has told you so future reviews see them. Pass null for anything not discussed. Notes replace the existing notes, so include what should be kept.",
+                properties: [
+                    "availabilityHoursMonToSun": [
+                        "anyOf": [["type": "array", "items": ["type": "number"]], ["type": "null"]],
+                        "description": "Seven numbers, Monday first; 0 for a day off",
+                    ],
+                    "sports": [
+                        "anyOf": [
+                            [
+                                "type": "array",
+                                "items": ["type": "string", "enum": ["swim", "bike", "run", "strength"]],
+                            ], ["type": "null"],
+                        ]
+                    ],
                     "notes": nullable("string"),
-                 ],
-                 required: ["availabilityHoursMonToSun", "sports", "notes"]),
-            tool(CoachTools.saveGoal,
-                 "Create a goal, or update the one with the same title.",
-                 properties: [
+                ],
+                required: ["availabilityHoursMonToSun", "sports", "notes"]),
+            tool(
+                CoachTools.saveGoal,
+                "Create a goal, or update the one with the same title.",
+                properties: [
                     "title": ["type": "string"],
-                    "sport": ["anyOf": [["type": "string", "enum": Sport.allCases.map(\.rawValue)], ["type": "null"]]],
+                    "sport": [
+                        "anyOf": [["type": "string", "enum": Sport.allCases.map(\.rawValue)], ["type": "null"]]
+                    ],
                     "distanceKm": nullable("number"),
                     "date": nullable("string"),
-                    "target": ["anyOf": [["type": "string"], ["type": "null"]], "description": "For example a finish time"],
+                    "target": [
+                        "anyOf": [["type": "string"], ["type": "null"]], "description": "For example a finish time",
+                    ],
                     "priority": ["type": "string", "enum": GoalPriority.allCases.map(\.rawValue)],
-                 ],
-                 required: ["title", "sport", "distanceKm", "date", "target", "priority"]),
+                ],
+                required: ["title", "sport", "distanceKm", "date", "target", "priority"]),
         ]
     }()
 }
@@ -333,12 +388,18 @@ enum CoachTools {
     }
 
     @MainActor
-    static func run(_ name: String, input: JSONValue, toolUseID: String, conversation: CoachConversation, in context: ModelContext, now: Date, calendar: Calendar) -> Outcome {
+    static func run(
+        _ name: String, input: JSONValue, toolUseID: String, conversation: CoachConversation, in context: ModelContext,
+        now: Date, calendar: Calendar
+    ) -> Outcome {
         do {
             switch name {
             case getPlanSessions: return try planSessions(input, in: context, calendar: calendar)
-            case proposeChanges: return try propose(input, toolUseID: toolUseID, conversation: conversation, in: context, now: now, calendar: calendar)
-            case proposePlan: return try proposePlan(input, conversation: conversation, in: context, now: now, calendar: calendar)
+            case proposeChanges:
+                return try propose(
+                    input, toolUseID: toolUseID, conversation: conversation, in: context, now: now, calendar: calendar)
+            case proposePlan:
+                return try proposePlan(input, conversation: conversation, in: context, now: now, calendar: calendar)
             case saveAthleteDetails: return try saveDetails(input, in: context)
             case saveGoal: return try saveGoal(input, in: context, calendar: calendar)
             default: return Outcome(text: "Unknown tool \(name).", isError: true)
@@ -346,7 +407,8 @@ enum CoachTools {
         } catch let error as ToolError {
             return Outcome(text: error.message, isError: true)
         } catch {
-            return Outcome(text: "The input could not be read. Check it against the tool's schema and try again.", isError: true)
+            return Outcome(
+                text: "The input could not be read. Check it against the tool's schema and try again.", isError: true)
         }
     }
 
@@ -363,9 +425,11 @@ enum CoachTools {
     }
 
     @MainActor
-    private static func planSessions(_ input: JSONValue, in context: ModelContext, calendar: Calendar) throws -> Outcome {
+    private static func planSessions(_ input: JSONValue, in context: ModelContext, calendar: Calendar) throws -> Outcome
+    {
         guard let from = SuggestionApplier.date(from: input["from"]?.string, calendar: calendar),
-              let to = SuggestionApplier.date(from: input["to"]?.string, calendar: calendar), from <= to else {
+            let to = SuggestionApplier.date(from: input["to"]?.string, calendar: calendar), from <= to
+        else {
             throw ToolError(message: "Give from and to as YYYY-MM-DD, with from on or before to.")
         }
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
@@ -392,7 +456,10 @@ enum CoachTools {
     }
 
     @MainActor
-    private static func propose(_ input: JSONValue, toolUseID: String, conversation: CoachConversation, in context: ModelContext, now: Date, calendar: Calendar) throws -> Outcome {
+    private static func propose(
+        _ input: JSONValue, toolUseID: String, conversation: CoachConversation, in context: ModelContext, now: Date,
+        calendar: Calendar
+    ) throws -> Outcome {
         guard let value = input["suggestions"] else { throw ToolError(message: "suggestions is required.") }
         let proposals = try value.decode([CoachSuggestion].self)
         let all = try sessions(in: context)
@@ -420,7 +487,9 @@ enum CoachTools {
                 problems.append("\(proposal.date ?? "") is in the past")
                 continue
             }
-            if proposal.action == .add, SuggestionApplier.date(from: proposal.date, calendar: calendar) == nil || proposal.sport == nil {
+            if proposal.action == .add,
+                SuggestionApplier.date(from: proposal.date, calendar: calendar) == nil || proposal.sport == nil
+            {
                 problems.append("an added session needs a date and a sport")
                 continue
             }
@@ -437,7 +506,8 @@ enum CoachTools {
             record.targetSummary = target.map { SuggestionApplier.summary(of: $0, calendar: calendar) } ?? ""
             shown += 1
         }
-        var text = "\(shown) suggestion\(shown == 1 ? "" : "s") shown to the athlete to accept or reject. Nothing has changed yet."
+        var text =
+            "\(shown) suggestion\(shown == 1 ? "" : "s") shown to the athlete to accept or reject. Nothing has changed yet."
         if !problems.isEmpty { text += " Not shown: \(problems.joined(separator: "; "))." }
         return Outcome(text: text, isError: shown == 0 && !problems.isEmpty)
     }
@@ -452,28 +522,39 @@ enum CoachTools {
     }
 
     @MainActor
-    private static func proposePlan(_ input: JSONValue, conversation: CoachConversation, in context: ModelContext, now: Date, calendar: Calendar) throws -> Outcome {
+    private static func proposePlan(
+        _ input: JSONValue, conversation: CoachConversation, in context: ModelContext, now: Date, calendar: Calendar
+    ) throws -> Outcome {
         let plan = try input.decode(PlanInput.self)
         guard let start = SuggestionApplier.date(from: plan.start, calendar: calendar),
-              let end = SuggestionApplier.date(from: plan.end, calendar: calendar), start <= end else {
+            let end = SuggestionApplier.date(from: plan.end, calendar: calendar), start <= end
+        else {
             throw ToolError(message: "Give start and end as YYYY-MM-DD, with start on or before end.")
         }
-        guard start >= calendar.startOfDay(for: now) else { throw ToolError(message: "The plan must start today or later.") }
+        guard start >= calendar.startOfDay(for: now) else {
+            throw ToolError(message: "The plan must start today or later.")
+        }
 
         let goals = try context.fetch(FetchDescriptor<Goal>()).filter { $0.status == .active }
-        let goal = goals.first { $0.title.caseInsensitiveCompare(plan.goalTitle ?? "") == .orderedSame }
-            ?? goals.filter { ($0.targetDate ?? .distantPast) >= start }.min { ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture) }
+        let goal =
+            goals.first { $0.title.caseInsensitiveCompare(plan.goalTitle ?? "") == .orderedSame }
+            ?? goals.filter { ($0.targetDate ?? .distantPast) >= start }.min {
+                ($0.priority, $0.targetDate ?? .distantFuture) < ($1.priority, $1.targetDate ?? .distantFuture)
+            }
         let response = PlanResponse(summary: plan.summary, phases: plan.phases, sessions: plan.sessions)
         let draft: TrainingPlan
         do {
-            draft = try CoachPlanner.makeDraft(response, start: start, end: end, goal: goal, in: context, now: now, calendar: calendar)
+            draft = try CoachPlanner.makeDraft(
+                response, start: start, end: end, goal: goal, in: context, now: now, calendar: calendar)
         } catch {
-            throw ToolError(message: "None of the sessions fall between start and end. Check the dates and send the plan again.")
+            throw ToolError(
+                message: "None of the sessions fall between start and end. Check the dates and send the plan again.")
         }
         conversation.draftPlanID = draft.uuid
         conversation.draftOutcomeReported = false
         let dropped = plan.sessions.count - (draft.workouts?.count ?? 0)
-        var text = "Draft plan with \(draft.workouts?.count ?? 0) sessions from \(plan.start) to \(plan.end) is ready for the athlete to review. Nothing changes until they accept it."
+        var text =
+            "Draft plan with \(draft.workouts?.count ?? 0) sessions from \(plan.start) to \(plan.end) is ready for the athlete to review. Nothing changes until they accept it."
         if dropped > 0 { text += " \(dropped) session\(dropped == 1 ? "" : "s") outside those dates were left out." }
         return Outcome(text: text)
     }
@@ -487,7 +568,9 @@ enum CoachTools {
     @MainActor
     private static func saveDetails(_ input: JSONValue, in context: ModelContext) throws -> Outcome {
         let details = try input.decode(DetailsInput.self)
-        if let hours = details.availabilityHoursMonToSun, hours.count != 7 || hours.contains(where: { $0 < 0 || $0 > 24 }) {
+        if let hours = details.availabilityHoursMonToSun,
+            hours.count != 7 || hours.contains(where: { $0 < 0 || $0 > 24 })
+        {
             throw ToolError(message: "availabilityHoursMonToSun must be seven numbers between 0 and 24, Monday first.")
         }
         var descriptor = FetchDescriptor<AthleteProfile>(sortBy: [SortDescriptor(\.createdAt)])
@@ -519,7 +602,9 @@ enum CoachTools {
         let details = try input.decode(GoalInput.self)
         let title = details.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { throw ToolError(message: "The goal needs a title.") }
-        let existing = try context.fetch(FetchDescriptor<Goal>()).first { $0.title.caseInsensitiveCompare(title) == .orderedSame }
+        let existing = try context.fetch(FetchDescriptor<Goal>()).first {
+            $0.title.caseInsensitiveCompare(title) == .orderedSame
+        }
         let goal = existing ?? Goal(title: title)
         if existing == nil { context.insert(goal) }
         goal.priority = details.priority
@@ -542,7 +627,8 @@ public enum SessionTitle {
         if title.hasSuffix("."), !title.hasSuffix("..") { title.removeLast() }
         title = title.trimmingCharacters(in: quotes)
         if title.count > CoachConfiguration.titleMaxCharacters {
-            title = String(title.prefix(CoachConfiguration.titleMaxCharacters)).trimmingCharacters(in: .whitespaces) + "…"
+            title =
+                String(title.prefix(CoachConfiguration.titleMaxCharacters)).trimmingCharacters(in: .whitespaces) + "…"
         }
         return title
     }

@@ -14,8 +14,8 @@ import Testing
         #expect(abs(summary.average - 120) < 0.001)
         #expect(summary.max == 160)
         #expect(summary.bins.reduce(0, +) == 90)
-        #expect(summary.bins[14] == 60) // 100–104 bpm
-        #expect(summary.bins[26] == 30) // 160–164 bpm
+        #expect(summary.bins[14] == 60)  // 100–104 bpm
+        #expect(summary.bins[26] == 30)  // 160–164 bpm
     }
 
     @Test func longGapsAreCapped() throws {
@@ -33,9 +33,9 @@ import Testing
 
     @Test func binsSplitIntoZones() {
         var bins = Array(repeating: 0.0, count: AnalysisConstants.histogramBinCount)
-        bins[14] = 600 // 100–104
-        bins[22] = 300 // 140–144
-        bins[30] = 120 // 180–184
+        bins[14] = 600  // 100–104
+        bins[22] = 300  // 140–144
+        bins[30] = 120  // 180–184
         let zones = HeartRateHistogram.zoneSeconds(bins: bins, zoneUpperBounds: [114, 133, 152, 171])
         #expect(zones == [600, 0, 300, 0, 120])
     }
@@ -44,17 +44,20 @@ import Testing
 @Suite struct DuplicateResolverTests {
     let base = Date(timeIntervalSince1970: 1_790_000_000)
 
-    func candidate(_ sport: Sport = .bike, at minutes: Double = 0, for duration: Double = 120,
-                   power: Bool = false, hr: Bool = false, fit: Bool = false, manual: Bool = false) -> SessionCandidate {
-        SessionCandidate(id: UUID(), sport: sport, start: base.addingTimeInterval(minutes * 60), duration: duration * 60,
-                         hasPower: power, hasHeartRate: hr, isFITImport: fit, isManualPrimary: manual)
+    func candidate(
+        _ sport: Sport = .bike, at minutes: Double = 0, for duration: Double = 120,
+        power: Bool = false, hr: Bool = false, fit: Bool = false, manual: Bool = false
+    ) -> SessionCandidate {
+        SessionCandidate(
+            id: UUID(), sport: sport, start: base.addingTimeInterval(minutes * 60), duration: duration * 60,
+            hasPower: power, hasHeartRate: hr, isFITImport: fit, isManualPrimary: manual)
     }
 
     @Test func aRideRecordedTwiceCountsOnce() {
         let watch = candidate(hr: true)
         let wahoo = candidate(at: 1, for: 118, power: true)
         let result = DuplicateResolver.resolve([watch, wahoo])
-        #expect(result[wahoo.id] == true) // power wins for cycling
+        #expect(result[wahoo.id] == true)  // power wins for cycling
         #expect(result[watch.id] == false)
     }
 
@@ -87,8 +90,8 @@ import Testing
 
     @Test func overlapMustExceedTheThreshold() {
         let first = candidate(for: 100)
-        let justUnder = candidate(at: 30, for: 100) // 70% shared
-        let over = candidate(at: 29, for: 100) // 71% shared
+        let justUnder = candidate(at: 30, for: 100)  // 70% shared
+        let over = candidate(at: 29, for: 100)  // 71% shared
         #expect(!DuplicateResolver.isSameSession(first, justUnder))
         #expect(DuplicateResolver.isSameSession(first, over))
     }

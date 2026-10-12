@@ -1,7 +1,7 @@
 import Analysis
 import Foundation
-import SwiftUI
 import Models
+import SwiftUI
 
 enum Format {
     static func duration(_ seconds: Double) -> String {
@@ -10,14 +10,19 @@ enum Format {
 
     static func distance(_ meters: Double) -> String {
         Measurement(value: meters, unit: UnitLength.meters)
-            .formatted(.measurement(width: .abbreviated, usage: .road, numberFormatStyle: .number.precision(.fractionLength(0...1))))
+            .formatted(
+                .measurement(
+                    width: .abbreviated, usage: .road, numberFormatStyle: .number.precision(.fractionLength(0...1))))
     }
 
     /// Distance in the unit the sport is planned in (pool lengths for swimming).
     static func distance(_ meters: Double, sport: Sport) -> String {
         let unit = DistanceEntry.unit(for: sport)
         return Measurement(value: DistanceEntry.value(meters: meters, sport: sport), unit: unit)
-            .formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0...1))))
+            .formatted(
+                .measurement(
+                    width: .abbreviated, usage: .asProvided,
+                    numberFormatStyle: .number.precision(.fractionLength(0...1))))
     }
 
     static func heartRate(_ bpm: Double) -> String {
@@ -125,15 +130,17 @@ extension Color {
         }
         let (lightRGB, darkRGB) = (components(light), components(dark))
         #if os(iOS)
-        self.init(uiColor: UIColor { traits in
-            let (r, g, b) = traits.userInterfaceStyle == .dark ? darkRGB : lightRGB
-            return UIColor(red: r, green: g, blue: b, alpha: 1)
-        })
+        self.init(
+            uiColor: UIColor { traits in
+                let (r, g, b) = traits.userInterfaceStyle == .dark ? darkRGB : lightRGB
+                return UIColor(red: r, green: g, blue: b, alpha: 1)
+            })
         #else
-        self.init(nsColor: NSColor(name: nil) { appearance in
-            let (r, g, b) = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? darkRGB : lightRGB
-            return NSColor(srgbRed: r, green: g, blue: b, alpha: 1)
-        })
+        self.init(
+            nsColor: NSColor(name: nil) { appearance in
+                let (r, g, b) = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? darkRGB : lightRGB
+                return NSColor(srgbRed: r, green: g, blue: b, alpha: 1)
+            })
         #endif
     }
 

@@ -15,7 +15,9 @@ enum SamplePlan {
         func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
 
         // The simulator gets a goal to plan toward; a real device starts with none.
-        let goal = Goal(title: "Sample Half Marathon", type: .event, eventSport: .run, eventDistanceMeters: 21_097.5, targetDate: day(90), priority: .a)
+        let goal = Goal(
+            title: "Sample Half Marathon", type: .event, eventSport: .run, eventDistanceMeters: 21_097.5,
+            targetDate: day(90), priority: .a)
         context.insert(goal)
         let plan = TrainingPlan(name: name, startDate: day(-28), endDate: day(13), goal: goal)
         context.insert(plan)
@@ -55,34 +57,56 @@ enum SamplePlan {
     /// key. Labelled as a sample; fixture mode only.
     static func seedReviewIfNeeded(in context: ModelContext, now: Date = Date(), calendar: Calendar = .current) {
         guard (try? context.fetchCount(FetchDescriptor<CoachReview>())) == 0,
-              let plan = (try? context.fetch(FetchDescriptor<TrainingPlan>()))?.first(where: { $0.name == name }) else { return }
+            let plan = (try? context.fetch(FetchDescriptor<TrainingPlan>()))?.first(where: { $0.name == name })
+        else { return }
         let today = calendar.startOfDay(for: now)
         func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
 
-        let review = CoachReview(date: now, periodStart: day(-28), periodEnd: today, trigger: .onDemand, model: "sample")
-        review.assessment = "Sample review, not written by the coach. It is here so the suggestion screens can be tried in the simulator.\n\nConsistency has been good and load is steady. The long ride is carrying most of the week."
+        let review = CoachReview(
+            date: now, periodStart: day(-28), periodEnd: today, trigger: .onDemand, model: "sample")
+        review.assessment =
+            "Sample review, not written by the coach. It is here so the suggestion screens can be tried in the simulator.\n\nConsistency has been good and load is steady. The long ride is carrying most of the week."
         review.flags = ["Sample flag: two short nights this week."]
-        review.payloadJSON = (try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).json) ?? "{}"
+        review.payloadJSON =
+            (try? CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar).json) ?? "{}"
         context.insert(review)
 
         let proposals: [(CoachSuggestion, PlannedWorkout?)] = [
-            (CoachSuggestion(action: .modify, sessionType: .easy, durationMinutes: 45, intensity: "Z2", rationale: "Sample: ease this one back after two short nights."),
-             plan.workouts(on: day(2), calendar: calendar).first),
-            (CoachSuggestion(action: .move, date: day(6).formatted(style), rationale: "Sample: leave a day between the long ride and the long run."),
-             plan.workouts(on: day(5), calendar: calendar).first),
-            (CoachSuggestion(action: .add, date: day(4).formatted(style), sport: .swim, sessionType: .recovery, durationMinutes: 30, rationale: "Sample: an easy swim keeps the week aerobic without more impact."), nil),
-            (CoachSuggestion(action: .remove, rationale: "Sample: drop this to make room for recovery."),
-             plan.workouts(on: day(3), calendar: calendar).first),
+            (
+                CoachSuggestion(
+                    action: .modify, sessionType: .easy, durationMinutes: 45, intensity: "Z2",
+                    rationale: "Sample: ease this one back after two short nights."),
+                plan.workouts(on: day(2), calendar: calendar).first
+            ),
+            (
+                CoachSuggestion(
+                    action: .move, date: day(6).formatted(style),
+                    rationale: "Sample: leave a day between the long ride and the long run."),
+                plan.workouts(on: day(5), calendar: calendar).first
+            ),
+            (
+                CoachSuggestion(
+                    action: .add, date: day(4).formatted(style), sport: .swim, sessionType: .recovery,
+                    durationMinutes: 30, rationale: "Sample: an easy swim keeps the week aerobic without more impact."),
+                nil
+            ),
+            (
+                CoachSuggestion(action: .remove, rationale: "Sample: drop this to make room for recovery."),
+                plan.workouts(on: day(3), calendar: calendar).first
+            ),
         ]
         for (index, (proposal, target)) in proposals.enumerated() {
             guard let data = try? JSONEncoder().encode(proposal) else { continue }
-            let suggestion = PlanSuggestion(action: proposal.action, proposedChangeJSON: String(decoding: data, as: UTF8.self), rationale: proposal.rationale)
+            let suggestion = PlanSuggestion(
+                action: proposal.action, proposedChangeJSON: String(decoding: data, as: UTF8.self),
+                rationale: proposal.rationale)
             suggestion.createdAt = now.addingTimeInterval(Double(index) / 1000)
             context.insert(suggestion)
             suggestion.review = review
             suggestion.targetWorkout = target
-            suggestion.targetSummary = target.map { "\($0.date.formatted(style)), \($0.sessionType.rawValue) \($0.sport.rawValue)" } ?? ""
+            suggestion.targetSummary =
+                target.map { "\($0.date.formatted(style)), \($0.sessionType.rawValue) \($0.sport.rawValue)" } ?? ""
         }
         try? context.save()
     }
@@ -98,7 +122,8 @@ enum SamplePlan {
 
         let draft = TrainingPlan(name: "Sample Draft", startDate: day(1), endDate: day(21), origin: .generated)
         draft.isDraft = true
-        draft.coachSummary = "Sample draft, not written by the coach. It is here so reviewing and accepting a generated plan can be tried in the simulator.\n\nThree weeks: two building, one easier."
+        draft.coachSummary =
+            "Sample draft, not written by the coach. It is here so reviewing and accepting a generated plan can be tried in the simulator.\n\nThree weeks: two building, one easier."
         context.insert(draft)
         for (kind, from, to) in [(PlanPhaseKind.build, 1, 14), (.recovery, 15, 21)] {
             let phase = PlanPhase(kind: kind, startDate: day(from), endDate: day(to))
@@ -112,8 +137,9 @@ enum SamplePlan {
         for start in stride(from: 1, through: 15, by: 7) {
             for (offset, sport, type, minutes, intensity) in week {
                 let scale = start == 15 ? 0.7 : 1.0
-                let session = PlannedWorkout(date: day(start + offset), sport: sport, sessionType: type,
-                                             targetDurationSeconds: (minutes * scale).rounded() * 60, targetIntensity: intensity)
+                let session = PlannedWorkout(
+                    date: day(start + offset), sport: sport, sessionType: type,
+                    targetDurationSeconds: (minutes * scale).rounded() * 60, targetIntensity: intensity)
                 context.insert(session)
                 session.plan = draft
             }
@@ -133,10 +159,17 @@ enum SamplePlan {
         let conversation = CoachConversation(kind: .discussion, date: now)
         conversation.title = "Sample conversation"
         conversation.model = "sample"
-        conversation.messagesJSON = JSONValue.array([
-            message("user", [.text("My legs felt heavy on Sunday's run. Should I change anything this week?")]),
-            message("assistant", [.text("Sample reply, not written by the coach. It is here so the chat screen can be looked at in the simulator.\n\nSunday ran long against its target, so heavy legs make sense. I'd keep the week but take Tuesday easier.")]),
-        ]).text
+        conversation.messagesJSON =
+            JSONValue.array([
+                message("user", [.text("My legs felt heavy on Sunday's run. Should I change anything this week?")]),
+                message(
+                    "assistant",
+                    [
+                        .text(
+                            "Sample reply, not written by the coach. It is here so the chat screen can be looked at in the simulator.\n\nSunday ran long against its target, so heavy legs make sense. I'd keep the week but take Tuesday easier."
+                        )
+                    ]),
+            ]).text
         context.insert(conversation)
         try? context.save()
     }

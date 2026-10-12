@@ -61,7 +61,7 @@ struct PlannedWorkoutEditor: View {
                                 TextField("Optional", value: $minutes, format: .number)
                                     .multilineTextAlignment(.trailing)
                                     #if os(iOS)
-                                    .keyboardType(.numberPad)
+                                .keyboardType(.numberPad)
                                     #endif
                                 Text("min").foregroundStyle(.secondary)
                             }
@@ -72,7 +72,7 @@ struct PlannedWorkoutEditor: View {
                                     TextField("Optional", value: $distance, format: .number)
                                         .multilineTextAlignment(.trailing)
                                         #if os(iOS)
-                                        .keyboardType(.decimalPad)
+                                    .keyboardType(.decimalPad)
                                         #endif
                                     Text(DistanceEntry.unit(for: sport).symbol).foregroundStyle(.secondary)
                                 }
@@ -155,7 +155,9 @@ struct PlannedWorkoutEditor: View {
             if sport == .strength {
                 target.targetDistanceMeters = nil
             } else if distanceChanged {
-                target.targetDistanceMeters = distance.flatMap { $0 > 0 ? DistanceEntry.meters(value: $0, sport: sport) : nil }
+                target.targetDistanceMeters = distance.flatMap {
+                    $0 > 0 ? DistanceEntry.meters(value: $0, sport: sport) : nil
+                }
             }
             target.targetIntensity = intensity.trimmingCharacters(in: .whitespaces)
         }
@@ -193,8 +195,11 @@ private struct MatchSection: View {
                     environment.reconcilePlan()
                 }
             } else {
-                Text(session.status == .missed ? "No workout matched. This session counts as missed." : "No workout matched yet.")
-                    .foregroundStyle(.secondary)
+                Text(
+                    session.status == .missed
+                        ? "No workout matched. This session counts as missed." : "No workout matched yet."
+                )
+                .foregroundStyle(.secondary)
                 NavigationLink("Choose a Workout") { MatchPicker(session: session) }
             }
             if session.isManualMatch {
@@ -213,7 +218,9 @@ private struct MatchSection: View {
     }
 
     private func summary(of workout: CompletedWorkout) -> String {
-        var parts = [workout.start.formatted(.dateTime.weekday().day().month()), Format.duration(workout.durationSeconds)]
+        var parts = [
+            workout.start.formatted(.dateTime.weekday().day().month()), Format.duration(workout.durationSeconds),
+        ]
         if let ratio = session.complianceRatio { parts.append("\(Format.percent(ratio)) of target") }
         return parts.joined(separator: " · ")
     }
@@ -247,9 +254,11 @@ private struct MatchPicker: View {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(workout.displayName).foregroundStyle(.primary)
-                        Text("\(workout.start.formatted(.dateTime.weekday().day().month().hour().minute())) · \(Format.duration(workout.durationSeconds))")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            "\(workout.start.formatted(.dateTime.weekday().day().month().hour().minute())) · \(Format.duration(workout.durationSeconds))"
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         if let other = workout.plannedWorkout, other !== session {
                             Text("Matched to \(Format.title(of: other))").font(.caption).foregroundStyle(.tertiary)
                         }
@@ -264,7 +273,9 @@ private struct MatchPicker: View {
         }
         .overlay {
             if candidates.isEmpty {
-                ContentUnavailableView("No workouts nearby", systemImage: "figure.run", description: Text("There are no completed workouts within a week of this session."))
+                ContentUnavailableView(
+                    "No workouts nearby", systemImage: "figure.run",
+                    description: Text("There are no completed workouts within a week of this session."))
             }
         }
         .navigationTitle("Choose Workout")

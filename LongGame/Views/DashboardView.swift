@@ -125,10 +125,12 @@ struct DashboardView: View {
                     }
                     .accessibilityElement(children: .combine)
                 } else if lastSevenDays.isEmpty {
-                    Text(environment.healthSource == nil && workouts.isEmpty
-                        ? "No workouts yet. They arrive from your iPhone through iCloud."
-                        : "No workouts in the last 7 days.")
-                        .foregroundStyle(.secondary)
+                    Text(
+                        environment.healthSource == nil && workouts.isEmpty
+                            ? "No workouts yet. They arrive from your iPhone through iCloud."
+                            : "No workouts in the last 7 days."
+                    )
+                    .foregroundStyle(.secondary)
                 } else {
                     sportTable
                 }
@@ -149,7 +151,9 @@ struct DashboardView: View {
                 } header: {
                     Text("Recovery · last 4 weeks")
                 } footer: {
-                    Text("The shaded band is your normal range: the average of the previous 28 days, give or take one standard deviation. Diamonds mark days on the wrong side of it.")
+                    Text(
+                        "The shaded band is your normal range: the average of the previous 28 days, give or take one standard deviation. Diamonds mark days on the wrong side of it."
+                    )
                 }
             }
         }
@@ -159,10 +163,12 @@ struct DashboardView: View {
     /// What an empty dashboard is waiting on, if anything is actually in progress.
     private var waitingText: String? {
         if environment.healthState == .syncing {
-            return "Your workouts will appear here. The first import reads your last 90 days and can take a minute or two; you can keep using the app."
+            return
+                "Your workouts will appear here. The first import reads your last 90 days and can take a minute or two; you can keep using the app."
         }
         if environment.isImportingFromICloud {
-            return "Your workouts will appear here. They are read on your iPhone and arrive through iCloud, which can take a few minutes the first time."
+            return
+                "Your workouts will appear here. They are read on your iPhone and arrive through iCloud, which can take a few minutes the first time."
         }
         return nil
     }
@@ -172,9 +178,11 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Connect Apple Health", systemImage: "heart.text.square")
                     .font(.headline)
-                Text("Long Game reads your workouts and recovery data to compare them with your plan. It never writes to Health.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Long Game reads your workouts and recovery data to compare them with your plan. It never writes to Health."
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 Button("Connect") {
                     Task { await environment.connectHealth() }
                 }
@@ -203,7 +211,9 @@ struct DashboardView: View {
         } header: {
             Text("Training load")
         } footer: {
-            Text("Load is minutes weighted by heart-rate zone, or by power for rides when FTP is set. The ratio compares the last 7 days with the last 28; \(Format.ratio(AnalysisConstants.loadRatioRange.lowerBound))–\(Format.ratio(AnalysisConstants.loadRatioRange.upperBound)) is the steady range.")
+            Text(
+                "Load is minutes weighted by heart-rate zone, or by power for rides when FTP is set. The ratio compares the last 7 days with the last 28; \(Format.ratio(AnalysisConstants.loadRatioRange.lowerBound))–\(Format.ratio(AnalysisConstants.loadRatioRange.upperBound)) is the steady range."
+            )
         }
 
         Section("Weekly load by sport") {
@@ -267,19 +277,24 @@ struct DashboardView: View {
     }
 
     /// Load and recovery concerns for today. A recovery reading only counts if it is recent.
-    private func flags(load: LoadDay?, hrv: [BaselinePoint], restingHR: [BaselinePoint], sleep: [BaselinePoint]) -> [Flag] {
+    private func flags(load: LoadDay?, hrv: [BaselinePoint], restingHR: [BaselinePoint], sleep: [BaselinePoint])
+        -> [Flag]
+    {
         var flags: [Flag] = []
         if let load, let ratio = load.ratio, load.isRatioFlagged {
             let rising = ratio > AnalysisConstants.loadRatioRange.upperBound
-            flags.append(Flag(
-                id: "load",
-                title: rising ? "Training load is ramping fast" : "Training load has dropped",
-                detail: "The last 7 days are \(Format.ratio(ratio))× your 4-week average."
-            ))
+            flags.append(
+                Flag(
+                    id: "load",
+                    title: rising ? "Training load is ramping fast" : "Training load has dropped",
+                    detail: "The last 7 days are \(Format.ratio(ratio))× your 4-week average."
+                ))
         }
         let recent = calendar.date(byAdding: .day, value: -1, to: today) ?? today
         func check(_ id: String, _ points: [BaselinePoint], _ title: String, _ format: (Double) -> String) {
-            guard let latest = points.last, latest.isFlagged, latest.date >= recent, let mean = latest.mean else { return }
+            guard let latest = points.last, latest.isFlagged, latest.date >= recent, let mean = latest.mean else {
+                return
+            }
             flags.append(Flag(id: id, title: title, detail: "\(format(latest.value)) against a usual \(format(mean))."))
         }
         check("hrv", hrv, "HRV is below your normal range") { "\(Format.load($0)) ms" }
@@ -342,6 +357,7 @@ private struct GoalCountdownRow: View {
 
     private func daysUntil(_ date: Date) -> Int? {
         let calendar = Calendar.current
-        return calendar.dateComponents([.day], from: calendar.startOfDay(for: .now), to: calendar.startOfDay(for: date)).day
+        return calendar.dateComponents([.day], from: calendar.startOfDay(for: .now), to: calendar.startOfDay(for: date))
+            .day
     }
 }

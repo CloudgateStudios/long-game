@@ -28,18 +28,26 @@ public struct CoachPlanner: Sendable {
         calendar: Calendar = .current,
         onProgress: @escaping @MainActor @Sendable (Progress) -> Void = { _ in }
     ) async throws -> TrainingPlan {
-        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw CoachError.missingAPIKey }
-        let built = try CoachPayloadBuilder.build(in: context, trigger: .planGeneration, planRequest: request, now: now, calendar: calendar)
+        guard let apiKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CoachError.missingAPIKey
+        }
+        let built = try CoachPayloadBuilder.build(
+            in: context, trigger: .planGeneration, planRequest: request, now: now, calendar: calendar)
 
-        let message = try await client.send(apiKey: apiKey, model: model, system: CoachConfiguration.planPrompt, user: built.json, format: .plan) { text in
+        let message = try await client.send(
+            apiKey: apiKey, model: model, system: CoachConfiguration.planPrompt, user: built.json, format: .plan
+        ) { text in
             let summary = PartialJSON.string(forKey: "summary", in: text) ?? ""
             // Each session carries exactly one sessionType, so counting them counts sessions.
-            await onProgress(Progress(summary: summary, sessionCount: text.components(separatedBy: "\"sessionType\"").count - 1))
+            await onProgress(
+                Progress(summary: summary, sessionCount: text.components(separatedBy: "\"sessionType\"").count - 1))
         }
         guard let response = try? JSONDecoder().decode(PlanResponse.self, from: Data(message.text.utf8)) else {
             throw CoachError.malformed
         }
-        return try Self.store(response, request: request, goal: goal, built: built, message: message, requestedModel: model, in: context, now: now, calendar: calendar)
+        return try Self.store(
+            response, request: request, goal: goal, built: built, message: message, requestedModel: model, in: context,
+            now: now, calendar: calendar)
     }
 
     @MainActor
@@ -54,18 +62,22 @@ public struct CoachPlanner: Sendable {
         now: Date,
         calendar: Calendar
     ) throws -> TrainingPlan {
-        let plan = try Self.makeDraft(response, start: request.start, end: request.end, goal: goal, in: context, now: now, calendar: calendar)
+        let plan = try Self.makeDraft(
+            response, start: request.start, end: request.end, goal: goal, in: context, now: now, calendar: calendar)
 
         // A record of the request, so "What Was Sent" and the cost are kept for plans too.
-        let review = CoachReview(date: now, periodStart: built.periodStart, periodEnd: built.periodEnd, trigger: .planGeneration,
-                                 model: message.model.isEmpty ? requestedModel : message.model)
+        let review = CoachReview(
+            date: now, periodStart: built.periodStart, periodEnd: built.periodEnd, trigger: .planGeneration,
+            model: message.model.isEmpty ? requestedModel : message.model)
         review.payloadJSON = built.json
         review.assessment = plan.coachSummary
         review.title = plan.name
         review.inputTokens = message.usage.inputTokens
         review.outputTokens = message.usage.outputTokens
         context.insert(review)
-        SpendLedger.record(message.usage, kind: .planGeneration, sessionID: review.uuid, model: review.model, requestedModel: requestedModel, date: now, in: context)
+        SpendLedger.record(
+            message.usage, kind: .planGeneration, sessionID: review.uuid, model: review.model,
+            requestedModel: requestedModel, date: now, in: context)
 
         try context.save()
         return plan
@@ -86,7 +98,8 @@ public struct CoachPlanner: Sendable {
         let start = calendar.startOfDay(for: start)
         let end = calendar.startOfDay(for: end)
         let sessions = response.sessions.compactMap { session -> (Date, PlanResponse.Session)? in
-            guard let date = SuggestionApplier.date(from: session.date, calendar: calendar), date >= start, date <= end else { return nil }
+            guard let date = SuggestionApplier.date(from: session.date, calendar: calendar), date >= start, date <= end
+            else { return nil }
             return (date, session)
         }
         guard start <= end, !sessions.isEmpty else { throw CoachError.malformed }
@@ -109,7 +122,9 @@ public struct CoachPlanner: Sendable {
 
         for phase in response.phases {
             guard let from = SuggestionApplier.date(from: phase.start, calendar: calendar),
-                  let to = SuggestionApplier.date(from: phase.end, calendar: calendar), from <= to, to >= start, from <= end else { continue }
+                let to = SuggestionApplier.date(from: phase.end, calendar: calendar), from <= to, to >= start,
+                from <= end
+            else { continue }
             let record = PlanPhase(kind: phase.kind, startDate: max(from, start), endDate: min(to, end))
             context.insert(record)
             record.plan = plan

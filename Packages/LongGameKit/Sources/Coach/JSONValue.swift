@@ -35,7 +35,11 @@ public enum JSONValue: Sendable, Equatable, Codable {
         case .bool(let value): try container.encode(value)
         case .number(let value):
             // Whole numbers go out as integers, as they came in.
-            if value.rounded() == value, abs(value) < 1e15 { try container.encode(Int64(value)) } else { try container.encode(value) }
+            if value.rounded() == value, abs(value) < 1e15 {
+                try container.encode(Int64(value))
+            } else {
+                try container.encode(value)
+            }
         case .string(let value): try container.encode(value)
         case .array(let value): try container.encode(value)
         case .object(let value): try container.encode(value)
