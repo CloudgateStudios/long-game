@@ -8,7 +8,7 @@ struct PlanEditor: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDate) private var goals: [Goal]
+    @Query(sort: \Goal.targetDay) private var goals: [Goal]
 
     let plan: TrainingPlan?
     let onSave: (TrainingPlan) -> Void

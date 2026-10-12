@@ -61,7 +61,8 @@ rough guide on the default model: a review costs about 15 to 35 cents, a generat
 60 cents, and a short conversation around 10 cents. Settings shows a running estimate.
 
 What is sent: age (not date of birth), sex, height, weight, zones, goals, the plan, four
-weeks of per-workout summaries, 28 days of daily recovery metrics, and load trends. Never
+weeks of per-workout summaries with any effort rating and notes you added, 28 days of daily
+recovery metrics, and load trends. Never
 names, locations, device or app names, or raw sample streams. "See What Will Be Sent" shows
 the exact payload before you send it, and every review keeps a copy of what it sent.
 
@@ -71,6 +72,25 @@ Sync uses SwiftData with a CloudKit private database. Builds run from Xcode use 
 Development environment by default; `LG_ICLOUD_ENVIRONMENT` in `Config/Shared.xcconfig`
 switches to Production, which needs the schema deployed from the CloudKit Console first.
 All your devices must use the same environment to see the same data.
+
+### Deploying the schema to Production
+
+Production only accepts additions. Once a record type or field is deployed it can never be
+removed, renamed, given another type, or have its encryption changed, so settle the models
+first. Then, before the first release and after every later model change:
+
+1. Run a debug build from Xcode on a device signed in to iCloud, with the launch argument
+   `-initializeCloudKitSchema` (Product > Scheme > Edit Scheme > Run > Arguments). This
+   writes every record type and field to the Development schema, including optional fields
+   no record has used yet, which CloudKit would otherwise leave out. The Xcode console
+   prints the result. Remove the argument afterwards.
+2. In the CloudKit Console, compare the Development schema with
+   `Packages/LongGameKit/Sources/Models`, then choose Deploy Schema Changes.
+
+If Development still holds a schema from before a field was encrypted or renamed, step 1
+can fail or leave the old fields behind. Reset the Development environment in the Console first. That erases the data
+CloudKit holds for Development, so do it only when the copy on your devices is one you can
+afford to lose or rebuild.
 
 ## TestFlight
 
@@ -98,8 +118,8 @@ One-time setup:
 TestFlight builds expire after 90 days. The weekly schedule rebuilds `release` so every
 device always has a live build, without shipping unreleased work from `main`.
 
-These builds use CloudKit Production. Deploy the schema from the CloudKit Console before
-the first release and again before moving `release` past a data model change.
+These builds use CloudKit Production. Deploy the schema (see iCloud above) before the
+first release and again before moving `release` past a data model change.
 
 ## Project layout
 

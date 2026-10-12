@@ -317,6 +317,29 @@ actor Collector {
         return try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar)
     }
 
+    @Test func payloadCarriesFeedbackAndBricks() throws {
+        let bike = session(.bike, day: 2)
+        let run = session(.run, day: 2, minutes: 20)
+        session(.swim, day: 2)
+        run.follow(bike)
+        let done = workout(.run, day: -1)
+        done.perceivedEffort = 8
+        done.feel = .tired
+        done.athleteNotes = "Legs heavy from the start."
+        workout(.bike, day: -2)
+
+        let payload = try build().payload
+        let sessions = try #require(payload.plan?.sessions)
+        // The run sits straight after the bike, and they share a label the swim does not have.
+        #expect(sessions.map(\.sport) == ["bike", "run", "swim"])
+        #expect(sessions[0].brick != nil)
+        #expect(sessions[0].brick == sessions[1].brick)
+        #expect(sessions[2].brick == nil)
+        #expect(payload.workouts.map(\.rpe) == [nil, 8])
+        #expect(payload.workouts.last?.feel == "tired")
+        #expect(payload.workouts.last?.notes == "Legs heavy from the start.")
+    }
+
     @Test func payloadCarriesSummariesButNothingIdentifying() throws {
         let done = session(.run, day: -2)
         session(.bike, day: 3, minutes: 90, type: .long)
@@ -503,57 +526,22 @@ actor Collector {
         }
     }
 
-    @Test func reviewsAreChargedAndOldOnesBackfilledOnce() async throws {
+    @Test func reviewsAreChargedAndOutliveTheReview() async throws {
         session(.run, day: 1)
         let (reviewer, _) = reviewer(replying: #"{"assessment":"ok","flags":[],"suggestions":[]}"#)
         let review = try await reviewer.run(
             trigger: .onDemand, model: "claude-opus-5-5", apiKey: "k", in: context, now: now, calendar: calendar)
-        var charges = try context.fetch(FetchDescriptor<CoachCharge>())
+        let charges = try context.fetch(FetchDescriptor<CoachCharge>())
         #expect(charges.count == 1)
         #expect(charges.first?.sessionID == review.uuid)
         #expect(charges.first?.date == now)
         // 1200 in and 340 out on Opus 5.5.
         #expect(abs((charges.first?.cost ?? 0) - (1200 * 4 + 340 * 20) / 1_000_000) < 1e-9)
 
-        // A review and a conversation from before the ledger existed.
-        let old = CoachReview(
-            date: day(-20), periodStart: day(-48), periodEnd: day(-20), trigger: .planGeneration,
-            model: "claude-opus-5-5")
-        old.inputTokens = 10_000
-        old.outputTokens = 5_000
-        context.insert(old)
-        let chat = CoachConversation(kind: .discussion, date: day(-3))
-        chat.estimatedCost = 0.11
-        context.insert(chat)
-        try context.save()
-
-        try SpendLedger.backfill(in: context)
-        try SpendLedger.backfill(in: context)
-        charges = try context.fetch(FetchDescriptor<CoachCharge>())
-        #expect(charges.count == 3)
-        #expect(charges.first { $0.sessionID == old.uuid }?.kind == .planGeneration)
-        #expect(abs((charges.first { $0.sessionID == old.uuid }?.cost ?? 0) - 0.14) < 1e-9)
-        #expect(charges.first { $0.sessionID == chat.uuid }?.cost == 0.11)
-
-        // Another device backfilled the same review, and a real charge turned up for the chat.
-        let copy = CoachCharge(
-            date: old.date, kind: .planGeneration, sessionID: old.uuid, model: old.model, inputTokens: 10_000,
-            outputTokens: 5_000, cost: 0.14)
-        copy.backfillKey = "review-\(old.uuid.uuidString)"
-        context.insert(copy)
-        context.insert(
-            CoachCharge(
-                date: now, kind: .conversation, sessionID: chat.uuid, model: "claude-opus-5-5", inputTokens: 1,
-                outputTokens: 1, cost: 0.11))
-        try SpendLedger.backfill(in: context)
-        charges = try context.fetch(FetchDescriptor<CoachCharge>())
-        #expect(charges.count == 3)
-        #expect(charges.filter { $0.sessionID == chat.uuid }.allSatisfy { $0.backfillKey == nil })
-
         // Deleting the review does not erase what it cost.
         context.delete(review)
         try context.save()
-        #expect(try context.fetchCount(FetchDescriptor<CoachCharge>()) == 3)
+        #expect(try context.fetchCount(FetchDescriptor<CoachCharge>()) == 1)
     }
 
     @Test func costUsesTheModelsPrices() {

@@ -1,4 +1,5 @@
 import Analysis
+import CoreData
 import Foundation
 import SwiftData
 
@@ -13,19 +14,7 @@ public enum LongGameStore {
         case cloudKit(containerID: String)
     }
 
-    public static let schema = Schema([
-        AthleteProfile.self,
-        Goal.self,
-        TrainingPlan.self,
-        PlanPhase.self,
-        PlannedWorkout.self,
-        CompletedWorkout.self,
-        DailyMetrics.self,
-        CoachReview.self,
-        PlanSuggestion.self,
-        CoachConversation.self,
-        CoachCharge.self,
-    ])
+    public static let schema = Schema(versionedSchema: SchemaV1.self)
 
     public static func makeContainer(mode: Mode) throws -> ModelContainer {
         let configuration: ModelConfiguration
@@ -41,8 +30,37 @@ public enum LongGameStore {
                 cloudKitDatabase: .private(containerID)
             )
         }
-        return try ModelContainer(for: schema, configurations: [configuration])
+        return try ModelContainer(
+            for: schema, migrationPlan: LongGameMigrationPlan.self, configurations: [configuration])
     }
+
+    #if DEBUG
+    /// Creates every record type and field in the container's CloudKit Development schema.
+    /// CloudKit otherwise adds a field only when a record first carries a value for it, so
+    /// rarely-set fields would be missing from the schema deployed to Production, where
+    /// nothing can be added on the fly. Run once before each deploy, signed in to iCloud.
+    /// It works on a scratch store, so no real record is touched.
+    public static func initializeCloudKitSchema(containerID: String) throws {
+        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: SchemaV1.models) else {
+            throw CocoaError(.persistentStoreIncompatibleSchema)
+        }
+        let url = try storeURL(name: "SchemaInitialization")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let description = NSPersistentStoreDescription(url: url)
+        description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerID)
+        description.shouldAddStoreAsynchronously = false
+
+        let container = NSPersistentCloudKitContainer(name: "LongGame", managedObjectModel: model)
+        container.persistentStoreDescriptions = [description]
+        var loadError: (any Error)?
+        container.loadPersistentStores { _, error in loadError = error }
+        if let loadError { throw loadError }
+        try container.initializeCloudKitSchema()
+        for store in container.persistentStoreCoordinator.persistentStores {
+            try container.persistentStoreCoordinator.remove(store)
+        }
+    }
+    #endif
 
     /// Each store gets its own directory so the whole directory (store, WAL, CloudKit
     /// metadata) can carry complete file protection.

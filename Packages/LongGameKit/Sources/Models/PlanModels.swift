@@ -8,20 +8,18 @@ import SwiftData
 @Model
 public final class Goal {
     public var uuid: UUID = UUID()
-    public var title: String = ""
+    @Attribute(.allowsCloudEncryption) public var title: String = ""
     public var typeRaw: String = GoalType.event.rawValue
     public var eventSportRaw: String?
     public var eventDistanceMeters: Double?
-    public var targetDate: Date?
+    /// The day of the event or deadline, as a `CalendarDay` stamp. Use `targetDate`.
+    @Attribute(originalName: "targetDate") public var targetDay: Date?
     /// Free-text target, for example "finish under 1:50".
-    public var targetMetric: String = ""
-    public var targetFinishSeconds: Double?
+    @Attribute(.allowsCloudEncryption) public var targetMetric: String = ""
+    @Attribute(.allowsCloudEncryption) public var targetFinishSeconds: Double?
     public var priorityRaw: String = GoalPriority.a.rawValue
     public var statusRaw: String = GoalStatus.active.rawValue
-    public var notes: String = ""
-    /// No longer written. Early builds created a starter goal and marked it with this;
-    /// the field stays so stores and iCloud records that already have it still load.
-    public var seedKey: String?
+    @Attribute(.allowsCloudEncryption) public var notes: String = ""
     public var createdAt: Date = Date()
 
     @Relationship(deleteRule: .nullify, inverse: \TrainingPlan.goal)
@@ -39,8 +37,13 @@ public final class Goal {
         self.typeRaw = type.rawValue
         self.eventSportRaw = eventSport?.rawValue
         self.eventDistanceMeters = eventDistanceMeters
-        self.targetDate = targetDate
+        self.targetDay = targetDate.map { CalendarDay.stamp(for: $0) }
         self.priorityRaw = priority.rawValue
+    }
+
+    public var targetDate: Date? {
+        get { targetDay.map { CalendarDay.date(for: $0) } }
+        set { targetDay = newValue.map { CalendarDay.stamp(for: $0) } }
     }
 
     public var type: GoalType {
@@ -68,15 +71,16 @@ public final class Goal {
 public final class TrainingPlan {
     public var uuid: UUID = UUID()
     public var name: String = ""
-    public var startDate: Date = Date()
-    public var endDate: Date = Date()
+    /// First and last day, as `CalendarDay` stamps. Use `startDate` and `endDate`.
+    @Attribute(originalName: "startDate") public var startDay: Date = CalendarDay.stamp(for: Date())
+    @Attribute(originalName: "endDate") public var endDay: Date = CalendarDay.stamp(for: Date())
     public var originRaw: String = PlanOrigin.manual.rawValue
     public var createdAt: Date = Date()
     /// A generated plan waiting to be reviewed. Drafts are invisible to matching, the
     /// dashboard and the coach until accepted.
     public var isDraft: Bool = false
     /// The coach's explanation of a generated plan.
-    public var coachSummary: String = ""
+    @Attribute(.allowsCloudEncryption) public var coachSummary: String = ""
 
     public var goal: Goal?
 
@@ -88,10 +92,20 @@ public final class TrainingPlan {
 
     public init(name: String, startDate: Date, endDate: Date, origin: PlanOrigin = .manual, goal: Goal? = nil) {
         self.name = name
-        self.startDate = startDate
-        self.endDate = endDate
+        self.startDay = CalendarDay.stamp(for: startDate)
+        self.endDay = CalendarDay.stamp(for: endDate)
         self.originRaw = origin.rawValue
         self.goal = goal
+    }
+
+    public var startDate: Date {
+        get { CalendarDay.date(for: startDay) }
+        set { startDay = CalendarDay.stamp(for: newValue) }
+    }
+
+    public var endDate: Date {
+        get { CalendarDay.date(for: endDay) }
+        set { endDay = CalendarDay.stamp(for: newValue) }
     }
 
     public var origin: PlanOrigin {
@@ -115,22 +129,33 @@ public final class TrainingPlan {
     public func workouts(on date: Date, calendar: Calendar = .current) -> [PlannedWorkout] {
         (workouts ?? [])
             .filter { calendar.isDate($0.date, inSameDayAs: date) }
-            .sorted { ($0.createdAt, $0.uuid.uuidString) < ($1.createdAt, $1.uuid.uuidString) }
+            .sorted(by: PlannedWorkout.inDayOrder)
     }
 }
 
 @Model
 public final class PlanPhase {
     public var kindRaw: String = PlanPhaseKind.base.rawValue
-    public var startDate: Date = Date()
-    public var endDate: Date = Date()
+    /// First and last day, as `CalendarDay` stamps. Use `startDate` and `endDate`.
+    @Attribute(originalName: "startDate") public var startDay: Date = CalendarDay.stamp(for: Date())
+    @Attribute(originalName: "endDate") public var endDay: Date = CalendarDay.stamp(for: Date())
 
     public var plan: TrainingPlan?
 
     public init(kind: PlanPhaseKind, startDate: Date, endDate: Date) {
         self.kindRaw = kind.rawValue
-        self.startDate = startDate
-        self.endDate = endDate
+        self.startDay = CalendarDay.stamp(for: startDate)
+        self.endDay = CalendarDay.stamp(for: endDate)
+    }
+
+    public var startDate: Date {
+        get { CalendarDay.date(for: startDay) }
+        set { startDay = CalendarDay.stamp(for: newValue) }
+    }
+
+    public var endDate: Date {
+        get { CalendarDay.date(for: endDay) }
+        set { endDay = CalendarDay.stamp(for: newValue) }
     }
 
     public var kind: PlanPhaseKind {
@@ -143,19 +168,24 @@ public final class PlanPhase {
 public final class PlannedWorkout {
     /// Stable identifier the coach uses to target a session.
     public var uuid: UUID = UUID()
-    public var date: Date = Date()
+    /// The day as a `CalendarDay` stamp. Read and write it through `date`.
+    @Attribute(originalName: "date") public var day: Date = CalendarDay.stamp(for: Date())
+    /// Position among the day's sessions, lowest first. Ties fall back to creation order.
+    public var orderInDay: Int = 0
+    /// Shared by sessions done back to back as one outing: a brick, or the legs of a race.
+    public var brickID: UUID?
     public var sportRaw: String = Sport.run.rawValue
     public var sessionTypeRaw: String = SessionType.easy.rawValue
     public var targetDurationSeconds: Double?
     public var targetDistanceMeters: Double?
     /// Zone or free-text description, for example "Z2" or "5 × 1 km at 10K pace".
-    public var targetIntensity: String = ""
+    @Attribute(.allowsCloudEncryption) public var targetIntensity: String = ""
     /// Free text. Strength sessions hold exercises and sets here in v1; a structured
     /// child model can be added later as a new optional relationship.
-    public var instructions: String = ""
+    @Attribute(.allowsCloudEncryption) public var instructions: String = ""
     /// A run or ride as steps for a watch or bike computer, stored as JSON. Nil for a
     /// session described only in words.
-    public var structureJSON: String?
+    @Attribute(.allowsCloudEncryption) public var structureJSON: String?
     /// Whether this run's steps are followed by pace or heart rate. Nil follows the
     /// athlete's usual choice.
     public var runTargetsRaw: String?
@@ -178,13 +208,24 @@ public final class PlannedWorkout {
         targetIntensity: String = "",
         instructions: String = ""
     ) {
-        self.date = date
+        self.day = CalendarDay.stamp(for: date)
         self.sportRaw = sport.rawValue
         self.sessionTypeRaw = sessionType.rawValue
         self.targetDurationSeconds = targetDurationSeconds
         self.targetDistanceMeters = targetDistanceMeters
         self.targetIntensity = targetIntensity
         self.instructions = instructions
+    }
+
+    /// Start of the day in the device's calendar.
+    public var date: Date {
+        get { CalendarDay.date(for: day) }
+        set { day = CalendarDay.stamp(for: newValue) }
+    }
+
+    /// The order sessions on one day are shown and done in.
+    public static func inDayOrder(_ a: PlannedWorkout, _ b: PlannedWorkout) -> Bool {
+        (a.orderInDay, a.createdAt, a.uuid.uuidString) < (b.orderInDay, b.createdAt, b.uuid.uuidString)
     }
 
     public var sport: Sport {

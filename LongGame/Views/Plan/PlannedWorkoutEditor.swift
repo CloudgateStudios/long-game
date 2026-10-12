@@ -21,6 +21,8 @@ struct PlannedWorkoutEditor: View {
     @State private var distance: Double?
     @State private var intensity: String
     @State private var instructions: String
+    /// The session this one is done straight after, as one outing.
+    @State private var leaderID: UUID?
 
     init(plan: TrainingPlan, workout: PlannedWorkout?, date: Date) {
         self.plan = plan
@@ -36,9 +38,15 @@ struct PlannedWorkoutEditor: View {
         _distance = State(initialValue: initialDistance)
         _intensity = State(initialValue: workout?.targetIntensity ?? "")
         _instructions = State(initialValue: workout?.instructions ?? "")
+        _leaderID = State(initialValue: workout?.brickLeader?.uuid)
     }
 
     private var isDayMarker: Bool { sessionType.isDayMarker }
+
+    /// The day's other sessions, any of which this one could be done straight after.
+    private var possibleLeaders: [PlannedWorkout] {
+        plan.workouts(on: date).filter { $0 !== workout && !$0.isDayMarker }
+    }
 
     var body: some View {
         NavigationStack {
@@ -103,6 +111,19 @@ struct PlannedWorkoutEditor: View {
                     .lineLimit(3...10)
                 }
 
+                if !isDayMarker, !possibleLeaders.isEmpty {
+                    Section {
+                        Picker("Straight after", selection: $leaderID) {
+                            Text("None").tag(UUID?.none)
+                            ForEach(possibleLeaders) { Text(Format.title(of: $0)).tag(UUID?.some($0.uuid)) }
+                        }
+                    } header: {
+                        Text("Brick")
+                    } footer: {
+                        Text("Links sessions done back to back as one outing, such as a run off the bike.")
+                    }
+                }
+
                 if let workout {
                     Section {
                         Button("Delete Session", role: .destructive) {
@@ -136,6 +157,10 @@ struct PlannedWorkoutEditor: View {
             }
             .onChange(of: sessionType) { _, new in
                 if new == .strength { sport = .strength }
+            }
+            .onChange(of: date) { old, new in
+                // A brick is one outing on one day.
+                if !Calendar.current.isDate(old, inSameDayAs: new) { leaderID = nil }
             }
         }
         #if os(macOS)
@@ -173,6 +198,8 @@ struct PlannedWorkoutEditor: View {
             }
             target.targetIntensity = intensity.trimmingCharacters(in: .whitespaces)
         }
+        let leader = isDayMarker ? nil : possibleLeaders.first { $0.uuid == leaderID }
+        if leader !== target.brickLeader { target.follow(leader) }
         // Re-matches, saves, and so starts the upload to iCloud.
         environment.reconcilePlan()
         dismiss()

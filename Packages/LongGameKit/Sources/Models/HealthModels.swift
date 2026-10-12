@@ -54,10 +54,10 @@ public final class CompletedWorkout {
     /// declared unique because CloudKit forbids unique constraints.
     public var externalID: UUID = UUID()
     public var sourceRaw: String = WorkoutSource.healthKit.rawValue
-    public var sourceName: String = ""
+    @Attribute(.allowsCloudEncryption) public var sourceName: String = ""
     public var sportRaw: String = Sport.other.rawValue
     /// Original activity name, kept for "other" sports such as hiking or curling.
-    public var activityName: String = ""
+    @Attribute(.allowsCloudEncryption) public var activityName: String = ""
     /// Shared by the legs of one multisport workout.
     public var sessionID: UUID?
     /// False when another record of the same session counts toward load and matching.
@@ -81,6 +81,11 @@ public final class CompletedWorkout {
     @Attribute(.allowsCloudEncryption) public var effortScore: Double?
     @Attribute(.allowsCloudEncryption) public var load: Double?
     public var confidenceRaw: String = LoadConfidence.measured.rawValue
+    /// How hard the athlete says it was, 1–10. Health never supplies these three; they are
+    /// typed in afterwards, so ingest leaves them alone.
+    @Attribute(.allowsCloudEncryption) public var perceivedEffort: Int?
+    @Attribute(.allowsCloudEncryption) public var feelRaw: String?
+    @Attribute(.allowsCloudEncryption) public var athleteNotes: String = ""
 
     @Relationship(deleteRule: .nullify, inverse: \PlannedWorkout.matchedWorkout)
     public var plannedWorkout: PlannedWorkout?
@@ -108,6 +113,15 @@ public final class CompletedWorkout {
         set { confidenceRaw = newValue.rawValue }
     }
 
+    public var feel: WorkoutFeel? {
+        get { feelRaw.flatMap(WorkoutFeel.init(rawValue:)) }
+        set { feelRaw = newValue?.rawValue }
+    }
+
+    public var hasFeedback: Bool {
+        perceivedEffort != nil || feel != nil || !athleteNotes.isEmpty
+    }
+
     public var displayName: String {
         sport == .other && !activityName.isEmpty ? activityName : sport.displayName
     }
@@ -115,8 +129,8 @@ public final class CompletedWorkout {
 
 @Model
 public final class DailyMetrics {
-    /// Start of the local day.
-    public var date: Date = Date()
+    /// The day as a `CalendarDay` stamp. Read and write it through `date`.
+    @Attribute(originalName: "date") public var day: Date = CalendarDay.stamp(for: Date())
     @Attribute(.allowsCloudEncryption) public var restingHR: Double?
     @Attribute(.allowsCloudEncryption) public var hrvSDNN: Double?
     @Attribute(.allowsCloudEncryption) public var sleepSeconds: Double?
@@ -131,6 +145,39 @@ public final class DailyMetrics {
     @Attribute(.allowsCloudEncryption) public var bodyMassKg: Double?
 
     public init(date: Date) {
-        self.date = date
+        self.day = CalendarDay.stamp(for: date)
+    }
+
+    /// Start of the day in the device's calendar.
+    public var date: Date {
+        get { CalendarDay.date(for: day) }
+        set { day = CalendarDay.stamp(for: newValue) }
+    }
+}
+
+/// The zones and thresholds in force from one day until the next snapshot. The profile
+/// only holds today's numbers; these keep older workouts scored against the numbers the
+/// athlete had at the time, so raising FTP does not rewrite last season's load.
+@Model
+public final class ThresholdSnapshot {
+    public var uuid: UUID = UUID()
+    /// The first day these numbers apply, as a `CalendarDay` stamp.
+    public var day: Date = CalendarDay.stamp(for: Date())
+    public var createdAt: Date = Date()
+    /// Upper bounds of zones 1–4 in bpm, whole numbers.
+    @Attribute(.allowsCloudEncryption) public var zoneUpperBounds: [Double]?
+    @Attribute(.allowsCloudEncryption) public var maxHR: Double?
+    @Attribute(.allowsCloudEncryption) public var restingHR: Double?
+    @Attribute(.allowsCloudEncryption) public var ftpWatts: Double?
+    @Attribute(.allowsCloudEncryption) public var thresholdRunPaceSecondsPerKm: Double?
+    @Attribute(.allowsCloudEncryption) public var thresholdSwimPaceSecondsPer100m: Double?
+
+    public init(date: Date) {
+        self.day = CalendarDay.stamp(for: date)
+    }
+
+    public var date: Date {
+        get { CalendarDay.date(for: day) }
+        set { day = CalendarDay.stamp(for: newValue) }
     }
 }

@@ -145,7 +145,7 @@ public enum SuggestionApplier {
             guard let date = date(from: proposal.date, calendar: calendar), let sport = proposal.sport else {
                 throw SuggestionError.incomplete
             }
-            let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDate)]))
+            let plans = try context.fetch(FetchDescriptor<TrainingPlan>(sortBy: [SortDescriptor(\.startDay)]))
             guard let plan = plans.first(where: { $0.startDate <= date && date <= $0.endDate }) ?? plans.last else {
                 throw SuggestionError.noPlan
             }

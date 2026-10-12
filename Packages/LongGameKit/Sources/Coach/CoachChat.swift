@@ -265,7 +265,9 @@ public struct CoachChat: Sendable {
             with an id), completed workouts and how they matched the plan, daily recovery metrics with the athlete's own \
             baselines, and training-load trends. Durations are minutes, distances kilometres, heart rate beats per minute, \
             power watts. "load" is minutes weighted by heart-rate zone (1 to 5 points per minute). "loadRatio" is the last \
-            7 days' average daily load over the last 28 days'; roughly 0.8 to 1.3 is steady.
+            7 days' average daily load over the last 28 days'; roughly 0.8 to 1.3 is steady. On a workout, "rpe" is the \
+            athlete's own rating of how hard it was (1 to 10), and "feel" and "notes" are what they said about it \
+            afterwards. Sessions that share a "brick" value are done back to back as one outing.
 
             \(mode)
 
@@ -435,7 +437,7 @@ enum CoachTools {
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
         let found = try sessions(in: context)
             .filter { calendar.startOfDay(for: $0.date) >= from && calendar.startOfDay(for: $0.date) <= to }
-            .sorted { ($0.date, $0.createdAt) < ($1.date, $1.createdAt) }
+            .sorted { $0.day == $1.day ? PlannedWorkout.inDayOrder($0, $1) : $0.day < $1.day }
             .map { session in
                 CoachPayload.Session(
                     id: shortID(session),
@@ -447,7 +449,8 @@ enum CoachTools {
                     intensity: session.targetIntensity.isEmpty ? nil : session.targetIntensity,
                     instructions: session.instructions.isEmpty ? nil : session.instructions,
                     status: session.status.rawValue,
-                    percentOfTarget: session.complianceRatio.map { Int(($0 * 100).rounded()) }
+                    percentOfTarget: session.complianceRatio.map { Int(($0 * 100).rounded()) },
+                    brick: session.brickLabel
                 )
             }
         let encoder = JSONEncoder()

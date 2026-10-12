@@ -15,7 +15,7 @@ struct PlanGeneratorView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \Goal.targetDate) private var goals: [Goal]
+    @Query(sort: \Goal.targetDay) private var goals: [Goal]
     @Query(sort: \AthleteProfile.createdAt) private var profiles: [AthleteProfile]
     @Query(sort: \CompletedWorkout.start, order: .reverse) private var workouts: [CompletedWorkout]
 
@@ -284,7 +284,7 @@ struct DraftPlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \TrainingPlan.startDate) private var allPlans: [TrainingPlan]
+    @Query(sort: \TrainingPlan.startDay) private var allPlans: [TrainingPlan]
 
     let draft: TrainingPlan
     /// Called with the plan once it has been accepted.

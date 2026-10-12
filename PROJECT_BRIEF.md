@@ -171,8 +171,15 @@ fatigue (for example a long hike the day before a key run).
 ## 6. Data model (SwiftData, CloudKit-compatible)
 
 CloudKit rules to follow: every property optional or defaulted, no unique constraints, all
-relationships optional with inverses. Mark health-derived fields with
-`@Attribute(.allowsCloudEncryption)`.
+relationships optional with inverses. Mark health-derived fields and anything the athlete
+or the coach wrote with `@Attribute(.allowsCloudEncryption)`.
+
+The Production schema only accepts additions: a deployed field can never be removed,
+renamed, retyped or have its encryption changed. The models are versioned (`SchemaV1`).
+
+Calendar days (a session's day, a night's metrics, plan and phase ranges, a goal's date) are
+stored as `CalendarDay` stamps, midnight UTC of that year, month and day, and read through
+a `date` accessor. A day therefore stays the same day when the device changes time zone.
 
 - **AthleteProfile** — age source (DOB), sex, height, weight, max HR, resting HR baseline,
   HR zones (auto-derived, manually overridable), threshold values per sport (FTP, threshold
@@ -186,13 +193,17 @@ relationships optional with inverses. Mark health-derived fields with
   taper, recovery) with date ranges, origin (manual / generated).
 - **PlannedWorkout** — date, sport, session type (easy, long, tempo, intervals, strength,
   rest…), target duration, target distance, target intensity (zone or description),
-  free-text instructions, status, link to matched CompletedWorkout. Strength sessions use
+  free-text instructions, status, link to matched CompletedWorkout, order within the day,
+  and a brick ID shared by sessions done back to back. Strength sessions use
   the free-text field for exercises and sets in v1; leave room for a structured
   `StrengthSet` child model in v2 without a migration headache.
 - **CompletedWorkout** — HealthKit UUID, source name, sport, original activity name,
   session ID (multisport legs), primary/duplicate flag, start, duration, distance,
   active energy, avg and max HR, seconds in each zone, avg power and cadence where
-  available, effort score, computed load, confidence flag.
+  available, effort score, computed load, confidence flag, and the athlete's own feedback
+  (perceived effort 1–10, how it felt, notes).
+- **ThresholdSnapshot** — the zones, FTP and threshold paces in force from a given day.
+  Written whenever they change, so each workout is scored against the numbers of its day.
 - **DailyMetrics** — date, resting HR, HRV, sleep duration, time in sleep stages,
   respiratory rate, steps, active energy, VO2 max, body mass.
 - **CoachReview** — date, period covered, trigger (weekly / on-demand / plan generation),

@@ -52,6 +52,8 @@ public struct CoachPayload: Codable, Sendable, Equatable {
         /// planned, done, partial, overdone or missed.
         public var status: String
         public var percentOfTarget: Int?
+        /// Shared by sessions done back to back as one outing; absent otherwise.
+        public var brick: String?
     }
 
     public struct Plan: Codable, Sendable, Equatable {
@@ -77,6 +79,11 @@ public struct CoachPayload: Codable, Sendable, Equatable {
         public var loadEstimated: Bool?
         /// The planned session this was matched to; absent when unplanned.
         public var sessionId: String?
+        /// The athlete's own rating of how hard it was, 1–10, with how it felt and anything
+        /// they wrote about it.
+        public var rpe: Int?
+        public var feel: String?
+        public var notes: String?
     }
 
     public struct Day: Codable, Sendable, Equatable {

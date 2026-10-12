@@ -36,6 +36,7 @@ enum Format {
         if let seconds = workout.targetDurationSeconds { parts.append(duration(seconds)) }
         if let meters = workout.targetDistanceMeters { parts.append(distance(meters, sport: workout.sport)) }
         if !workout.targetIntensity.isEmpty { parts.append(workout.targetIntensity) }
+        if let leader = workout.brickLeader { parts.append("straight after \(leader.sport.displayName.lowercased())") }
         return parts.joined(separator: " · ")
     }
 
