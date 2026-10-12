@@ -30,6 +30,8 @@ enum Format {
     }
 
     static func targets(of workout: PlannedWorkout) -> String {
+        // A rest or flex day has no targets; its note is all there is to say about it.
+        if workout.isDayMarker { return workout.instructions }
         var parts: [String] = []
         if let seconds = workout.targetDurationSeconds { parts.append(duration(seconds)) }
         if let meters = workout.targetDistanceMeters { parts.append(distance(meters, sport: workout.sport)) }
@@ -39,11 +41,27 @@ enum Format {
 
     static func title(of workout: PlannedWorkout) -> String {
         switch workout.sessionType {
-        case .rest: "Rest"
+        case .rest: "Rest day"
+        case .flex: "Flex day"
         case .strength where workout.sport == .strength: "Strength"
         default: "\(workout.sessionType.displayName) \(workout.sport.displayName.lowercased())"
         }
     }
+}
+
+extension SessionType {
+    /// Symbol for a rest or flex day, which has no sport to show.
+    var dayMarkerSymbolName: String? {
+        switch self {
+        case .rest: "moon.zzz"
+        case .flex: "shuffle"
+        default: nil
+        }
+    }
+}
+
+extension PlannedWorkout {
+    var symbolName: String { sessionType.dayMarkerSymbolName ?? sport.symbolName }
 }
 
 /// Distances are stored in meters and typed in the unit that suits the sport and locale.
@@ -183,5 +201,30 @@ extension View {
         frame(maxWidth: width)
             .frame(maxWidth: .infinity)
             .background(.pageBackground)
+    }
+}
+
+/// Paces are stored in seconds per kilometre and typed as minutes:seconds in the locale's unit.
+enum PaceEntry {
+    private static var metersPerUnit: Double {
+        Locale.current.measurementSystem == .metric ? 1000 : 1609.344
+    }
+
+    static var unitLabel: String {
+        Locale.current.measurementSystem == .metric ? "/km" : "/mi"
+    }
+
+    static func text(secondsPerKm: Double) -> String {
+        let total = Int((secondsPerKm * metersPerUnit / 1000).rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// Nil unless the text is a plausible pace such as "4:30" or "7:15".
+    static func secondsPerKm(from text: String) -> Double? {
+        let parts = text.trimmingCharacters(in: .whitespaces).split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 2, let minutes = Int(parts[0]), parts[1].count == 2, let seconds = Int(parts[1]),
+            (2...20).contains(minutes), (0..<60).contains(seconds)
+        else { return nil }
+        return Double(minutes * 60 + seconds) * 1000 / metersPerUnit
     }
 }

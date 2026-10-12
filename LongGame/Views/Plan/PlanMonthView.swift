@@ -61,9 +61,7 @@ struct PlanMonthView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Add Session", systemImage: "plus") { sheet = .newWorkout(anchor) }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
+                AddToDayMenu(plan: plan, day: anchor, sheet: $sheet)
             }
             if workouts.isEmpty {
                 Text("Nothing planned").foregroundStyle(.secondary)
@@ -101,7 +99,7 @@ private struct MonthCell: View {
                     .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
                 HStack(spacing: 2) {
                     ForEach(workouts.prefix(3)) { workout in
-                        Image(systemName: workout.sessionType == .rest ? "moon.zzz" : workout.sport.symbolName)
+                        Image(systemName: workout.symbolName)
                             .font(.caption2)
                             .imageScale(.small)
                             .foregroundStyle(workout.status.color)

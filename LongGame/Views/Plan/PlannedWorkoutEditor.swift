@@ -1,4 +1,5 @@
 import Analysis
+import Coach
 import Models
 import SwiftData
 import SwiftUI
@@ -37,7 +38,7 @@ struct PlannedWorkoutEditor: View {
         _instructions = State(initialValue: workout?.instructions ?? "")
     }
 
-    private var isRest: Bool { sessionType == .rest }
+    private var isDayMarker: Bool { sessionType.isDayMarker }
 
     var body: some View {
         NavigationStack {
@@ -47,14 +48,23 @@ struct PlannedWorkoutEditor: View {
                     Picker("Type", selection: $sessionType) {
                         ForEach(SessionType.allCases) { Text($0.displayName).tag($0) }
                     }
-                    if !isRest {
+                    if !isDayMarker {
                         Picker("Sport", selection: $sport) {
                             ForEach(Sport.allCases) { Label($0.displayName, systemImage: $0.symbolName).tag($0) }
                         }
                     }
+                } footer: {
+                    switch sessionType {
+                    case .rest: Text("A day fully off. Nothing is matched to it and it never counts as missed.")
+                    case .flex:
+                        Text(
+                            "A day you decide on when it comes: train, rest, or anything between. Whatever you do is logged as usual, and the day never counts as missed."
+                        )
+                    default: EmptyView()
+                    }
                 }
 
-                if !isRest {
+                if !isDayMarker {
                     Section("Targets") {
                         LabeledContent("Duration") {
                             HStack {
@@ -82,12 +92,19 @@ struct PlannedWorkoutEditor: View {
                     }
                 }
 
-                Section(sport == .strength && !isRest ? "Exercises and sets" : "Instructions") {
-                    TextField("Notes for this session", text: $instructions, axis: .vertical)
-                        .lineLimit(3...10)
+                Section(isDayMarker ? "Notes" : sport == .strength ? "Exercises and sets" : "Instructions") {
+                    TextField(
+                        isDayMarker ? "Notes for this day" : "Notes for this session", text: $instructions,
+                        axis: .vertical
+                    )
+                    .lineLimit(3...10)
                 }
 
-                if let workout, !workout.isRest, !plan.isDraft {
+                if let workout, WorkoutStructurer.canStructure(workout) {
+                    StructuredWorkoutSection(session: workout)
+                }
+
+                if let workout, !workout.isDayMarker, !plan.isDraft {
                     MatchSection(session: workout)
                 }
 
@@ -146,7 +163,7 @@ struct PlannedWorkoutEditor: View {
         target.sessionType = sessionType
         target.sport = sport
         target.instructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
-        if isRest {
+        if isDayMarker {
             target.targetDurationSeconds = nil
             target.targetDistanceMeters = nil
             target.targetIntensity = ""

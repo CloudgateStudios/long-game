@@ -63,6 +63,8 @@ public enum CoachConfiguration {
     static let chatEffort = "medium"
     /// The most tool round-trips one message from the athlete may set off.
     static let maxToolRounds = 6
+    /// Turning one session into steps is a small, mechanical job.
+    static let structureEffort = "low"
     static let maxTokens = 64_000
     /// Seconds without any data before a request is given up on.
     static let idleTimeout: TimeInterval = 120
@@ -109,7 +111,11 @@ public enum CoachConfiguration {
         - Respect the athlete's weekly availability and notes. Do not stack hard sessions on consecutive days, and keep \
         weekly load changes gradual.
         - sport is one of swim, bike, run, strength, other. sessionType is one of easy, long, tempo, intervals, recovery, \
-        race, strength, rest, other. Dates are YYYY-MM-DD.
+        race, strength, rest, flex, other. Dates are YYYY-MM-DD.
+        - Sessions of type rest and flex are days the athlete has marked, not workouts; ignore their sport. A rest day is \
+        fully off: add nothing to it and move nothing onto it. A flex day is the athlete's to fill or leave empty on the \
+        day: do not schedule onto it, and do not read an empty one as a missed session. Leave both in place unless the \
+        athlete asks otherwise.
         - rationale: one or two sentences tied to the data, written to the athlete.
         """
 
@@ -141,15 +147,48 @@ public enum CoachConfiguration {
         - Do not stack hard sessions (tempo, intervals, race, long) on consecutive days. Follow a long or hard day with an \
         easy day or a day off.
         - If the goal date falls inside the plan, put a session of type race on that date.
-        - Leave rest days empty rather than adding sessions of type rest.
+        - Leave rest days empty rather than adding sessions of type rest or flex.
 
         Each session has a date (YYYY-MM-DD), sport (swim, bike, run, strength, other), sessionType (easy, long, tempo, \
-        intervals, recovery, race, strength, rest, other), durationMinutes and, where useful, distanceKm; an intensity as a \
+        intervals, recovery, race, strength, rest, flex, other), durationMinutes and, where useful, distanceKm; an intensity as a \
         heart-rate zone or short description ("Z2", "6 x 3 min at Z4, 2 min easy"); and brief instructions only where the \
         session needs explaining. For strength sessions, put the exercises in instructions. Use null for anything that \
         does not apply. List sessions in date order.
 
         summary: plain text, no markdown, two to four short paragraphs written to the athlete: how the plan is shaped, why \
         it starts where it does, and what the key sessions each week are.
+        """
+
+    public static let structurePrompt = """
+        You turn one planned run or ride into a structured workout: the steps a sports watch or bike computer leads the \
+        athlete through. You are a training assistant, not a medical service.
+
+        You receive JSON: the session (sport, sessionType, durationMinutes, distanceKm, intensity and instructions as the \
+        coach wrote them) and the athlete's numbers where known (ftpWatts, heart-rate zoneUpperBounds for zones 1 to 4 in \
+        beats per minute, maxHR, thresholdRunPaceSecPerKm, and for runs runTargets).
+
+        Reply with blocks, in the order they are done. Each block has repeats (1 for a plain step) and its steps. Each \
+        step has:
+        - kind: warmup, work, recovery or cooldown.
+        - durationSeconds or distanceMeters: set exactly one and leave the other null. Leave both null only for a step \
+        that should run until the athlete presses lap.
+        - target: null for no target, or kind, low and high. Kinds: hrZone (zone numbers 1 to 5), heartRate (beats per \
+        minute), ftpPercent (percent of FTP, 100 is threshold), power (watts), pace (seconds per kilometre, low is the \
+        faster end), rpe (1 to 10). low must not be greater than high; use the same value for both for a single number.
+        - note: a cue of a few words ("high cadence", "5K effort"), or null.
+
+        Rules:
+        - Keep to what the session says. Do not make it harder, longer or shorter. The steps should add up to \
+        durationMinutes (or distanceKm) within a couple of minutes.
+        - Unless the session says otherwise, start hard sessions (tempo, intervals, race pace) with a warm-up of 10 to 15 \
+        minutes and end with a cool-down of 5 to 10 minutes, inside the session's total time. An easy, long or recovery \
+        session can be a single work step, or a short warm-up, one steady step and a short cool-down.
+        - Choose the target the athlete can follow on a device. Rides: ftpPercent when ftpWatts is known, otherwise \
+        hrZone. Runs: follow athlete.runTargets. For "pace", give every step a pace when the session gives one or \
+        thresholdRunPaceSecPerKm is known (easy running is roughly 15 to 30 percent slower than threshold pace), and \
+        fall back to hrZone otherwise. For "heartRate", use hrZone throughout.
+        - Recoveries between hard efforts are short and easy: give them a target of hrZone 1 or about 50 percent of FTP, \
+        or none.
+        - A set repeated several times is one block with repeats, not the same steps written out.
         """
 }

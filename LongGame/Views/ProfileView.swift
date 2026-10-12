@@ -13,6 +13,8 @@ struct ProfileView: View {
     @State private var maxHR: Double?
     @State private var restingHR: Double?
     @State private var ftp: Double?
+    @State private var thresholdPace = ""
+    @State private var runTargets = RunTargetMode.heartRate
     @State private var usesCustomZones = false
     @State private var customBounds: [Double?] = [nil, nil, nil, nil]
     @State private var coachNotes = ""
@@ -74,6 +76,28 @@ struct ProfileView: View {
             }
 
             Section {
+                LabeledContent("Threshold pace") {
+                    HStack {
+                        TextField("Not set", text: $thresholdPace)
+                            .multilineTextAlignment(.trailing)
+                            #if os(iOS)
+                        .keyboardType(.numbersAndPunctuation)
+                            #endif
+                        Text(PaceEntry.unitLabel).foregroundStyle(.secondary)
+                    }
+                }
+                Picker("Structured runs by", selection: $runTargets) {
+                    ForEach(RunTargetMode.allCases) { Text($0.displayName).tag($0) }
+                }
+            } header: {
+                Text("Running")
+            } footer: {
+                Text(
+                    "Threshold pace is what you could hold for about an hour, entered as minutes:seconds. It lets a run's steps be shown by pace or by heart-rate zone; each session can also choose its own."
+                )
+            }
+
+            Section {
                 TextField("Injuries, constraints, preferences", text: $coachNotes, axis: .vertical)
                     .lineLimit(3...8)
             } header: {
@@ -116,6 +140,8 @@ struct ProfileView: View {
         .onChange(of: maxHR) { apply() }
         .onChange(of: restingHR) { apply() }
         .onChange(of: ftp) { apply() }
+        .onChange(of: thresholdPace) { apply() }
+        .onChange(of: runTargets) { apply() }
         .onChange(of: usesCustomZones) { apply() }
         .onChange(of: customBounds) { apply() }
         .onChange(of: coachNotes) {
@@ -164,6 +190,8 @@ struct ProfileView: View {
             maxHR = profile.maxHR
             restingHR = profile.restingHRBaseline
             ftp = profile.ftpWatts
+            thresholdPace = profile.thresholdRunPaceSecondsPerKm.map(PaceEntry.text) ?? ""
+            runTargets = profile.runTargets
             coachNotes = profile.coachNotes
             if let override = profile.zoneUpperBoundsOverride, HeartRateZones.isValid(override) {
                 usesCustomZones = true
@@ -180,6 +208,13 @@ struct ProfileView: View {
         profile.maxHR = maxHR.flatMap { $0 > 0 ? $0 : nil }
         profile.restingHRBaseline = restingHR.flatMap { $0 > 0 ? $0 : nil }
         profile.ftpWatts = ftp.flatMap { $0 > 0 ? $0 : nil }
+        // A half-typed pace is not saved over a good one, but clearing the field clears it.
+        if let pace = PaceEntry.secondsPerKm(from: thresholdPace) {
+            profile.thresholdRunPaceSecondsPerKm = pace
+        } else if thresholdPace.trimmingCharacters(in: .whitespaces).isEmpty {
+            profile.thresholdRunPaceSecondsPerKm = nil
+        }
+        profile.runTargets = runTargets
         profile.zoneUpperBoundsOverride = usesCustomZones && customZonesAreValid ? customBounds.compactMap { $0 } : nil
         environment.reconcilePlan()
         refreshZones()

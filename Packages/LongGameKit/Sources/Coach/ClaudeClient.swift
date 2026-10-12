@@ -125,11 +125,13 @@ public struct ClaudeClient: Sendable {
         case review
         case plan
         case title
+        case workoutStructure
 
         var schema: [String: Any] {
             switch self {
             case .review: CoachResponse.schema
             case .plan: PlanResponse.schema
+            case .workoutStructure: WorkoutStructurer.schema
             case .title:
                 [
                     "type": "object", "additionalProperties": false, "required": ["title"],

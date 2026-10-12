@@ -51,6 +51,8 @@ import Testing
         let missed = plan(.run, day: -1)
         let upcoming = plan(.run, day: 2)
         let rest = plan(.run, day: -1, minutes: nil, type: .rest)
+        // Shares a day and a sport with the unplanned workout, and still takes nothing.
+        let flex = plan(.strength, day: -1, minutes: nil, type: .flex)
         log(.run, day: -3, minutes: 58)
         log(.bike, day: -2, minutes: 60)
         log(.swim, day: -2, minutes: 45)
@@ -64,6 +66,8 @@ import Testing
         #expect(upcoming.status == .planned)
         #expect(rest.status == .planned)
         #expect(rest.matchedWorkout == nil)
+        #expect(flex.status == .planned)
+        #expect(flex.matchedWorkout == nil)
         #expect(unplanned.plannedWorkout == nil)
         #expect(partial.complianceRatio == 0.6)
 
@@ -144,12 +148,12 @@ import Testing
         #expect(run.matchedWorkout === workout)
     }
 
-    @Test func weekComplianceLeavesOutRestDays() throws {
+    @Test func weekComplianceLeavesOutRestAndFlexDays() throws {
         let plan = TrainingPlan(name: "Test", startDate: day(-7), endDate: day(7))
         context.insert(plan)
         for session in [
             self.plan(.run, day: -2), self.plan(.bike, day: -1), self.plan(.run, day: 1),
-            self.plan(.run, day: -1, minutes: nil, type: .rest),
+            self.plan(.run, day: -1, minutes: nil, type: .rest), self.plan(.other, day: -3, minutes: nil, type: .flex),
         ] {
             session.plan = plan
         }
