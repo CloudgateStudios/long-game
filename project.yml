@@ -44,6 +44,7 @@ targets:
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         ITSAppUsesNonExemptEncryption: false
         LGCloudKitContainer: $(LG_ICLOUD_CONTAINER)
+        LGCloudKitEnvironment: $(LG_ICLOUD_ENVIRONMENT)
         NSHealthShareUsageDescription: Long Game reads your workouts and recovery data to compare them with your training plan. It never writes to Health.
         UIBackgroundModes: [remote-notification]
         UILaunchScreen: {}

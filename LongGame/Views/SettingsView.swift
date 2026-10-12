@@ -35,6 +35,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                     }
                     LabeledContent("Container", value: containerID)
+                    LabeledContent("Environment", value: cloudEnvironmentText)
                     LabeledContent("Status") {
                         HStack(spacing: 8) {
                             if environment.isImportingFromICloud || environment.isExportingToICloud {
@@ -138,6 +139,13 @@ struct SettingsView: View {
         case .synced(let date): "Synced \(date.formatted(date: .omitted, time: .shortened))"
         case .failed: "Sync failed"
         }
+    }
+
+    /// The CloudKit environment this build was configured for. Devices on different
+    /// environments do not see each other's data.
+    private var cloudEnvironmentText: String {
+        let value = Bundle.main.object(forInfoDictionaryKey: "LGCloudKitEnvironment") as? String ?? ""
+        return value.isEmpty ? "Unknown" : value
     }
 
     private var cloudStatusText: String {
