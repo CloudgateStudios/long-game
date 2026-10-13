@@ -84,8 +84,15 @@ first. Then, before the first release and after every later model change:
    writes every record type and field to the Development schema, including optional fields
    no record has used yet, which CloudKit would otherwise leave out. The Xcode console
    prints the result. Remove the argument afterwards.
-2. In the CloudKit Console, compare the Development schema with
-   `Packages/LongGameKit/Sources/Models`, then choose Deploy Schema Changes.
+2. Run `sh Scripts/cloudkit_schema.sh export` and commit `Config/CloudKitSchema.ckdb`. The
+   diff shows exactly what the model change added to the schema.
+3. In the CloudKit Console, choose Deploy Schema Changes.
+4. Run `sh Scripts/cloudkit_schema.sh check`. It fails, and prints what is missing, unless
+   Development and Production both match the committed file. Run it before every release.
+
+The script uses `cktool`, which ships with Xcode, and needs a CloudKit management token:
+create one in the CloudKit Console and save it with
+`xcrun cktool save-token --type management`.
 
 If Development still holds a schema from before a field was encrypted, step 1 fails with
 "invalid attempt to set value type ENCRYPTED_STRING". Reset the Development environment in the Console first. That erases the data
@@ -119,7 +126,8 @@ TestFlight builds expire after 90 days. The weekly schedule rebuilds `release` s
 device always has a live build, without shipping unreleased work from `main`.
 
 These builds use CloudKit Production. Deploy the schema (see iCloud above) before the
-first release and again before moving `release` past a data model change.
+first release and again before moving `release` past a data model change;
+`sh Scripts/cloudkit_schema.sh check` tells you whether Production is up to date.
 
 ## Project layout
 
