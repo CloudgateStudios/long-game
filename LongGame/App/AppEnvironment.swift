@@ -39,6 +39,10 @@ final class AppEnvironment {
 
     let coach = CoachSession()
     let reminder = WeeklyReminder()
+    /// Whether the Settings sheet is up, and the pages pushed inside it. Kept here so any
+    /// screen can open Settings on a page, and so it comes back after a manual iCloud sync.
+    var isShowingSettings = false
+    var settingsPath: [SettingsPage] = []
     /// Whether this device is signed in to iCloud; nil until checked or when not syncing.
     private(set) var iCloudAccountAvailable: Bool?
 

@@ -18,7 +18,6 @@ struct ProfileView: View {
     @State private var runTargets = RunTargetMode.heartRate
     @State private var usesCustomZones = false
     @State private var customBounds: [Double?] = [nil, nil, nil, nil]
-    @State private var coachNotes = ""
     @State private var zones = ResolvedZones()
     @State private var didLoad = false
 
@@ -98,17 +97,6 @@ struct ProfileView: View {
                 )
             }
 
-            Section {
-                TextField("Injuries, constraints, preferences", text: $coachNotes, axis: .vertical)
-                    .lineLimit(3...8)
-            } header: {
-                Text("Notes for the coach")
-            } footer: {
-                Text(
-                    "Sent with every review. For example: \"left knee is sore after long descents\" or \"no swimming on Fridays\"."
-                )
-            }
-
             if history.count > 1 {
                 Section {
                     ForEach(history) { snapshot in
@@ -160,8 +148,6 @@ struct ProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .onAppear(perform: load)
-        // Notes are saved once on the way out rather than on every keystroke.
-        .onDisappear { environment.saveChanges() }
         .onChange(of: maxHR) { apply() }
         .onChange(of: restingHR) { apply() }
         .onChange(of: ftp) { apply() }
@@ -169,9 +155,6 @@ struct ProfileView: View {
         .onChange(of: runTargets) { apply() }
         .onChange(of: usesCustomZones) { apply() }
         .onChange(of: customBounds) { apply() }
-        .onChange(of: coachNotes) {
-            if didLoad { profile?.coachNotes = coachNotes }
-        }
     }
 
     private func numberField(_ title: String, value: Binding<Double?>, unit: String, placeholder: String) -> some View {
@@ -217,7 +200,6 @@ struct ProfileView: View {
             ftp = profile.ftpWatts
             thresholdPace = profile.thresholdRunPaceSecondsPerKm.map(PaceEntry.text) ?? ""
             runTargets = profile.runTargets
-            coachNotes = profile.coachNotes
             if let override = profile.zoneUpperBoundsOverride, HeartRateZones.isValid(override) {
                 usesCustomZones = true
                 customBounds = override.map(Optional.some)

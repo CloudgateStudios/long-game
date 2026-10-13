@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case today, plan, coach, settings
+    case today, plan, coach
 
     var id: String { rawValue }
 
@@ -10,7 +10,6 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .today: "Today"
         case .plan: "Training"
         case .coach: "Coach"
-        case .settings: "Settings"
         }
     }
 
@@ -19,7 +18,6 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .today: "sun.max"
         case .plan: "calendar"
         case .coach: "text.bubble"
-        case .settings: "gearshape"
         }
     }
 }
@@ -30,6 +28,7 @@ struct RootView: View {
     @SceneStorage("selectedSection") private var selection: AppSection = .today
 
     var body: some View {
+        @Bindable var environment = environment
         TabView(selection: $selection) {
             ForEach(AppSection.allCases) { section in
                 Tab(section.title, systemImage: section.symbolName, value: section) {
@@ -47,9 +46,17 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        #if os(iOS)
+        .sheet(isPresented: $environment.isShowingSettings) {
+            SettingsScreen()
+        }
+        #endif
         // Opening the weekly reminder lands on the coach, which then runs the review.
         .onChange(of: environment.reminder.openedFromReminder, initial: true) { _, opened in
-            if opened { selection = .coach }
+            if opened {
+                environment.isShowingSettings = false
+                selection = .coach
+            }
         }
     }
 
@@ -59,7 +66,6 @@ struct RootView: View {
         case .today: DashboardView()
         case .plan: PlanView()
         case .coach: CoachView()
-        case .settings: SettingsView()
         }
     }
 }

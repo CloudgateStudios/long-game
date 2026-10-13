@@ -201,6 +201,16 @@ struct DashboardView: View {
             UpcomingGoalsSheet(goals: upcomingGoals)
         }
         .readableWidth(820)
+        #if os(iOS)
+        // The Mac has its Settings window in the app menu instead.
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                OpenSettingsButton {
+                    Label("Settings", systemImage: "gearshape")
+                }
+            }
+        }
+        #endif
     }
 
     private var todayHeader: String {
