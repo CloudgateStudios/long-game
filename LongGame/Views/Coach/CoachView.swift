@@ -22,7 +22,6 @@ struct CoachView: View {
     @State private var exportText: String?
     @State private var previewJSON: String?
     @State private var didCopy = false
-    @SceneStorage("selectedSection") private var selection: AppSection = .coach
 
     private var coach: CoachSession { environment.coach }
     private var planID: UUID? { UUID(uuidString: selectedPlanID) }
@@ -87,9 +86,7 @@ struct CoachView: View {
                         .buttonStyle(.borderedProminent)
                         .disabled(coach.isRunning)
                     } else {
-                        Button {
-                            selection = .settings
-                        } label: {
+                        OpenSettingsButton(page: .coach) {
                             Label("Add API Key in Settings", systemImage: "key").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
