@@ -1,0 +1,39 @@
+name: Update Release Branch
+
+# Ships what is on main: runs the release checks, then moves the release branch to main.
+# Xcode Cloud builds every change to release and sends it to TestFlight.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-release
+  cancel-in-progress: false
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+
+jobs:
+  update:
+    name: Update release branch
+    if: github.ref == 'refs/heads/main'
+    # macOS for cktool, which the CloudKit schema check uses.
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Write Local.xcconfig
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          LG_ICLOUD_CONTAINER: ${{ secrets.LG_ICLOUD_CONTAINER }}
+        run: |
+          printf 'DEVELOPMENT_TEAM = %s\nLG_ICLOUD_CONTAINER = %s\n' \
+            "$DEVELOPMENT_TEAM" "$LG_ICLOUD_CONTAINER" > Config/Local.xcconfig
+      - name: Check and update release
+        env:
+          CLOUDKIT_MANAGEMENT_TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
+        run: sh Scripts/update_release.sh

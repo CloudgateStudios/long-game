@@ -3,6 +3,10 @@ name: PR title
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
+  # The Version Bump workflow starts this for the pull request it opens. There is no
+  # pull request in the event to read, and that workflow writes the title itself, so the
+  # job passes without checking.
+  workflow_dispatch:
 
 permissions:
   pull-requests: read
@@ -15,6 +19,7 @@ jobs:
     steps:
       # Checks the title against Conventional Commits (feat:, fix:, chore(deps): ...).
       # With squash merging, the title becomes the commit subject on main.
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+      - if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -125,9 +125,25 @@ One-time setup:
 TestFlight builds expire after 90 days. The weekly schedule rebuilds `release` so every
 device always has a live build, without shipping unreleased work from `main`.
 
-These builds use CloudKit Production. Deploy the schema (see iCloud above) before the
-first release and again before moving `release` past a data model change;
-`sh Scripts/cloudkit_schema.sh check` tells you whether Production is up to date.
+### Releasing
+
+Two workflows in GitHub Actions, both started by hand from `main` (Actions > pick the
+workflow > Run workflow):
+
+- **Update Release Branch** ships what is on `main`. It runs the CloudKit schema check and
+  stops if Production is behind; these builds use CloudKit Production, so deploy the schema
+  first (see iCloud above). Then it moves `release` to `main`, which starts the Xcode Cloud
+  build. It runs `Scripts/update_release.sh`, which also works from a Mac.
+- **Version Bump** raises the version (patch, minor or major) in `project.yml` and the
+  Xcode project and opens a pull request for you to review and merge. It runs
+  `Scripts/bump_version.sh`. A release does not need a new version: Xcode Cloud gives every
+  build its own build number.
+
+Settings shows the version and build a device is running.
+
+Update Release Branch needs these repository secrets: `CLOUDKIT_MANAGEMENT_TOKEN` (a
+management token from the CloudKit Console, for the schema check), and `DEVELOPMENT_TEAM`
+and `LG_ICLOUD_CONTAINER` with the same values as your `Local.xcconfig`.
 
 ## Project layout
 

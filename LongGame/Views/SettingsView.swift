@@ -119,6 +119,10 @@ struct SettingsView: View {
             } footer: {
                 Text("What is stored on this device and which iCloud container it syncs with.")
             }
+
+            Section {
+                LabeledContent("Version", value: versionText)
+            }
         }
         .formStyle(.grouped)
         .readableWidth()
@@ -145,6 +149,13 @@ struct SettingsView: View {
         case .synced(let date): "Synced \(date.formatted(date: .omitted, time: .shortened))"
         case .failed: "Sync failed"
         }
+    }
+
+    /// Version and build number of the running app, as "0.1.0 (3)".
+    private var versionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "–"
+        return "\(version) (\(build))"
     }
 
     /// The CloudKit environment this build was configured for. Devices on different
