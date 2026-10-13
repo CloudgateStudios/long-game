@@ -256,6 +256,7 @@ struct SuggestionCard: View {
             "Date", before: current.map { $0.day.formatted(.dateTime.weekday().day().month()) },
             after: dateText(proposal.date))
         add("Sport", before: current?.sport.displayName, after: proposal.sport?.displayName)
+        add("Activity", before: current?.activity, after: ActivityName.normalized(proposal.activity))
         add("Type", before: current?.sessionType.displayName, after: proposal.sessionType?.displayName)
         add(
             "Duration", before: current?.targetDurationSeconds.map(Format.duration),

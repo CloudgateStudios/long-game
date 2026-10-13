@@ -1,8 +1,9 @@
 import Analysis
 import Foundation
-import Models
 import SwiftData
 import Testing
+
+@testable import Models
 
 /// The models as they were in builds that only ever synced with CloudKit Development,
 /// cut down to the fields that changed shape.
@@ -83,9 +84,8 @@ private enum Development {
             try context.save()
         }
 
-        let container = try ModelContainer(
-            for: LongGameStore.schema, migrationPlan: LongGameMigrationPlan.self,
-            configurations: [ModelConfiguration(schema: LongGameStore.schema, url: url, cloudKitDatabase: .none)])
+        let container = try LongGameStore.makeContainer(
+            configuration: ModelConfiguration(schema: LongGameStore.schema, url: url, cloudKitDatabase: .none))
         let context = container.mainContext
         // The day fields still hold the old local midnights until they are repaired.
         // Two on the plan and one each on the session, the day and the goal. A machine set
@@ -110,6 +110,38 @@ private enum Development {
         let goal = try #require(try context.fetch(FetchDescriptor<Models.Goal>()).first)
         #expect(goal.title == "Half Marathon")
         #expect(goal.targetDay == day(90))
+    }
+
+    @Test func aVersionOneStoreGainsTheActivityName() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appending(path: "LongGame.store")
+
+        do {
+            let schema = Schema(versionedSchema: SchemaV1.self)
+            let container = try ModelContainer(
+                for: schema, configurations: [ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)])
+            let plan = SchemaV1.TrainingPlan()
+            plan.name = "Spring"
+            container.mainContext.insert(plan)
+            let session = SchemaV1.PlannedWorkout()
+            session.sportRaw = "other"
+            session.instructions = "Up the ridge"
+            container.mainContext.insert(session)
+            session.plan = plan
+            try container.mainContext.save()
+        }
+
+        let container = try LongGameStore.makeContainer(
+            configuration: ModelConfiguration(schema: LongGameStore.schema, url: url, cloudKitDatabase: .none))
+        let session = try #require(try container.mainContext.fetch(FetchDescriptor<Models.PlannedWorkout>()).first)
+        #expect(session.sport == .other)
+        #expect(session.instructions == "Up the ridge")
+        #expect(session.plan?.name == "Spring")
+        #expect(session.activityName == "")
+        session.activity = "Hiking"
+        try container.mainContext.save()
     }
 
     @Test func sessionsOnADayFollowTheirOrder() throws {

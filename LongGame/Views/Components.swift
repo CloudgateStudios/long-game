@@ -89,6 +89,7 @@ extension PlannedWorkout {
             targetIntensity: targetIntensity,
             instructions: instructions
         )
+        copy.activityName = activityName
         modelContext?.insert(copy)
         copy.plan = plan
         try? modelContext?.save()

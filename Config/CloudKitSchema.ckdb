@@ -293,6 +293,8 @@ DEFINE SCHEMA
     );
 
     RECORD TYPE CD_PlannedWorkout (
+        CD_activityName            ENCRYPTED STRING,
+        CD_activityName_ckAsset    ASSET,
         CD_brickID                 STRING QUERYABLE SEARCHABLE SORTABLE,
         CD_createdAt               TIMESTAMP QUERYABLE SORTABLE,
         CD_date                    TIMESTAMP QUERYABLE SORTABLE,

@@ -140,6 +140,7 @@ public struct CoachPlanner: Sendable {
                 targetIntensity: session.intensity ?? "",
                 instructions: session.instructions ?? ""
             )
+            record.activity = session.activity
             // Keeps the model's order for sessions on the same day.
             record.createdAt = now.addingTimeInterval(Double(index) / 1000)
             context.insert(record)

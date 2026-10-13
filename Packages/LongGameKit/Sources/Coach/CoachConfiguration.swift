@@ -115,6 +115,8 @@ public enum CoachConfiguration {
         weekly load changes gradual.
         - sport is one of swim, bike, run, strength, other. sessionType is one of easy, long, tempo, intervals, recovery, \
         race, strength, rest, flex, other. Dates are YYYY-MM-DD.
+        - activity names what an "other" session is ("Hiking", "Yoga"), spelled as the same activity appears in the \
+        athlete's workouts where it does. Leave it null for every other sport.
         - Sessions of type rest and flex are days the athlete has marked, not workouts; ignore their sport. A rest day is \
         fully off: add nothing to it and move nothing onto it. A flex day is the athlete's to fill or leave empty on the \
         day: do not schedule onto it, and do not read an empty one as a missed session. Leave both in place unless the \
@@ -155,7 +157,8 @@ public enum CoachConfiguration {
         Each session has a date (YYYY-MM-DD), sport (swim, bike, run, strength, other), sessionType (easy, long, tempo, \
         intervals, recovery, race, strength, rest, flex, other), durationMinutes and, where useful, distanceKm; an intensity as a \
         heart-rate zone or short description ("Z2", "6 x 3 min at Z4, 2 min easy"); and brief instructions only where the \
-        session needs explaining. For strength sessions, put the exercises in instructions. Use null for anything that \
+        session needs explaining. For a session whose sport is other, set activity to what it is ("Hiking", "Yoga"), \
+        spelled as the same activity appears in the athlete's workouts where it does; leave it null for every other sport. For strength sessions, put the exercises in instructions. Use null for anything that \
         does not apply. List sessions in date order.
 
         summary: plain text, no markdown, two to four short paragraphs written to the athlete: how the plan is shaped, why \

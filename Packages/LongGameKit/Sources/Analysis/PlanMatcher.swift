@@ -5,6 +5,8 @@ public struct PlannedSession: Sendable, Equatable {
     public var id: UUID
     public var date: Date
     public var sport: Sport
+    /// What an "other" session is, when the athlete named it.
+    public var activity: String?
     public var sessionType: SessionType
     public var targetDurationSeconds: Double?
     public var targetDistanceMeters: Double?
@@ -13,6 +15,7 @@ public struct PlannedSession: Sendable, Equatable {
         id: UUID,
         date: Date,
         sport: Sport,
+        activity: String? = nil,
         sessionType: SessionType = .easy,
         targetDurationSeconds: Double? = nil,
         targetDistanceMeters: Double? = nil
@@ -20,6 +23,7 @@ public struct PlannedSession: Sendable, Equatable {
         self.id = id
         self.date = date
         self.sport = sport
+        self.activity = activity
         self.sessionType = sessionType
         self.targetDurationSeconds = targetDurationSeconds
         self.targetDistanceMeters = targetDistanceMeters
@@ -30,17 +34,21 @@ public struct CompletedSession: Sendable, Equatable {
     public var id: UUID
     public var start: Date
     public var sport: Sport
+    /// The activity as recorded, for an "other" workout.
+    public var activity: String?
     public var durationSeconds: Double
     public var distanceMeters: Double?
     /// Measured training load, when it has been computed.
     public var load: Double?
 
     public init(
-        id: UUID, start: Date, sport: Sport, durationSeconds: Double, distanceMeters: Double? = nil, load: Double? = nil
+        id: UUID, start: Date, sport: Sport, activity: String? = nil, durationSeconds: Double,
+        distanceMeters: Double? = nil, load: Double? = nil
     ) {
         self.id = id
         self.start = start
         self.sport = sport
+        self.activity = activity
         self.durationSeconds = durationSeconds
         self.distanceMeters = distanceMeters
         self.load = load
@@ -50,6 +58,8 @@ public struct CompletedSession: Sendable, Equatable {
 public enum PlanMatcher {
     /// Pairs planned sessions with completed workouts, one to one: same sport on the
     /// same day first, then within `matchDayTolerance` days. Returns planned ID → completed ID.
+    /// A session that names its activity ("Hiking") is not paired with a workout recorded
+    /// under another name.
     ///
     /// Pass only what may be matched automatically: no rest or flex days, no duplicates, and
     /// nothing the user has matched or un-matched by hand.
@@ -69,7 +79,10 @@ public enum PlanMatcher {
         }
 
         func take(for session: PlannedSession, maxDays: Int) {
-            let candidates = available.filter { $0.sport == session.sport && dayDistance(session, $0) <= maxDays }
+            let candidates = available.filter {
+                $0.sport == session.sport && ActivityName.agree(session.activity, $0.activity)
+                    && dayDistance(session, $0) <= maxDays
+            }
             // Nearest day wins, then whichever is closest to the target, then the earliest.
             let best = candidates.min { a, b in
                 let keyA = (dayDistance(session, a), fit(session, a), a.start, a.id.uuidString)
