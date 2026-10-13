@@ -30,6 +30,8 @@
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Long Game reads your workouts and recovery data to compare them with your training plan. It never writes to Health.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Long Game does not write to Health. It only reads your workouts and recovery data.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
