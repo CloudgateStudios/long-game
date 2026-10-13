@@ -85,3 +85,13 @@ schemes:
         - package: LongGameKit/ModelsTests
         - package: LongGameKit/HealthIngestTests
         - package: LongGameKit/WorkoutExportTests
+  # Run on a device or Mac signed in to iCloud, never the simulator, to write the whole
+  # schema to CloudKit Development before a deploy. See the README.
+  LongGame - Initialize CloudKit:
+    build:
+      targets:
+        LongGame: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-initializeCloudKitSchema": true

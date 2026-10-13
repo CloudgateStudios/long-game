@@ -79,11 +79,13 @@ Production only accepts additions. Once a record type or field is deployed it ca
 removed, renamed, given another type, or have its encryption changed, so settle the models
 first. Then, before the first release and after every later model change:
 
-1. Run a debug build from Xcode on a device signed in to iCloud, with the launch argument
-   `-initializeCloudKitSchema` (Product > Scheme > Edit Scheme > Run > Arguments). This
-   writes every record type and field to the Development schema, including optional fields
-   no record has used yet, which CloudKit would otherwise leave out. The Xcode console
-   prints the result. Remove the argument afterwards.
+1. In Xcode, choose the scheme "LongGame - Initialize CloudKit" and run it on a device or
+   Mac signed in to iCloud. The simulator will not do: it runs on sample data and never
+   opens the iCloud store. The scheme is a debug build with the launch argument
+   `-initializeCloudKitSchema`, which writes every record type and field to the
+   Development schema, including optional fields no record has used yet, which CloudKit
+   would otherwise leave out. The Xcode console prints the result. Switch back to the
+   LongGame scheme afterwards.
 2. Run `sh Scripts/cloudkit_schema.sh export` and commit `Config/CloudKitSchema.ckdb`. The
    diff shows exactly what the model change added to the schema.
 3. In the CloudKit Console, choose Deploy Schema Changes.
