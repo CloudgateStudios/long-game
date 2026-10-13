@@ -125,9 +125,18 @@ One-time setup:
 TestFlight builds expire after 90 days. The weekly schedule rebuilds `release` so every
 device always has a live build, without shipping unreleased work from `main`.
 
-These builds use CloudKit Production. Deploy the schema (see iCloud above) before the
-first release and again before moving `release` past a data model change;
-`sh Scripts/cloudkit_schema.sh check` tells you whether Production is up to date.
+### Releasing
+
+`sh Scripts/release.sh patch` (or `minor`, `major`) ships what is on `main`:
+
+1. It runs the CloudKit schema check and stops if Production is behind. These builds use
+   CloudKit Production, so deploy the schema first (see iCloud above).
+2. It raises the version in `project.yml` and the Xcode project through a pull request
+   that merges itself once the checks pass.
+3. It moves `release` to the new `main`, which starts the Xcode Cloud build.
+
+Xcode Cloud sets the build number. Settings shows the version and build a device is
+running.
 
 ## Project layout
 
