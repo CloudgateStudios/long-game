@@ -75,6 +75,29 @@ import Testing
         #expect(try reconcile() == 0)
     }
 
+    @Test func aNamedSessionWaitsForItsOwnActivity() throws {
+        let hike = plan(.other, day: -1)
+        hike.activity = " Hiking "
+        #expect(hike.activityName == "Hiking")
+        #expect(hike.sportDisplayName == "Hiking")
+        let yoga = log(.other, day: -1)
+        yoga.activityName = "Yoga"
+        _ = try reconcile()
+        #expect(hike.matchedWorkout == nil)
+        #expect(hike.status == .missed)
+
+        let hiked = log(.other, day: -1)
+        hiked.activityName = "Hiking"
+        _ = try reconcile()
+        #expect(hike.matchedWorkout === hiked)
+        #expect(hike.status == .done)
+
+        // The name belongs to "other": a session changed to a run no longer carries it.
+        hike.sport = .run
+        #expect(hike.activity == nil)
+        #expect(hike.sportDisplayName == "Run")
+    }
+
     @Test func duplicatesAreNeverMatched() throws {
         let ride = plan(.bike, day: -1)
         let duplicate = log(.bike, day: -1, primary: false)

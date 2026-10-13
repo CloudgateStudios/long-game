@@ -112,6 +112,7 @@ public enum CoachPayloadBuilder {
                         id: shortIDs[session.uuid] ?? session.uuid.uuidString,
                         date: text(session.day),
                         sport: session.sport.rawValue,
+                        activity: session.activity,
                         type: session.sessionType.rawValue,
                         minutes: session.targetDurationSeconds.map { round0($0 / 60) },
                         km: session.targetDistanceMeters.map { round1($0 / 1000) },

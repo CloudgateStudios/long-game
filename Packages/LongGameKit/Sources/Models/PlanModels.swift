@@ -181,6 +181,9 @@ public final class PlannedWorkout {
     /// Shared by sessions done back to back as one outing: a brick, or the legs of a race.
     public var brickID: UUID?
     public var sportRaw: String = Sport.run.rawValue
+    /// What an "other" session is, for example "Hiking" or "Curling". Empty for the
+    /// modelled sports. Read it through `activity`.
+    @Attribute(.allowsCloudEncryption) public var activityName: String = ""
     public var sessionTypeRaw: String = SessionType.easy.rawValue
     public var targetDurationSeconds: Double?
     public var targetDistanceMeters: Double?
@@ -243,6 +246,15 @@ public final class PlannedWorkout {
         get { SessionType(rawValue: sessionTypeRaw) ?? .other }
         set { sessionTypeRaw = newValue.rawValue }
     }
+
+    /// The named activity of an "other" session; nil for a modelled sport or when unnamed.
+    public var activity: String? {
+        get { sport == .other && !activityName.isEmpty ? activityName : nil }
+        set { activityName = ActivityName.normalized(newValue) ?? "" }
+    }
+
+    /// "Hiking" for a named "other" session, otherwise the sport's name.
+    public var sportDisplayName: String { activity ?? sport.displayName }
 
     public var status: PlannedStatus {
         get { PlannedStatus(rawValue: statusRaw) ?? .planned }

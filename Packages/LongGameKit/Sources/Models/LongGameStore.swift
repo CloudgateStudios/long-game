@@ -14,7 +14,7 @@ public enum LongGameStore {
         case cloudKit(containerID: String)
     }
 
-    public static let schema = Schema(versionedSchema: SchemaV1.self)
+    public static let schema = Schema(versionedSchema: SchemaV2.self)
 
     public static func makeContainer(mode: Mode) throws -> ModelContainer {
         let configuration: ModelConfiguration
@@ -30,8 +30,18 @@ public enum LongGameStore {
                 cloudKitDatabase: .private(containerID)
             )
         }
-        return try ModelContainer(
-            for: schema, migrationPlan: LongGameMigrationPlan.self, configurations: [configuration])
+        return try makeContainer(configuration: configuration)
+    }
+
+    static func makeContainer(configuration: ModelConfiguration) throws -> ModelContainer {
+        do {
+            return try ModelContainer(
+                for: schema, migrationPlan: LongGameMigrationPlan.self, configurations: [configuration])
+        } catch let error as SwiftDataError where error == .unknownDataStoreSchema {
+            // A store last written by a build from before version 1 matches no version in
+            // the plan. Everything since then only added to it, so it migrates on its own.
+            return try ModelContainer(for: schema, configurations: [configuration])
+        }
     }
 
     #if DEBUG
@@ -41,7 +51,7 @@ public enum LongGameStore {
     /// nothing can be added on the fly. Run once before each deploy, signed in to iCloud.
     /// It works on a scratch store, so no real record is touched.
     public static func initializeCloudKitSchema(containerID: String) throws {
-        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: SchemaV1.models) else {
+        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: SchemaV2.models) else {
             throw CocoaError(.persistentStoreIncompatibleSchema)
         }
         let url = try storeURL(name: "SchemaInitialization")
