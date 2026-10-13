@@ -3,7 +3,9 @@ import Models
 import SwiftUI
 
 struct PlanMonthView: View {
-    let plan: TrainingPlan
+    /// Nil when there is no plan: the month then shows only what was done.
+    let plan: TrainingPlan?
+    var log = WorkoutLog()
     /// The selected day; the grid shows its month.
     @Binding var anchor: Date
     @Binding var sheet: PlanSheet?
@@ -13,9 +15,29 @@ struct PlanMonthView: View {
     @ScaledMetric(relativeTo: .callout) private var cellHeight: CGFloat = 54
 
     var body: some View {
+        VStack(spacing: 0) {
+            PeriodHeader(
+                title: anchor.formatted(.dateTime.month(.wide).year()),
+                subtitle: plan?.phase(on: anchor).map { "\($0.kind.displayName) phase" } ?? "",
+                step: { shift(months: $0) },
+                today: { withAnimation { anchor = .now } }
+            )
+            .padding(.horizontal)
+            .padding(.bottom, 6)
+            .frame(maxWidth: 900)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+
+            PeriodPager(unit: .month, anchor: $anchor) { start in
+                month(containing: start)
+            }
+        }
+    }
+
+    private func month(containing start: Date) -> some View {
         let calendar = Calendar.current
-        let cells = PlanCalendar.monthGrid(containing: anchor, calendar: calendar)
-        ScrollView {
+        let cells = PlanCalendar.monthGrid(containing: start, calendar: calendar)
+        return ScrollView {
             VStack(spacing: 12) {
                 LazyVGrid(columns: columns, spacing: 4) {
                     ForEach(Array(PlanCalendar.weekdaySymbols(calendar: calendar).enumerated()), id: \.offset) {
@@ -26,6 +48,7 @@ struct PlanMonthView: View {
                         if let day {
                             MonthCell(
                                 plan: plan,
+                                extras: log.extras(on: day, beyond: plan).map(\.workout).filter(\.isPrimary),
                                 day: day,
                                 height: cellHeight,
                                 isSelected: calendar.isDate(day, inSameDayAs: anchor),
@@ -46,30 +69,20 @@ struct PlanMonthView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                selectedDay
+                // A month sliding in has no selected day until the swipe settles on it.
+                if calendar.isDate(anchor, equalTo: start, toGranularity: .month) {
+                    selectedDay
+                }
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
             .frame(maxWidth: 900)
             .frame(maxWidth: .infinity)
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            PeriodHeader(
-                title: anchor.formatted(.dateTime.month(.wide).year()),
-                subtitle: plan.phase(on: anchor).map { "\($0.kind.displayName) phase" } ?? "",
-                step: { shift(months: $0) },
-                today: { withAnimation { anchor = .now } }
-            )
-            .padding(.horizontal)
-            .padding(.bottom, 6)
-            .frame(maxWidth: 900)
-            .frame(maxWidth: .infinity)
-            .background(.bar)
-        }
     }
 
     private func phaseIndex(on day: Date) -> Int? {
-        guard let phase = plan.phase(on: day) else { return nil }
+        guard let plan, let phase = plan.phase(on: day) else { return nil }
         return plan.sortedPhases.firstIndex { $0 === phase }
     }
 
@@ -77,7 +90,7 @@ struct PlanMonthView: View {
     private func phaseSummary(for days: [Date]) -> String {
         var seen: [PlanPhase] = []
         for day in days {
-            if let phase = plan.phase(on: day), !seen.contains(where: { $0 === phase }) { seen.append(phase) }
+            if let phase = plan?.phase(on: day), !seen.contains(where: { $0 === phase }) { seen.append(phase) }
         }
         guard seen.count > 1 else { return "" }
         return seen.enumerated().map { index, phase in
@@ -89,21 +102,21 @@ struct PlanMonthView: View {
     }
 
     private var selectedDay: some View {
-        let workouts = plan.workouts(on: anchor)
+        let isEmpty = (plan?.workouts(on: anchor) ?? []).isEmpty && log.extras(on: anchor, beyond: plan).isEmpty
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(anchor.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                AddToDayMenu(plan: plan, day: anchor, sheet: $sheet)
+                if let plan {
+                    AddToDayMenu(plan: plan, day: anchor, sheet: $sheet)
+                }
             }
-            if workouts.isEmpty {
-                Text("Nothing planned").foregroundStyle(.secondary)
+            if isEmpty {
+                Text(plan == nil ? "No workouts" : "Nothing planned").foregroundStyle(.secondary)
             }
-            ForEach(workouts) { workout in
-                PlannedWorkoutRow(workout: workout, sheet: $sheet)
-            }
+            DayRows(plan: plan, day: anchor, log: log, sheet: $sheet)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,7 +130,9 @@ struct PlanMonthView: View {
 }
 
 private struct MonthCell: View {
-    let plan: TrainingPlan
+    let plan: TrainingPlan?
+    /// Workouts done on the day that no session shown here asked for.
+    let extras: [CompletedWorkout]
     let day: Date
     let height: CGFloat
     let isSelected: Bool
@@ -139,7 +154,7 @@ private struct MonthCell: View {
     }
 
     var body: some View {
-        let workouts = plan.workouts(on: day)
+        let workouts = plan?.workouts(on: day) ?? []
         let sessions = workouts.filter { !$0.isDayMarker }
         let marker = workouts.first(where: \.isDayMarker)
         let isToday = Calendar.current.isDateInToday(day)
@@ -153,14 +168,18 @@ private struct MonthCell: View {
                         if isToday { Capsule().fill(.tint) }
                     }
                 // Color says which sport; the mark in the corner says how the day went.
+                // A filled dot is a planned session, a ring a workout nothing asked for.
                 HStack(spacing: 3) {
                     ForEach(sessions.prefix(3)) { workout in
                         Circle().fill(workout.tintColor).frame(width: 6, height: 6)
                     }
-                    if sessions.count > 3 {
+                    ForEach(extras.prefix(max(3 - sessions.count, 0)), id: \.externalID) { workout in
+                        Circle().strokeBorder(workout.sport.chartColor, lineWidth: 1.5).frame(width: 6, height: 6)
+                    }
+                    if sessions.count + extras.count > 3 {
                         Text("+").font(.caption2)
                     }
-                    if sessions.isEmpty, let marker {
+                    if sessions.isEmpty, extras.isEmpty, let marker {
                         Image(systemName: marker.symbolName).font(.caption2).imageScale(.small)
                     }
                 }
@@ -202,13 +221,15 @@ private struct MonthCell: View {
         .buttonStyle(.plain)
         .accessibilityLabel(day.formatted(.dateTime.weekday(.wide).day().month(.wide)))
         .accessibilityValue(
-            workouts.isEmpty
-                ? "Nothing planned"
-                : workouts.map { "\(Format.title(of: $0)), \($0.status.label)" }.joined(separator: "; ")
+            workouts.isEmpty && extras.isEmpty
+                ? (plan == nil ? "No workouts" : "Nothing planned")
+                : (workouts.map { "\(Format.title(of: $0)), \($0.status.label)" }
+                    + extras.map { "\($0.displayName), not planned" }).joined(separator: "; ")
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .dropDestination(for: String.self) { ids, _ in
-            withAnimation { ids.contains { plan.moveWorkout(withID: $0, to: day) } }
+            guard let plan else { return false }
+            return withAnimation { ids.contains { plan.moveWorkout(withID: $0, to: day) } }
         } isTargeted: {
             isTargeted = $0
         }

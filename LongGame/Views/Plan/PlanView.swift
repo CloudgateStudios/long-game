@@ -34,6 +34,7 @@ struct PlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppEnvironment.self) private var environment
     @Query(sort: \TrainingPlan.startDate) private var allPlans: [TrainingPlan]
+    @Query(sort: \CompletedWorkout.start) private var completed: [CompletedWorkout]
     @State private var reviewingDraft: TrainingPlan?
     @State private var interview: CoachConversation?
     @AppStorage("selectedPlanID") private var selectedPlanID = ""
@@ -54,18 +55,26 @@ struct PlanView: View {
             ?? plans.last
     }
 
+    /// Workouts are worth a calendar even before there is a plan to hold them against.
+    private var hasCalendar: Bool { plan != nil || !completed.isEmpty }
+
     var body: some View {
         Group {
-            if let plan {
+            if hasCalendar {
+                let log = WorkoutLog(completed)
                 VStack(spacing: 0) {
                     if let draft, draft.uuid.uuidString != dismissedDraftID {
                         DraftBanner(
                             review: { reviewingDraft = draft },
                             later: { withAnimation { dismissedDraftID = draft.uuid.uuidString } })
+                    } else if plan == nil {
+                        NoPlanBanner(
+                            canChat: environment.coach.canChat, interview: startInterview,
+                            generate: { sheet = .generate }, create: { sheet = .newPlan })
                     }
                     switch mode {
-                    case .week: PlanWeekView(plan: plan, anchor: $anchor, sheet: $sheet)
-                    case .month: PlanMonthView(plan: plan, anchor: $anchor, sheet: $sheet)
+                    case .week: PlanWeekView(plan: plan, log: log, anchor: $anchor, sheet: $sheet)
+                    case .month: PlanMonthView(plan: plan, log: log, anchor: $anchor, sheet: $sheet)
                     }
                 }
                 .background(.pageBackground)
@@ -96,7 +105,7 @@ struct PlanView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if plan != nil {
+            if hasCalendar {
                 ToolbarItem(placement: .principal) {
                     Picker("View", selection: $mode) {
                         ForEach(PlanMode.allCases) { Text($0.title).tag($0) }
@@ -225,6 +234,34 @@ private struct DraftBanner: View {
     }
 }
 
+/// Shown above the calendar while it holds workouts but no plan.
+private struct NoPlanBanner: View {
+    let canChat: Bool
+    let interview: () -> Void
+    let generate: () -> Void
+    let create: () -> Void
+
+    var body: some View {
+        HStack {
+            Label("No plan yet", systemImage: "calendar.badge.plus")
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            Menu("Create Plan") {
+                Button("Plan with the Coach", systemImage: "bubble.left.and.text.bubble.right", action: interview)
+                    .disabled(!canChat)
+                Button("Generate from a Form", systemImage: "sparkles", action: generate)
+                Button("Create by Hand", systemImage: "calendar.badge.plus", action: create)
+            }
+            .font(.subheadline)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.tint.opacity(0.15), in: .rect(cornerRadius: 12))
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+}
+
 /// Changes whenever something matching depends on does. Statuses are left out, so the
 /// reconciler's own writes do not trigger another pass.
 private func matchingSignature(_ plan: TrainingPlan) -> Int {
@@ -261,10 +298,13 @@ extension PlanView {
 }
 
 /// One planned session; tap to open it, drag or use the menu to move it. A rest or flex
-/// day has nothing to read, so it opens straight in the editor.
+/// day has nothing to read, so it opens straight in the editor. Once a workout is matched
+/// to it the row shows what was done and opens that workout, which links back to the session.
 struct PlannedWorkoutRow: View {
     @Environment(\.modelContext) private var context
     let workout: PlannedWorkout
+    /// Other recordings of the matched workout.
+    var others = 0
     @Binding var sheet: PlanSheet?
 
     var body: some View {
@@ -277,7 +317,11 @@ struct PlannedWorkoutRow: View {
                 }
             } else {
                 NavigationLink {
-                    PlannedWorkoutDetailView(workout: workout)
+                    if let matched = workout.matchedWorkout {
+                        WorkoutDetailView(workout: matched)
+                    } else {
+                        PlannedWorkoutDetailView(workout: workout)
+                    }
                 } label: {
                     label
                 }
@@ -310,6 +354,10 @@ struct PlannedWorkoutRow: View {
                 let targets = Format.targets(of: workout)
                 if !targets.isEmpty {
                     Text(targets).font(.subheadline).foregroundStyle(.secondary)
+                }
+                if let matched = workout.matchedWorkout {
+                    Text("Did \(Format.summary(of: matched))").font(.subheadline).foregroundStyle(.secondary)
+                    OtherRecordings(count: others)
                 }
                 if let structure = workout.structure {
                     WorkoutProfileChart(segments: structure.profile(sport: workout.sport), isCompact: true)
