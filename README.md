@@ -127,7 +127,9 @@ device always has a live build, without shipping unreleased work from `main`.
 
 ### Releasing
 
-`sh Scripts/release.sh patch` (or `minor`, `major`) ships what is on `main`:
+The Release workflow in GitHub Actions (Actions > Release > Run workflow, then pick patch,
+minor or major) ships what is on `main`. It runs `Scripts/release.sh`, which also works
+from a Mac as `sh Scripts/release.sh patch`:
 
 1. It runs the CloudKit schema check and stops if Production is behind. These builds use
    CloudKit Production, so deploy the schema first (see iCloud above).
@@ -137,6 +139,15 @@ device always has a live build, without shipping unreleased work from `main`.
 
 Xcode Cloud sets the build number. Settings shows the version and build a device is
 running.
+
+The workflow needs these repository secrets:
+
+- `RELEASE_TOKEN`: a fine-grained personal access token for this repository with read and
+  write access to Contents and Pull requests. The built-in Actions token will not do,
+  because a pull request it opens does not start the checks.
+- `CLOUDKIT_MANAGEMENT_TOKEN`: a management token from the CloudKit Console, for the
+  schema check.
+- `DEVELOPMENT_TEAM` and `LG_ICLOUD_CONTAINER`: the same values as your `Local.xcconfig`.
 
 ## Project layout
 

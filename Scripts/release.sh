@@ -4,9 +4,10 @@
 #
 #   sh Scripts/release.sh patch|minor|major
 #
-# Run from the project root with nothing uncommitted. main only takes pull requests, so the
-# version change goes through one that merges itself once the checks pass. Needs the GitHub
-# CLI (gh), signed in, and what Scripts/cloudkit_schema.sh needs.
+# Run from the project root with nothing uncommitted, or use the Release workflow in GitHub
+# Actions, which runs this. main only takes pull requests, so the version change goes
+# through one that merges itself once the checks pass. Needs the GitHub CLI (gh), signed
+# in, and what Scripts/cloudkit_schema.sh needs.
 set -eu
 PROJECT_YML="project.yml"
 PBXPROJ="LongGame.xcodeproj/project.pbxproj"
