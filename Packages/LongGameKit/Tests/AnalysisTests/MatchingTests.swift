@@ -34,6 +34,27 @@ import Testing
         #expect(result == [run.id: didRun.id])
     }
 
+    @Test func aNamedActivityOnlyMatchesItsOwnKind() {
+        var hike = planned(.other, day: 12)
+        hike.activity = "hiking"
+        let unnamed = planned(.other, day: 15)
+        var didYoga = done(.other, day: 12)
+        didYoga.activity = "Yoga"
+        var didHike = done(.other, day: 13)
+        didHike.activity = "Hiking"
+        var didCurl = done(.other, day: 15)
+        didCurl.activity = "Curling"
+        let result = PlanMatcher.match(
+            planned: [hike, unnamed], completed: [didYoga, didHike, didCurl], calendar: calendar)
+        // The hike skips the yoga on its own day for the hike a day later; a session with
+        // no name takes any activity.
+        #expect(result == [hike.id: didHike.id, unnamed.id: didCurl.id])
+
+        // A workout with no name can still be the hike.
+        let nameless = done(.other, day: 12)
+        #expect(PlanMatcher.match(planned: [hike], completed: [nameless], calendar: calendar) == [hike.id: nameless.id])
+    }
+
     @Test func fallsBackToTheDayBeforeOrAfter() {
         let run = planned(.run, day: 12)
         let early = done(.run, day: 11, hour: 22)

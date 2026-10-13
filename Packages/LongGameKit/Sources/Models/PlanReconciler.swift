@@ -10,6 +10,7 @@ extension PlannedWorkout {
             id: uuid,
             date: day,
             sport: sport,
+            activity: activity,
             sessionType: sessionType,
             targetDurationSeconds: targetDurationSeconds,
             targetDistanceMeters: targetDistanceMeters
@@ -32,6 +33,7 @@ extension CompletedWorkout {
             id: externalID,
             start: start,
             sport: sport,
+            activity: sport == .other ? ActivityName.normalized(activityName) : nil,
             durationSeconds: durationSeconds,
             distanceMeters: distanceMeters,
             load: load

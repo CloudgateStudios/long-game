@@ -16,6 +16,8 @@ struct PlannedWorkoutEditor: View {
 
     @State private var date: Date
     @State private var sport: Sport
+    /// What an "other" session is, for example "Hiking".
+    @State private var activity: String
     @State private var sessionType: SessionType
     @State private var minutes: Int?
     @State private var distance: Double?
@@ -24,12 +26,17 @@ struct PlannedWorkoutEditor: View {
     /// The session this one is done straight after, as one outing.
     @State private var leaderID: UUID?
 
+    /// "Other" workouts already in the log, whose names a planned session can reuse.
+    @Query(filter: #Predicate<CompletedWorkout> { $0.sportRaw == "other" && $0.activityName != "" })
+    private var loggedActivities: [CompletedWorkout]
+
     init(plan: TrainingPlan, workout: PlannedWorkout?, date: Date) {
         self.plan = plan
         self.workout = workout
         let sport = workout?.sport ?? .run
         _date = State(initialValue: date)
         _sport = State(initialValue: sport)
+        _activity = State(initialValue: workout?.activityName ?? "")
         _sessionType = State(initialValue: workout?.sessionType ?? .easy)
         _minutes = State(initialValue: workout?.targetDurationSeconds.map { Int(($0 / 60).rounded()) })
         initialDistance = workout?.targetDistanceMeters.map {
@@ -42,6 +49,13 @@ struct PlannedWorkoutEditor: View {
     }
 
     private var isDayMarker: Bool { sessionType.isDayMarker }
+
+    /// Names to pick from: what this athlete has logged, most often first, then the common ones.
+    private var activitySuggestions: [String] {
+        let counts = Dictionary(grouping: loggedActivities, by: \.activityName).mapValues(\.count)
+        let logged = counts.keys.sorted { (counts[$0] ?? 0, $1) > (counts[$1] ?? 0, $0) }
+        return logged + ActivityName.common.filter { name in !logged.contains { ActivityName.agree($0, name) } }
+    }
 
     /// The day's other sessions, any of which this one could be done straight after.
     private var possibleLeaders: [PlannedWorkout] {
@@ -60,6 +74,22 @@ struct PlannedWorkoutEditor: View {
                         Picker("Sport", selection: $sport) {
                             ForEach(Sport.allCases) { Label($0.displayName, systemImage: $0.symbolName).tag($0) }
                         }
+                        if sport == .other {
+                            LabeledContent("Activity") {
+                                HStack {
+                                    TextField("Optional", text: $activity)
+                                        .multilineTextAlignment(.trailing)
+                                    Menu {
+                                        ForEach(activitySuggestions, id: \.self) { name in
+                                            Button(name) { activity = name }
+                                        }
+                                    } label: {
+                                        Image(systemName: "chevron.up.chevron.down")
+                                    }
+                                    .accessibilityLabel("Choose an Activity")
+                                }
+                            }
+                        }
                     }
                 } footer: {
                     switch sessionType {
@@ -67,6 +97,10 @@ struct PlannedWorkoutEditor: View {
                     case .flex:
                         Text(
                             "A day you decide on when it comes: train, rest, or anything between. Whatever you do is logged as usual, and the day never counts as missed."
+                        )
+                    case _ where sport == .other:
+                        Text(
+                            "Name it as Health does, such as Hiking, and only a workout of that activity is matched to it. Unnamed, it matches any workout logged as other."
                         )
                     default: EmptyView()
                     }
@@ -182,6 +216,7 @@ struct PlannedWorkoutEditor: View {
         target.day = Calendar.current.startOfDay(for: date)
         target.sessionType = sessionType
         target.sport = sport
+        target.activityName = isDayMarker || sport != .other ? "" : ActivityName.normalized(activity) ?? ""
         target.instructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
         if isDayMarker {
             target.targetDurationSeconds = nil

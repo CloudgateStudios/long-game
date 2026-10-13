@@ -36,7 +36,7 @@ enum Format {
         if let seconds = workout.targetDurationSeconds { parts.append(duration(seconds)) }
         if let meters = workout.targetDistanceMeters { parts.append(distance(meters, sport: workout.sport)) }
         if !workout.targetIntensity.isEmpty { parts.append(workout.targetIntensity) }
-        if let leader = workout.brickLeader { parts.append("straight after \(leader.sport.displayName.lowercased())") }
+        if let leader = workout.brickLeader { parts.append("straight after \(leader.sportDisplayName.lowercased())") }
         return parts.joined(separator: " · ")
     }
 
@@ -45,7 +45,7 @@ enum Format {
         case .rest: "Rest day"
         case .flex: "Flex day"
         case .strength where workout.sport == .strength: "Strength"
-        default: "\(workout.sessionType.displayName) \(workout.sport.displayName.lowercased())"
+        default: "\(workout.sessionType.displayName) \(workout.sportDisplayName.lowercased())"
         }
     }
 }

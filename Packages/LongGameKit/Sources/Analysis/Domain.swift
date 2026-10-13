@@ -36,6 +36,31 @@ public enum Sport: String, Codable, Sendable, CaseIterable, Identifiable {
     }
 }
 
+/// The free-text name of an activity the app does not model as a sport of its own.
+public enum ActivityName {
+    /// Names Health gives the activities people plan most, offered as suggestions so a
+    /// planned session is spelled the way its workout will be. Keep in step with
+    /// `HealthKitDataSource.sport(for:)`.
+    public static let common = [
+        "Hiking", "Walking", "Yoga", "Pilates", "Rowing", "Elliptical", "Stairs", "HIIT", "Cross Training",
+        "Stretching", "Snow Sports", "Water Sports", "Golf", "Racquet Sports", "Team Sport", "Climbing", "Dance",
+        "Curling",
+    ]
+
+    /// Trimmed, or nil when nothing is left.
+    public static func normalized(_ name: String?) -> String? {
+        guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        return name
+    }
+
+    /// Whether a planned and a completed activity can be the same thing. A side with no
+    /// name agrees with anything; two names must be equal, ignoring case and accents.
+    public static func agree(_ a: String?, _ b: String?) -> Bool {
+        guard let a = normalized(a), let b = normalized(b) else { return true }
+        return a.compare(b, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+    }
+}
+
 public enum SessionType: String, Codable, Sendable, CaseIterable, Identifiable {
     case easy, long, tempo, intervals, recovery, race, strength, rest, flex, other
 

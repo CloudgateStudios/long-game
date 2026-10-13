@@ -250,7 +250,7 @@ actor Collector {
 
         // A reply with every optional field null decodes.
         let reply =
-            #"{"assessment":"a","flags":[],"suggestions":[{"action":"remove","sessionId":"ab12cd34","date":null,"sport":null,"sessionType":null,"durationMinutes":null,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"r"}]}"#
+            #"{"assessment":"a","flags":[],"suggestions":[{"action":"remove","sessionId":"ab12cd34","date":null,"sport":null,"activity":null,"sessionType":null,"durationMinutes":null,"distanceKm":null,"intensity":null,"instructions":null,"rationale":"r"}]}"#
         let decoded = try JSONDecoder().decode(CoachResponse.self, from: Data(reply.utf8))
         #expect(decoded.suggestions == [CoachSuggestion(action: .remove, sessionId: "ab12cd34", rationale: "r")])
     }
@@ -467,6 +467,34 @@ actor Collector {
             in: context, trigger: .onDemand, now: now.addingTimeInterval(86_400), calendar: calendar)
         #expect(next.payload.previousReview?.assessment == "Good consistency.")
         #expect(next.payload.previousReview?.suggestions.map(\.status) == ["accepted", "accepted"])
+    }
+
+    @Test func aNamedActivityReachesTheCoachAndComesBack() throws {
+        let hike = session(.other, day: 2)
+        hike.activity = "Hiking"
+        let run = session(.run, day: 3)
+        let payload = try CoachPayloadBuilder.build(in: context, trigger: .onDemand, now: now, calendar: calendar)
+            .payload
+        #expect(payload.plan?.sessions.map(\.activity) == ["Hiking", nil])
+
+        func accept(_ suggestion: CoachSuggestion, target: PlannedWorkout?) throws {
+            let record = PlanSuggestion(
+                action: suggestion.action,
+                proposedChangeJSON: String(decoding: try JSONEncoder().encode(suggestion), as: UTF8.self),
+                rationale: suggestion.rationale)
+            context.insert(record)
+            record.targetWorkout = target
+            try SuggestionApplier.accept(record, in: context, calendar: calendar)
+        }
+        try accept(CoachSuggestion(action: .modify, sport: .other, activity: "Yoga", rationale: "r"), target: run)
+        #expect(run.activity == "Yoga")
+        // Changing the sport away from other drops the name.
+        try accept(CoachSuggestion(action: .modify, sport: .bike, rationale: "r"), target: hike)
+        #expect(hike.activityName == "")
+        let date = day(5).formatted(.iso8601.year().month().day())
+        try accept(
+            CoachSuggestion(action: .add, date: date, sport: .other, activity: "Curling", rationale: "r"), target: nil)
+        #expect(plan.workouts(on: day(5), calendar: calendar).map(\.sportDisplayName) == ["Curling"])
     }
 
     @Test func moveRemoveAndReject() async throws {

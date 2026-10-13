@@ -120,7 +120,10 @@ public enum SuggestionApplier {
 
     static func summary(of session: PlannedWorkout, calendar: Calendar) -> String {
         let style = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
-        var parts = [session.day.formatted(style), "\(session.sessionType.rawValue) \(session.sport.rawValue)"]
+        var parts = [
+            session.day.formatted(style),
+            "\(session.sessionType.rawValue) \(session.activity ?? session.sport.rawValue)",
+        ]
         if let seconds = session.targetDurationSeconds { parts.append("\(Int((seconds / 60).rounded())) min") }
         return parts.joined(separator: ", ")
     }
@@ -168,6 +171,9 @@ public enum SuggestionApplier {
     private static func apply(_ proposal: CoachSuggestion, to session: PlannedWorkout, calendar: Calendar) {
         if let date = date(from: proposal.date, calendar: calendar) { session.day = date }
         if let sport = proposal.sport { session.sport = sport }
+        if let activity = proposal.activity { session.activity = activity }
+        // A name belongs to an "other" session only.
+        if session.sport != .other { session.activityName = "" }
         if let type = proposal.sessionType { session.sessionType = type }
         if let minutes = proposal.durationMinutes { session.targetDurationSeconds = minutes > 0 ? minutes * 60 : nil }
         if let km = proposal.distanceKm { session.targetDistanceMeters = km > 0 ? km * 1000 : nil }

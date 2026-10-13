@@ -44,6 +44,8 @@ public struct CoachPayload: Codable, Sendable, Equatable {
         public var id: String
         public var date: String
         public var sport: String
+        /// What an "other" session is, when the athlete or coach named it.
+        public var activity: String?
         public var type: String
         public var minutes: Double?
         public var km: Double?
@@ -180,6 +182,7 @@ public struct PlanResponse: Codable, Sendable, Equatable {
     public struct Session: Codable, Sendable, Equatable {
         public var date: String
         public var sport: Sport
+        public var activity: String?
         public var sessionType: SessionType
         public var durationMinutes: Double?
         public var distanceKm: Double?
@@ -215,10 +218,14 @@ public struct PlanResponse: Codable, Sendable, Equatable {
         let session: [String: Any] = [
             "type": "object",
             "additionalProperties": false,
-            "required": ["date", "sport", "sessionType", "durationMinutes", "distanceKm", "intensity", "instructions"],
+            "required": [
+                "date", "sport", "activity", "sessionType", "durationMinutes", "distanceKm", "intensity",
+                "instructions",
+            ],
             "properties": [
                 "date": ["type": "string"],
                 "sport": ["type": "string", "enum": Sport.allCases.map(\.rawValue)],
+                "activity": nullable("string"),
                 "sessionType": ["type": "string", "enum": SessionType.allCases.map(\.rawValue)],
                 "durationMinutes": nullable("number"),
                 "distanceKm": nullable("number"),
@@ -260,6 +267,7 @@ public struct CoachSuggestion: Codable, Sendable, Equatable {
     public var sessionId: String?
     public var date: String?
     public var sport: Sport?
+    public var activity: String?
     public var sessionType: SessionType?
     public var durationMinutes: Double?
     public var distanceKm: Double?
@@ -272,6 +280,7 @@ public struct CoachSuggestion: Codable, Sendable, Equatable {
         sessionId: String? = nil,
         date: String? = nil,
         sport: Sport? = nil,
+        activity: String? = nil,
         sessionType: SessionType? = nil,
         durationMinutes: Double? = nil,
         distanceKm: Double? = nil,
@@ -283,6 +292,7 @@ public struct CoachSuggestion: Codable, Sendable, Equatable {
         self.sessionId = sessionId
         self.date = date
         self.sport = sport
+        self.activity = activity
         self.sessionType = sessionType
         self.durationMinutes = durationMinutes
         self.distanceKm = distanceKm
@@ -307,14 +317,15 @@ extension CoachResponse {
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "action", "sessionId", "date", "sport", "sessionType", "durationMinutes", "distanceKm", "intensity",
-                "instructions", "rationale",
+                "action", "sessionId", "date", "sport", "activity", "sessionType", "durationMinutes", "distanceKm",
+                "intensity", "instructions", "rationale",
             ],
             "properties": [
                 "action": ["type": "string", "enum": SuggestionAction.allCases.map(\.rawValue)],
                 "sessionId": nullable("string"),
                 "date": nullable("string"),
                 "sport": nullableEnum(Sport.allCases.map(\.rawValue)),
+                "activity": nullable("string"),
                 "sessionType": nullableEnum(SessionType.allCases.map(\.rawValue)),
                 "durationMinutes": nullable("number"),
                 "distanceKm": nullable("number"),

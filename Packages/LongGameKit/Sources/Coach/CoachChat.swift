@@ -443,6 +443,7 @@ enum CoachTools {
                     id: shortID(session),
                     date: session.day.formatted(style),
                     sport: session.sport.rawValue,
+                    activity: session.activity,
                     type: session.sessionType.rawValue,
                     minutes: session.targetDurationSeconds.map { ($0 / 60).rounded() },
                     km: session.targetDistanceMeters.map { ($0 / 100).rounded() / 10 },
