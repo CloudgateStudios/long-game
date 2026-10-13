@@ -127,27 +127,23 @@ device always has a live build, without shipping unreleased work from `main`.
 
 ### Releasing
 
-The Release workflow in GitHub Actions (Actions > Release > Run workflow, then pick patch,
-minor or major) ships what is on `main`. It runs `Scripts/release.sh`, which also works
-from a Mac as `sh Scripts/release.sh patch`:
+Two workflows in GitHub Actions, both started by hand from `main` (Actions > pick the
+workflow > Run workflow):
 
-1. It runs the CloudKit schema check and stops if Production is behind. These builds use
-   CloudKit Production, so deploy the schema first (see iCloud above).
-2. It raises the version in `project.yml` and the Xcode project through a pull request
-   that merges itself once the checks pass.
-3. It moves `release` to the new `main`, which starts the Xcode Cloud build.
+- **Update Release Branch** ships what is on `main`. It runs the CloudKit schema check and
+  stops if Production is behind; these builds use CloudKit Production, so deploy the schema
+  first (see iCloud above). Then it moves `release` to `main`, which starts the Xcode Cloud
+  build. It runs `Scripts/update_release.sh`, which also works from a Mac.
+- **Version Bump** raises the version (patch, minor or major) in `project.yml` and the
+  Xcode project and opens a pull request for you to review and merge. It runs
+  `Scripts/bump_version.sh`. A release does not need a new version: Xcode Cloud gives every
+  build its own build number.
 
-Xcode Cloud sets the build number. Settings shows the version and build a device is
-running.
+Settings shows the version and build a device is running.
 
-The workflow needs these repository secrets:
-
-- `RELEASE_TOKEN`: a fine-grained personal access token for this repository with read and
-  write access to Contents and Pull requests. The built-in Actions token will not do,
-  because a pull request it opens does not start the checks.
-- `CLOUDKIT_MANAGEMENT_TOKEN`: a management token from the CloudKit Console, for the
-  schema check.
-- `DEVELOPMENT_TEAM` and `LG_ICLOUD_CONTAINER`: the same values as your `Local.xcconfig`.
+Update Release Branch needs these repository secrets: `CLOUDKIT_MANAGEMENT_TOKEN` (a
+management token from the CloudKit Console, for the schema check), and `DEVELOPMENT_TEAM`
+and `LG_ICLOUD_CONTAINER` with the same values as your `Local.xcconfig`.
 
 ## Project layout
 

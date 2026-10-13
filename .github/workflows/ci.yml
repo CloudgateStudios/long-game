@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The Version Bump workflow starts this for the pull request it opens.
+  workflow_dispatch:
 
 permissions:
   contents: read

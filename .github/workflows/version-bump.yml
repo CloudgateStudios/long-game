@@ -1,0 +1,47 @@
+name: Version Bump
+
+# Raises the app's version number and opens a pull request with the change.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part of the version to raise
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  bump:
+    name: Version bump
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Raise the version
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: echo "version=$(sh Scripts/bump_version.sh "$BUMP")" >> "$GITHUB_OUTPUT"
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          branch="chore/version-$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "chore: bump version to $VERSION"
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" --title "chore: bump version to $VERSION" \
+            --body "Raises the app version to $VERSION. Opened by the Version Bump workflow."
+          # A pull request opened by a workflow does not start other workflows, so its
+          # required checks would never run. Starting them by hand is allowed.
+          gh workflow run ci.yml --ref "$branch"
+          gh workflow run pr-title.yml --ref "$branch"
