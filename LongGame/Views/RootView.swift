@@ -1,15 +1,14 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case today, plan, log, coach, settings
+    case today, plan, coach, settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .today: "Today"
-        case .plan: "Plan"
-        case .log: "Log"
+        case .plan: "Training"
         case .coach: "Coach"
         case .settings: "Settings"
         }
@@ -19,7 +18,6 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .today: "sun.max"
         case .plan: "calendar"
-        case .log: "list.bullet.rectangle"
         case .coach: "text.bubble"
         case .settings: "gearshape"
         }
@@ -60,7 +58,6 @@ struct RootView: View {
         switch section {
         case .today: DashboardView()
         case .plan: PlanView()
-        case .log: LogView()
         case .coach: CoachView()
         case .settings: SettingsView()
         }

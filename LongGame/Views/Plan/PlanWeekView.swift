@@ -3,7 +3,9 @@ import Models
 import SwiftUI
 
 struct PlanWeekView: View {
-    let plan: TrainingPlan
+    /// Nil when there is no plan: the week then shows only what was done.
+    let plan: TrainingPlan?
+    var log = WorkoutLog()
     @Binding var anchor: Date
     @Binding var sheet: PlanSheet?
 
@@ -15,28 +17,13 @@ struct PlanWeekView: View {
     }
 
     private var plannedSeconds: Double {
-        days.flatMap { plan.workouts(on: $0) }.reduce(0) { $0 + ($1.targetDurationSeconds ?? 0) }
+        days.flatMap { plan?.workouts(on: $0) ?? [] }.reduce(0) { $0 + ($1.targetDurationSeconds ?? 0) }
     }
 
     var body: some View {
-        ScrollView {
-            // One column on a phone; side by side where there is room.
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading,
-                spacing: 12
-            ) {
-                ForEach(days, id: \.self) { day in
-                    DayCard(plan: plan, day: day, sheet: $sheet)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-            .frame(maxWidth: 1280)
-            .frame(maxWidth: .infinity)
-        }
-        // The week and its progress stay put while the days scroll underneath.
-        .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: 8) {
+        VStack(spacing: 0) {
+            // The week and its progress stay put while the weeks slide underneath.
+            VStack(alignment: .leading, spacing: 8) {
                 PeriodHeader(
                     title: title,
                     subtitle: subtitle,
@@ -44,8 +31,11 @@ struct PlanWeekView: View {
                     today: { withAnimation { anchor = .now } }
                 )
                 // A draft has not been trained against, so it has no compliance to show.
-                if !plan.isDraft {
+                if let plan, !plan.isDraft {
                     WeekComplianceSummary(compliance: plan.compliance(on: days))
+                }
+                if let done {
+                    Text(done).font(.caption).foregroundStyle(.secondary).monospacedDigit()
                 }
             }
             .padding(.horizontal)
@@ -53,14 +43,36 @@ struct PlanWeekView: View {
             .frame(maxWidth: 1280)
             .frame(maxWidth: .infinity)
             .background(.bar)
+
+            PeriodPager(unit: .weekOfYear, anchor: $anchor) { start in
+                WeekPage(
+                    plan: plan, log: log, days: PlanCalendar.weekDays(containing: start, calendar: .current),
+                    sheet: $sheet)
+            }
         }
     }
 
     /// The phase of the selected day, which is also what the month view names.
     private var subtitle: String {
         var parts: [String] = []
-        if let phase = plan.phase(on: anchor) { parts.append("\(phase.kind.displayName) phase") }
+        if let phase = plan?.phase(on: anchor) { parts.append("\(phase.kind.displayName) phase") }
         if plannedSeconds > 0 { parts.append("\(Format.duration(plannedSeconds)) planned") }
+        if parts.isEmpty, plan.map({ plan in !days.contains { plan.covers($0) } }) ?? true {
+            return "No plan this week"
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// What the week added up to, and how much of it nothing in the plan asked for.
+    private var done: String? {
+        let totals = log.totals(on: days)
+        guard totals.count > 0 else { return nil }
+        var parts = ["\(Format.duration(totals.seconds)) done", "\(Format.load(totals.load)) load"]
+        if let plan {
+            let extras = days.filter { plan.covers($0) }.flatMap { log.extras(on: $0, beyond: plan) }
+                .count { $0.workout.isPrimary && $0.workout.plannedWorkout == nil }
+            if extras > 0 { parts.append("\(extras) extra") }
+        }
         return parts.joined(separator: " · ")
     }
 
@@ -70,8 +82,42 @@ struct PlanWeekView: View {
     }
 }
 
+private struct WeekPage: View {
+    let plan: TrainingPlan?
+    let log: WorkoutLog
+    let days: [Date]
+    @Binding var sheet: PlanSheet?
+
+    /// With no plan there is nothing to add to an empty day, so only days with workouts show.
+    private var shownDays: [Date] {
+        plan == nil ? days.filter { !log.entries(on: $0).isEmpty } : days
+    }
+
+    var body: some View {
+        ScrollView {
+            // One column on a phone; side by side where there is room.
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 300), spacing: 12, alignment: .top)], alignment: .leading,
+                spacing: 12
+            ) {
+                ForEach(shownDays, id: \.self) { day in
+                    DayCard(plan: plan, log: log, day: day, sheet: $sheet)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: 1280)
+            .frame(maxWidth: .infinity)
+            if shownDays.isEmpty {
+                Text("No workouts this week").foregroundStyle(.secondary).padding(.top, 40)
+            }
+        }
+    }
+}
+
 private struct DayCard: View {
-    let plan: TrainingPlan
+    let plan: TrainingPlan?
+    let log: WorkoutLog
     let day: Date
     @Binding var sheet: PlanSheet?
     @State private var isTargeted = false
@@ -80,26 +126,25 @@ private struct DayCard: View {
     private var isPast: Bool { day < Calendar.current.startOfDay(for: .now) }
 
     var body: some View {
-        let workouts = plan.workouts(on: day)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(isToday ? "Today · \(dayTitle)" : dayTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isToday ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 Spacer()
-                AddToDayMenu(plan: plan, day: day, sheet: $sheet)
-                    .frame(minWidth: 44, minHeight: 32)
-                    .contentShape(.rect)
+                if let plan {
+                    AddToDayMenu(plan: plan, day: day, sheet: $sheet)
+                        .frame(minWidth: 44, minHeight: 32)
+                        .contentShape(.rect)
+                }
             }
-            ForEach(workouts) { workout in
-                PlannedWorkoutRow(workout: workout, sheet: $sheet)
-            }
+            DayRows(plan: plan, day: day, log: log, sheet: $sheet)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.cardBackground, in: .rect(cornerRadius: 16))
         // Days already behind step back so the eye lands on today and what is ahead.
-        .opacity(isPast && !plan.isDraft ? 0.72 : 1)
+        .opacity(isPast && plan?.isDraft != true ? 0.72 : 1)
         .overlay {
             if isTargeted {
                 RoundedRectangle(cornerRadius: 16).strokeBorder(.tint, lineWidth: 2)
@@ -108,7 +153,8 @@ private struct DayCard: View {
             }
         }
         .dropDestination(for: String.self) { ids, _ in
-            withAnimation { ids.contains { plan.moveWorkout(withID: $0, to: day) } }
+            guard let plan else { return false }
+            return withAnimation { ids.contains { plan.moveWorkout(withID: $0, to: day) } }
         } isTargeted: {
             isTargeted = $0
         }
