@@ -37,3 +37,24 @@ jobs:
         env:
           CLOUDKIT_MANAGEMENT_TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
         run: sh Scripts/update_release.sh
+
+  tag:
+    name: Tag and release a new version
+    needs: update
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag the version and create a GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(sed -n 's/^ *MARKETING_VERSION: *"\([0-9]*\.[0-9]*\.[0-9]*\)" *$/\1/p' project.yml)"
+          [ -n "$version" ] || { echo "error: no MARKETING_VERSION like \"1.2.3\" in project.yml." >&2; exit 1; }
+          # A release without a version bump ships under a version that already has its tag.
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "v$version is already tagged. Nothing to do."
+            exit 0
+          fi
+          # Creates the tag on the commit release now points at, along with the release.
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --generate-notes

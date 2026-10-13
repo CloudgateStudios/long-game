@@ -135,7 +135,9 @@ workflow > Run workflow):
 - **Update Release Branch** ships what is on `main`. It runs the CloudKit schema check and
   stops if Production is behind; these builds use CloudKit Production, so deploy the schema
   first (see iCloud above). Then it moves `release` to `main`, which starts the Xcode Cloud
-  build. It runs `Scripts/update_release.sh`, which also works from a Mac.
+  build. It runs `Scripts/update_release.sh`, which also works from a Mac. If the version
+  has no tag yet, so this is the first release since a version bump, the workflow then tags
+  the commit `v<version>` and creates a GitHub release with generated notes.
 - **Version Bump** raises the version (patch, minor or major) in `project.yml` and the
   Xcode project and opens a pull request for you to review and merge. It runs
   `Scripts/bump_version.sh`. A release does not need a new version: Xcode Cloud gives every
