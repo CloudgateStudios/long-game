@@ -53,5 +53,20 @@ struct LongGameApp: App {
         #if os(macOS)
         .defaultSize(width: 1100, height: 780)
         #endif
+
+        #if os(macOS)
+        Settings {
+            Group {
+                if let container = environment.container {
+                    SettingsScreen()
+                        .modelContainer(container)
+                } else {
+                    ProgressView()
+                }
+            }
+            .environment(environment)
+            .frame(minWidth: 480, idealWidth: 520, minHeight: 420, idealHeight: 560)
+        }
+        #endif
     }
 }
